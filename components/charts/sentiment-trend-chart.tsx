@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Line, LineChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip } from "recharts"
+import { Line, LineChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts"
 import { Button } from "@/components/ui/button"
 import { FileImage, FileSpreadsheet } from "lucide-react"
-import { downloadChartAsImage, downloadSentimentTrendCSV } from "@/lib/chart-export-utils"
+import { downloadChartAsImage, downloadSentimentTrendCSV, downloadElementAsImageFromRef } from "@/lib/chart-export-utils"
 
 interface SentimentTrendChartProps {
   isOpen: boolean
@@ -24,7 +24,8 @@ interface SentimentTrendChartProps {
 
 export function SentimentTrendChart({ isOpen, onClose, data, brandName }: SentimentTrendChartProps) {
   const [timePeriod, setTimePeriod] = useState("6months")
-  const [viewType, setViewType] = useState("count") // count or percentage
+  const [viewType, setViewType] = useState<'count' | 'percentage'>("count") // count or percentage
+  const exportRef = useRef<HTMLDivElement>(null)
 
   // Filter data based on selected time period
   const getFilteredData = () => {
@@ -49,42 +50,50 @@ export function SentimentTrendChart({ isOpen, onClose, data, brandName }: Sentim
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl">
-        <DialogHeader>
-          <div className="flex items-center justify-between w-full">
-            <DialogTitle>{brandName} - Review Sentiment Trends</DialogTitle>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => downloadChartAsImage("sentiment-trend", `${brandName}_sentiment_trend`)}
-              >
-                <FileImage className="w-4 h-4 mr-1" />
-                PNG
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => downloadSentimentTrendCSV(chartData, brandName, viewType)}
-              >
-                <FileSpreadsheet className="w-4 h-4 mr-1" />
-                CSV
-              </Button>
-            </div>
-          </div>
-        </DialogHeader>
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle>Positive vs Negative Reviews Over Time</CardTitle>
-                <p className="text-sm text-gray-600">Track how sentiment changes across different time periods</p>
-              </div>
-              <div className="flex space-x-3">
+      <DialogContent className="max-w-4xl">
+        <div ref={exportRef}>
+          <Card>
+            <DialogHeader>
+              <DialogTitle className="sr-only">Review Sentiment Trends</DialogTitle>
+              <div className="flex items-start justify-between w-full pt-3 pl-4">
+                {/* Top left: Title and subtitle */}
                 <div>
-                  <label className="text-sm font-medium text-gray-700">View</label>
-                  <Select value={viewType} onValueChange={setViewType}>
-                    <SelectTrigger className="w-32">
+                  <CardTitle className="text-lg font-semibold">Positive vs Negative Reviews Over Time</CardTitle>
+                  <p className="text-xs text-gray-600 mb-2">Track how sentiment changes across different time periods</p>
+                </div>
+                {/* Top right: PNG/CSV export buttons */}
+                <div className="flex items-center space-x-1">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="w-7 h-7 p-0"
+                    onClick={() => {
+                      if (exportRef.current) {
+                        downloadElementAsImageFromRef(exportRef.current, `${brandName}_sentiment_trend`);
+                      }
+                    }}
+                    title="Download PNG"
+                  >
+                    <FileImage className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="w-7 h-7 p-0"
+                    onClick={() => downloadSentimentTrendCSV(chartData, brandName, viewType)}
+                    title="Download CSV"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                  </Button>
+                  <span className="w-2" />
+                </div>
+              </div>
+              {/* Filters row: right aligned, with right padding */}
+              <div className="flex justify-end w-full mt-2 space-x-2 pr-4">
+                <div>
+                  <label className="text-xs font-medium text-gray-700">View</label>
+                  <Select value={viewType} onValueChange={v => setViewType(v as 'count' | 'percentage')}>
+                    <SelectTrigger className="w-24 h-7 text-xs px-2 py-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -94,9 +103,9 @@ export function SentimentTrendChart({ isOpen, onClose, data, brandName }: Sentim
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Period</label>
-                  <Select value={timePeriod} onValueChange={setTimePeriod}>
-                    <SelectTrigger className="w-32">
+                  <label className="text-xs font-medium text-gray-700">Period</label>
+                  <Select value={timePeriod} onValueChange={v => setTimePeriod(v as string)}>
+                    <SelectTrigger className="w-24 h-7 text-xs px-2 py-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -108,105 +117,106 @@ export function SentimentTrendChart({ isOpen, onClose, data, brandName }: Sentim
                   </Select>
                 </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[400px]" data-chart-id="sentiment-trend">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={60} />
-                  <YAxis
-                    tick={{ fontSize: 12 }}
-                    label={{
-                      value: isPercentageView ? "Percentage (%)" : "Number of Reviews",
-                      angle: -90,
-                      position: "insideLeft",
-                    }}
-                  />
-                  <Tooltip formatter={(value: any, name: string) => [isPercentageView ? `${value}%` : value, name]} />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey={isPercentageView ? "positivePercent" : "positive"}
-                    stroke="#22c55e"
-                    strokeWidth={3}
-                    dot={{ fill: "#22c55e", strokeWidth: 2, r: 4 }}
-                    name="Positive Reviews"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey={isPercentageView ? "negativePercent" : "negative"}
-                    stroke="#ef4444"
-                    strokeWidth={3}
-                    dot={{ fill: "#ef4444", strokeWidth: 2, r: 4 }}
-                    name="Negative Reviews"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey={isPercentageView ? "neutralPercent" : "neutral"}
-                    stroke="#f59e0b"
-                    strokeWidth={3}
-                    dot={{ fill: "#f59e0b", strokeWidth: 2, r: 4 }}
-                    name="Neutral Reviews"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Summary Statistics */}
-            <div className="mt-6 grid grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">
-                  {chartData.reduce((sum, item) => sum + item.positive, 0)}
-                </div>
-                <p className="text-sm text-green-700">Total Positive</p>
-                <p className="text-xs text-green-600">
-                  {chartData.length > 0
-                    ? (
-                        (chartData.reduce((sum, item) => sum + item.positive, 0) /
-                          chartData.reduce((sum, item) => sum + item.total, 0)) *
-                        100
-                      ).toFixed(1)
-                    : 0}
-                  % of all reviews
-                </p>
+            </DialogHeader>
+            <CardHeader>
+              <div className="h-[300px]" data-chart-id="sentiment-trend">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={60} />
+                    <YAxis
+                      tick={{ fontSize: 12 }}
+                      label={{
+                        value: "No. of Reviews",
+                        angle: -90,
+                        position: "insideLeft",
+                        offset: 0,
+                        style: { textAnchor: "middle", dominantBaseline: "middle" },
+                      }}
+                    />
+                    <Tooltip formatter={(value: any, name: string) => [isPercentageView ? `${value}%` : value, name]} />
+                    <Line
+                      type="monotone"
+                      dataKey={isPercentageView ? "positivePercent" : "positive"}
+                      stroke="#22c55e"
+                      strokeWidth={3}
+                      dot={{ fill: "#22c55e", strokeWidth: 2, r: 4 }}
+                      name="Positive Reviews"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey={isPercentageView ? "negativePercent" : "negative"}
+                      stroke="#ef4444"
+                      strokeWidth={3}
+                      dot={{ fill: "#ef4444", strokeWidth: 2, r: 4 }}
+                      name="Negative Reviews"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey={isPercentageView ? "neutralPercent" : "neutral"}
+                      stroke="#f59e0b"
+                      strokeWidth={3}
+                      dot={{ fill: "#f59e0b", strokeWidth: 2, r: 4 }}
+                      name="Neutral Reviews"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
-              <div className="text-center p-4 bg-red-50 rounded-lg">
-                <div className="text-2xl font-bold text-red-600">
-                  {chartData.reduce((sum, item) => sum + item.negative, 0)}
+            </CardHeader>
+            <CardContent>
+              <div className="mt-4 grid grid-cols-3 gap-3">
+                <div className="text-center p-2 bg-green-50 rounded-lg">
+                  <div className="text-xl font-bold text-green-600">
+                    {chartData.reduce((sum, item) => sum + item.positive, 0)}
+                  </div>
+                  <p className="text-xs text-green-700">Total Positive</p>
+                  <p className="text-xs text-green-600">
+                    {chartData.length > 0
+                      ? (
+                          (chartData.reduce((sum, item) => sum + item.positive, 0) /
+                            chartData.reduce((sum, item) => sum + item.total, 0)) *
+                          100
+                        ).toFixed(1)
+                      : 0}
+                    % of all reviews
+                  </p>
                 </div>
-                <p className="text-sm text-red-700">Total Negative</p>
-                <p className="text-xs text-red-600">
-                  {chartData.length > 0
-                    ? (
-                        (chartData.reduce((sum, item) => sum + item.negative, 0) /
-                          chartData.reduce((sum, item) => sum + item.total, 0)) *
-                        100
-                      ).toFixed(1)
-                    : 0}
-                  % of all reviews
-                </p>
-              </div>
-              <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                <div className="text-2xl font-bold text-yellow-600">
-                  {chartData.reduce((sum, item) => sum + item.neutral, 0)}
+                <div className="text-center p-2 bg-red-50 rounded-lg">
+                  <div className="text-xl font-bold text-red-600">
+                    {chartData.reduce((sum, item) => sum + item.negative, 0)}
+                  </div>
+                  <p className="text-xs text-red-700">Total Negative</p>
+                  <p className="text-xs text-red-600">
+                    {chartData.length > 0
+                      ? (
+                          (chartData.reduce((sum, item) => sum + item.negative, 0) /
+                            chartData.reduce((sum, item) => sum + item.total, 0)) *
+                          100
+                        ).toFixed(1)
+                      : 0}
+                    % of all reviews
+                  </p>
                 </div>
-                <p className="text-sm text-yellow-700">Total Neutral</p>
-                <p className="text-xs text-yellow-600">
-                  {chartData.length > 0
-                    ? (
-                        (chartData.reduce((sum, item) => sum + item.neutral, 0) /
-                          chartData.reduce((sum, item) => sum + item.total, 0)) *
-                        100
-                      ).toFixed(1)
-                    : 0}
-                  % of all reviews
-                </p>
+                <div className="text-center p-2 bg-yellow-50 rounded-lg">
+                  <div className="text-xl font-bold text-yellow-600">
+                    {chartData.reduce((sum, item) => sum + item.neutral, 0)}
+                  </div>
+                  <p className="text-xs text-yellow-700">Total Neutral</p>
+                  <p className="text-xs text-yellow-600">
+                    {chartData.length > 0
+                      ? (
+                          (chartData.reduce((sum, item) => sum + item.neutral, 0) /
+                            chartData.reduce((sum, item) => sum + item.total, 0)) *
+                          100
+                        ).toFixed(1)
+                      : 0}
+                    % of all reviews
+                  </p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </DialogContent>
     </Dialog>
   )

@@ -1,3 +1,4 @@
+import html2canvas from "html2canvas";
 // Chart export utilities for downloading charts as images and data as files
 
 export const downloadChartAsImage = async (chartId: string, filename: string, format: "png" | "jpeg" = "png") => {
@@ -141,3 +142,59 @@ const downloadCSV = (csvContent: string, filename: string) => {
   document.body.removeChild(link)
   URL.revokeObjectURL(link.href)
 }
+
+export const downloadElementAsImage = async (elementId: string, filename: string, format: "png" | "jpeg" = "png") => {
+  const element = document.querySelector(`[data-export-id="${elementId}"]`);
+  console.log("[downloadElementAsImage] Looking for element:", `[data-export-id="${elementId}"]`, element);
+  if (!element) {
+    console.error("Element not found for export");
+    return;
+  }
+  try {
+    const canvas = await html2canvas(element as HTMLElement, { backgroundColor: "#fff", useCORS: true });
+    if (!canvas) {
+      console.error("html2canvas did not return a canvas");
+      return;
+    }
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const link = document.createElement("a");
+        link.download = `${filename}.${format}`;
+        link.href = URL.createObjectURL(blob);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+      }
+    }, `image/${format}`, 0.95);
+  } catch (err) {
+    console.error("Error in html2canvas:", err);
+  }
+};
+
+export const downloadElementAsImageFromRef = async (element: HTMLElement, filename: string, format: "png" | "jpeg" = "png") => {
+  if (!element) {
+    console.error("Element (ref) not found for export");
+    return;
+  }
+  try {
+    const canvas = await html2canvas(element, { backgroundColor: "#fff", useCORS: true });
+    if (!canvas) {
+      console.error("html2canvas did not return a canvas");
+      return;
+    }
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const link = document.createElement("a");
+        link.download = `${filename}.${format}`;
+        link.href = URL.createObjectURL(blob);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+      }
+    }, `image/${format}`, 0.95);
+  } catch (err) {
+    console.error("Error in html2canvas (ref):", err);
+  }
+};

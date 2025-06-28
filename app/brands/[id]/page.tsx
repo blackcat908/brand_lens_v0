@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
-import { ArrowLeft, Star, ThumbsUp, ThumbsDown, Download, FileText, Filter, X, BarChart3, PieChart, Settings, Globe, SlidersHorizontal, ChevronDown } from "lucide-react"
+import { ArrowLeft, Star, ThumbsUp, ThumbsDown, Download, FileText, Filter, X, BarChart3, PieChart, Settings, Globe, SlidersHorizontal, ChevronDown, Meh, Loader2, RotateCw } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -31,6 +31,9 @@ import { useParams } from "next/navigation"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu"
 import { realBrandData } from "@/lib/real-brand-data"
+import { Checkbox } from "@/components/ui/checkbox"
+import { useToast } from "@/components/ui/use-toast"
+import { format, subDays, subMonths, isAfter, isBefore, parseISO } from "date-fns"
 
 interface ReviewFilters {
   rating: string;
@@ -125,14 +128,19 @@ export default function BrandDetailPage() {
 
   useEffect(() => {
     getBrandReviews(id || "").then((data) => {
-      setReviews(data)
+      // Map customer name to customerName for each review
+      const mappedData = (data || []).map((r: any) => ({
+        ...r,
+        customerName: r.customerName || r["customer name"] || "Anonymous"
+      }));
+      setReviews(mappedData);
       // Calculate metrics
-      if (data && data.length > 0) {
-        const sentimentMetrics = calculateBrandSentimentMetrics(data)
-        const avgRating = data.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / data.length
+      if (mappedData && mappedData.length > 0) {
+        const sentimentMetrics = calculateBrandSentimentMetrics(mappedData)
+        const avgRating = mappedData.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / mappedData.length
         // Monthly trend: percentage of positive reviews per month (last 6 months)
         const months: Record<string, any[]> = {}
-        data.forEach((r: any) => {
+        mappedData.forEach((r: any) => {
           const d = new Date(r.date)
           const key = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}`
           months[key] ||= []
@@ -146,12 +154,12 @@ export default function BrandDetailPage() {
           return Number(((pos / list.length) || 0).toFixed(2))
         })
         setMetrics({
-          totalSizingFitReviews: data.length,
+          totalSizingFitReviews: mappedData.length,
           avgRating: Number(avgRating.toFixed(1)),
           positiveCount: sentimentMetrics.positiveCount,
           negativeCount: sentimentMetrics.negativeCount,
           neutralCount: sentimentMetrics.neutralCount,
-          sentimentScore: calculateSentimentScore(data.map((r: any) => r.review)),
+          sentimentScore: calculateSentimentScore(mappedData.map((r: any) => r.review)),
           monthlyTrend,
         })
         // Monthly sentiment breakdown for chart
@@ -160,7 +168,7 @@ export default function BrandDetailPage() {
           const positive = list.filter((r) => r.rating >= 4).length
           const negative = list.filter((r) => r.rating <= 2).length
           const neutral = list.filter((r) => r.rating === 3).length
-    return {
+          return {
             month: m,
             positive,
             negative,
@@ -171,13 +179,13 @@ export default function BrandDetailPage() {
         setMonthlySentimentData(monthlySentiment)
       } else {
         setMetrics({
-        totalSizingFitReviews: 0,
-        avgRating: 0,
-        positiveCount: 0,
-        negativeCount: 0,
-        neutralCount: 0,
-        sentimentScore: 0,
-        monthlyTrend: [],
+          totalSizingFitReviews: 0,
+          avgRating: 0,
+          positiveCount: 0,
+          negativeCount: 0,
+          neutralCount: 0,
+          sentimentScore: 0,
+          monthlyTrend: [],
         })
         setMonthlySentimentData([])
       }
@@ -228,14 +236,14 @@ export default function BrandDetailPage() {
   const neutralCount = reviews.filter((r) => r.rating === 3).length
 
   // State for category filter
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(["Sizing Issues", "Fit Issues"]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(["Sizing & Fit Mentions"]);
 
-  // Get categories and keywords from KeywordsManager or define them here
+  // Update keywordCategories to merge Sizing and Fit Mentions
   const keywordCategories = [
-    { name: "Sizing Issues", keywords: [
-      "sizing", "size", "wrong size", "ordered wrong size", "poor sizing", "poor sizing information", "lack of sizing information", "wrong sizing information", "true to size", "runs small", "runs large", "size up", "size down", "don't know my size", "didn't know which size", "idk which size", "what size", "which size", "what's the size"
-    ] },
-    { name: "Fit Issues", keywords: [
+    { name: "Sizing & Fit Mentions", keywords: [
+      // Sizing Issues
+      "sizing", "size", "wrong size", "ordered wrong size", "poor sizing", "poor sizing information", "lack of sizing information", "wrong sizing information", "true to size", "runs small", "runs large", "size up", "size down", "don't know my size", "didn't know which size", "idk which size", "what size", "which size", "what's the size",
+      // Fit Issues
       "fit", "fits", "fitted", "fitting", "poor fit", "didn't fit", "too small", "too tight", "too big", "too loose", "would this fit", "large", "small", "tight", "loose", "narrow", "wide", "comfort", "comfortable"
     ] },
     { name: "Model Reference", keywords: [
@@ -252,7 +260,35 @@ export default function BrandDetailPage() {
   // Create a mapping for category name to keywords
   const keywordCategoriesMap = Object.fromEntries(keywordCategories.map(cat => [cat.name, cat.keywords]));
 
+  // Move date filter state and date range calculation above filteredReviews
+  const [dateFilter, setDateFilter] = useState<'7d' | '30d' | '3m' | '6m' | 'all' | 'custom'>('all');
+  const [customStartDate, setCustomStartDate] = useState<string>("");
+  const [customEndDate, setCustomEndDate] = useState<string>("");
+  const now = new Date();
+  let startDate: Date | null = null;
+  let endDate: Date | null = null;
+  if (dateFilter === '7d') startDate = subDays(now, 7);
+  else if (dateFilter === '30d') startDate = subDays(now, 30);
+  else if (dateFilter === '3m') startDate = subMonths(now, 3);
+  else if (dateFilter === '6m') startDate = subMonths(now, 6);
+  else if (dateFilter === 'custom' && customStartDate && customEndDate) {
+    startDate = parseISO(customStartDate);
+    endDate = parseISO(customEndDate);
+  }
+
   // Update filteredReviews logic
+  const dateFilteredReviews = useMemo(() => {
+    if (dateFilter === 'all') return reviews;
+    if (!startDate) return reviews;
+    return reviews.filter(r => {
+      const d = new Date(r.date);
+      if (dateFilter === 'custom' && endDate) {
+        return d >= startDate! && d <= endDate;
+      }
+      return d >= startDate!;
+    });
+  }, [reviews, dateFilter, startDate, endDate]);
+
   const filteredReviews = useMemo(() => {
     // Determine which keywords to use
     let keywordsToUse: string[] = [];
@@ -260,7 +296,7 @@ export default function BrandDetailPage() {
       keywordsToUse = selectedCategories.flatMap(cat => keywordCategoriesMap[cat] || []);
     } else {
       // If no category selected, show all reviews
-      return reviews.filter((review) => {
+      return dateFilteredReviews.filter((review) => {
         // Multi-rating filter
         if (reviewFilters.ratings.length > 0 && !reviewFilters.ratings.includes(Number(review.rating))) {
           return false;
@@ -272,7 +308,7 @@ export default function BrandDetailPage() {
         return true;
       });
     }
-    return reviews.filter((review) => {
+    return dateFilteredReviews.filter((review) => {
       // Multi-rating filter
       if (reviewFilters.ratings.length > 0 && !reviewFilters.ratings.includes(Number(review.rating))) {
         return false;
@@ -286,7 +322,7 @@ export default function BrandDetailPage() {
       const matchesKeyword = keywordsToUse.some((keyword) => reviewText.includes(keyword.toLowerCase()));
       return matchesKeyword;
     });
-  }, [reviews, reviewFilters, selectedCategories, keywordCategoriesMap]);
+  }, [dateFilteredReviews, reviewFilters, selectedCategories, keywordCategoriesMap]);
 
   const handleFilterChange = (key: keyof ReviewFilters, value: any) => {
     setReviewFilters((prev) => ({ ...prev, [key]: value }))
@@ -384,8 +420,33 @@ export default function BrandDetailPage() {
 
   const totalPages = Math.max(1, Math.ceil(sortedReviews.length / pageSize));
 
+  // Calculate metrics for filtered reviews (only for total and pos/neg, using only rating)
+  const filteredPosNegMetrics = useMemo(() => {
+    if (filteredReviews.length === 0) {
+      return {
+        totalSizingFitReviews: 0,
+        positiveCount: 0,
+        negativeCount: 0,
+        neutralCount: 0,
+      };
+    }
+    return {
+      totalSizingFitReviews: filteredReviews.length,
+      positiveCount: filteredReviews.filter((r) => r.rating >= 4).length,
+      negativeCount: filteredReviews.filter((r) => r.rating <= 2).length,
+      neutralCount: filteredReviews.filter((r) => r.rating === 3).length,
+    };
+  }, [filteredReviews]);
+
+  // State for visible columns
+  const [showLinkColumn, setShowLinkColumn] = useState(false);
+
+  const { toast } = useToast();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground px-4 md:px-12">
       <div className="container mx-auto px-4 pt-6">
         <Link href="/" className="flex items-center text-gray-600 hover:text-blue-600 active:text-blue-800 text-sm font-medium transition-colors">
           <ArrowLeft className="w-4 h-4 mr-1" />
@@ -411,7 +472,32 @@ export default function BrandDetailPage() {
               <p className="text-gray-600">Sizing & Fit Analysis</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 mb-6 justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isUpdating}
+              onClick={async () => {
+                setIsUpdating(true);
+                setUpdateStatus(null);
+                try {
+                  // Simulate fetch/update (replace with real API call later)
+                  await new Promise((resolve) => setTimeout(resolve, 2000));
+                  setUpdateStatus({ message: `Brand data updated! Latest reviews and analytics fetched for ${meta.name}.`, type: 'success' });
+                  toast({ title: "Brand data updated!", description: `Latest reviews and analytics fetched for ${meta.name}.` });
+                } catch (err) {
+                  setUpdateStatus({ message: "Update failed. Could not update brand data.", type: 'error' });
+                  toast({ title: "Update failed", description: "Could not update brand data.", variant: "destructive" });
+                } finally {
+                  setIsUpdating(false);
+                  setTimeout(() => setUpdateStatus(null), 4000);
+                }
+              }}
+              className="flex items-center"
+            >
+              {isUpdating ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <RotateCw className="w-4 h-4 mr-1" />}
+              {isUpdating ? "Updating..." : "Update"}
+            </Button>
             <Popover open={showSourcePopover} onOpenChange={setShowSourcePopover}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -421,28 +507,17 @@ export default function BrandDetailPage() {
               </PopoverTrigger>
               <PopoverContent className="w-96">
                 <div className="flex flex-col space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <Globe className="w-5 h-5 text-green-500" />
-                    <span className="text-green-700 font-medium">Active</span>
+                  <Label htmlFor="source-url" className="text-xs font-medium">Source URL</Label>
+                  <Input
+                    id="source-url"
+                    value={sourceUrl}
+                    onChange={e => setSourceUrl(e.target.value)}
+                    className="text-sm"
+                  />
+                  <div className="flex space-x-2 mt-1">
+                    <Button type="button" size="sm" variant="default" onClick={handleSaveUrl}>Save</Button>
+                    <Button type="button" size="sm" variant="outline" onClick={handleCancelUrlEdit}>Cancel</Button>
                   </div>
-                  <div className="text-sm text-gray-700">{reviews.length} reviews</div>
-                  <div className="text-sm text-gray-700">Last: -</div>
-                  <form onSubmit={e => { e.preventDefault(); handleSaveUrl(); }} className="flex flex-col space-y-2">
-                    <Label htmlFor="source-url" className="text-xs font-medium">Source URL</Label>
-                    <Input
-                      id="source-url"
-                      value={sourceUrl}
-                      onChange={e => setSourceUrl(e.target.value)}
-                      className="text-sm"
-                    />
-                    <div className="flex space-x-2 mt-1">
-                      <Button type="submit" size="sm" variant="default">Save</Button>
-                      <Button type="button" size="sm" variant="outline" onClick={handleCancelUrlEdit}>Cancel</Button>
-                    </div>
-                  </form>
-                  <Button size="sm" variant="secondary" onClick={handleUpdateReviews}>
-                    Update
-                  </Button>
                   <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-xs mt-2">View on Trustpilot</a>
                 </div>
               </PopoverContent>
@@ -453,46 +528,57 @@ export default function BrandDetailPage() {
             </Button>
           </div>
         </div>
+        {updateStatus && (
+          <div className={`mb-4 text-sm font-medium ${updateStatus.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>{updateStatus.message}</div>
+        )}
 
         {/* Metrics Tiles */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <Card className="bg-card text-card-foreground">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-foreground">Total Reviews</CardTitle>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
+          <Card className="bg-card text-card-foreground h-full p-1">
+            <CardHeader className="pt-2 pb-1 px-2">
+              <CardTitle className="text-base font-bold text-foreground mb-2">Total Reviews</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{filteredReviews.length}</div>
-              <p className="text-xs text-gray-500">Sizing & Fit mentions</p>
+            <CardContent className="px-2 pb-1">
+              <div className="text-xl font-bold">{filteredPosNegMetrics.totalSizingFitReviews}</div>
+              <p className="text-[11px] text-gray-500">
+                {selectedCategories.length === 1 && selectedCategories[0] === "Sizing & Fit Mentions"
+                  ? "Sizing & Fit mentions"
+                  : "Filtered Reviews"}
+              </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-card text-card-foreground">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-foreground">Average Rating</CardTitle>
+          <Card className="bg-card text-card-foreground h-full p-1">
+            <CardHeader className="pt-2 pb-1 px-2">
+              <CardTitle className="text-base font-bold text-foreground mb-2">Average Rating</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-2 pb-1">
               <div className="flex items-center space-x-2">
                 <div className="text-2xl font-bold">{metrics.avgRating}</div>
                 <Star className="w-5 h-5 text-yellow-500" />
               </div>
-              <p className="text-xs text-gray-500">From filtered reviews</p>
+              <p className="text-xs text-gray-500">From all reviews</p>
             </CardContent>
           </Card>
 
-          {/* Clickable Positive vs Negative Card */}
-          <Card className="relative overflow-hidden bg-card text-card-foreground">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-foreground">Positive vs Negative</CardTitle>
+          {/* Clickable Positive vs Negative vs Neutral Card */}
+          <Card className="relative overflow-hidden bg-card text-card-foreground h-full p-1">
+            <CardHeader className="pt-2 pb-1 px-2">
+              <CardTitle className="text-base font-bold text-foreground mb-2">Positive vs Negative</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-4 mb-3">
-                <div className="flex items-center space-x-1">
+            <CardContent className="pb-1">
+              <div className="flex items-center mb-2 w-full space-x-4">
+                <div className="flex items-center space-x-2 -ml-5">
                   <ThumbsUp className="w-4 h-4 text-green-500" />
-                  <span className="font-bold">{metrics.positiveCount}</span>
+                  <span className="font-bold">{filteredPosNegMetrics.positiveCount}</span>
                 </div>
-                <div className="flex items-center space-x-1">
+                <div className="flex items-center space-x-2">
                   <ThumbsDown className="w-4 h-4 text-red-500" />
-                  <span className="font-bold">{metrics.negativeCount}</span>
+                  <span className="font-bold">{filteredPosNegMetrics.negativeCount}</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Meh className="w-4 h-4 text-yellow-500" />
+                  <span className="font-bold">{filteredPosNegMetrics.neutralCount}</span>
                 </div>
               </div>
               <Button
@@ -501,16 +587,16 @@ export default function BrandDetailPage() {
                 size="sm"
               >
                 <PieChart className="w-4 h-4 mr-2" />
-                View Distribution
+                See Chart
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="bg-card text-card-foreground">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-foreground">Sentiment Score</CardTitle>
+          <Card className="bg-card text-card-foreground h-full p-1">
+            <CardHeader className="pt-2 pb-1 px-2">
+              <CardTitle className="text-base font-bold text-foreground mb-2">Sentiment Score</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-2 pb-1">
               <div className="text-2xl font-bold">{metrics.sentimentScore}</div>
               <Badge
                 className={
@@ -523,12 +609,12 @@ export default function BrandDetailPage() {
           </Card>
 
           {/* Clickable Monthly Trend Card */}
-          <Card className="relative overflow-hidden bg-card text-card-foreground">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-foreground">Monthly Trend</CardTitle>
+          <Card className="relative overflow-hidden bg-card text-card-foreground h-full p-1">
+            <CardHeader className="pt-0 pb-1 px-2">
+              <CardTitle className="text-base font-bold text-foreground mb-2">Monthly Trend</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="mb-3">
+            <CardContent className="pt-2">
+              <div className="mb-2">
                 <SentimentSparkline data={metrics.monthlyTrend} />
               </div>
               <Button
@@ -541,6 +627,50 @@ export default function BrandDetailPage() {
               </Button>
             </CardContent>
           </Card>
+
+          <Card className="bg-card text-card-foreground h-full p-1">
+            <CardHeader className="pt-0 pb-1 px-2">
+              <CardTitle className="text-base font-bold text-foreground mb-2">Top Issues</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-2 px-2 pb-1">
+              <div className="flex flex-wrap gap-1 mt-0">
+                {(() => {
+                  const keywordCounts: Record<string, { count: number; sentiment: string[] }> = {};
+                  filteredReviews.forEach(r => {
+                    currentKeywords.forEach(keyword => {
+                      if (r.review && r.review.toLowerCase().includes(keyword.toLowerCase())) {
+                        if (!keywordCounts[keyword]) keywordCounts[keyword] = { count: 0, sentiment: [] };
+                        keywordCounts[keyword].count++;
+                        if (r.sentiment_label) keywordCounts[keyword].sentiment.push(r.sentiment_label);
+                      }
+                    });
+                  });
+                  const topKeywords = Object.entries(keywordCounts)
+                    .sort((a, b) => b[1].count - a[1].count)
+                    .slice(0, 5);
+                  if (topKeywords.length === 0) return <span className="text-xs text-gray-400">No issues found</span>;
+                  return topKeywords.map(([keyword, data]) => {
+                    const pos = data.sentiment.filter(s => s === 'positive').length;
+                    const neg = data.sentiment.filter(s => s === 'negative').length;
+                    const neu = data.sentiment.filter(s => s === 'neutral').length;
+                    let color = 'bg-green-100 text-green-800';
+                    if (neg > pos && neg > neu) color = 'bg-red-100 text-red-800';
+                    else if (neu > pos && neu > neg) color = 'bg-yellow-100 text-yellow-800';
+                    return (
+                      <button
+                        key={keyword}
+                        className={`px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer border border-gray-200 transition hover:scale-105 focus:outline-none ${color}`}
+                        onClick={() => handleFilterChange('keyword', keyword)}
+                        title={`Show reviews mentioning '${keyword}'`}
+                      >
+                        {keyword} <span className="font-bold">({data.count})</span>
+                      </button>
+                    );
+                  });
+                })()}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Data Table with Integrated Filters */}
@@ -551,13 +681,12 @@ export default function BrandDetailPage() {
                 <div>
                   <CardTitle>Review Details</CardTitle>
                   <p className="text-sm text-gray-600">
-                    Sizing & fit keywords highlighted in <span className="bg-yellow-200 text-yellow-900 dark:bg-yellow-700 dark:text-yellow-100 px-1 rounded">yellow</span>
+                    Matched keywords are highlighted in <span className="bg-yellow-200 text-yellow-900 dark:bg-yellow-700 dark:text-yellow-100 px-1 rounded">yellow</span>
                     {reviewFilters.keyword && (
                       <span>
                         , search terms in <span className="bg-blue-200 px-1 rounded border border-blue-300">blue</span>
                       </span>
                     )}
-                    <span className="block mt-1 text-xs">Currently tracking {currentKeywords.length} keywords</span>
                   </p>
                 </div>
                 <div className="flex space-x-2">
@@ -617,64 +746,54 @@ export default function BrandDetailPage() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Rating Filter */}
-                  <div>
-                    <Label htmlFor="rating-filter" className="text-sm font-medium">
-                      Filter by Rating
-                    </Label>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between">
-                          {reviewFilters.ratings.length === 0
-                            ? "All Ratings"
-                            : reviewFilters.ratings.sort().join(", ") + (reviewFilters.ratings.length === 1 ? " star" : " stars")}
-                          <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-48">
-                        <DropdownMenuCheckboxItem
-                          checked={reviewFilters.ratings.length === 0}
-                          onCheckedChange={() => handleFilterChange("ratings", [])}
-                        >
-                          All Ratings
-                        </DropdownMenuCheckboxItem>
-                        {[5, 4, 3, 2, 1].map((star) => (
-                          <DropdownMenuCheckboxItem
-                            key={star}
-                            checked={reviewFilters.ratings.includes(star)}
-                            onCheckedChange={(checked) => {
-                              let newRatings = reviewFilters.ratings.slice();
-                              if (checked) {
-                                newRatings.push(star);
-                              } else {
-                                newRatings = newRatings.filter((r) => r !== star);
-                              }
-                              // If all are unchecked, treat as 'all ratings'
-                              handleFilterChange("ratings", newRatings);
-                            }}
-                          >
-                            <span className="flex items-center space-x-1">
-                              <span>{star}</span>
-                              <Star className="w-4 h-4 text-yellow-500" />
-                            </span>
-                          </DropdownMenuCheckboxItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                <div className="flex flex-col md:flex-row md:items-center md:space-x-4 w-full mb-2">
+                  <div className="flex-1 min-w-[180px]">
+                    <Label htmlFor="rating-filter" className="text-xs font-medium">Filter by Rating</Label>
+                    <Select value={reviewFilters.rating} onValueChange={value => handleFilterChange('rating', value)}>
+                      <SelectTrigger id="rating-filter" className="h-8 text-xs px-2">
+                        <SelectValue placeholder="All Ratings" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Ratings</SelectItem>
+                        <SelectItem value="5">5 Stars</SelectItem>
+                        <SelectItem value="4">4 Stars</SelectItem>
+                        <SelectItem value="3">3 Stars</SelectItem>
+                        <SelectItem value="2">2 Stars</SelectItem>
+                        <SelectItem value="1">1 Star</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-
-                  {/* Keyword Filter */}
-                  <div>
-                    <Label htmlFor="keyword-filter" className="text-sm font-medium">
-                      Search by Keyword
-                    </Label>
+                  <div className="flex-1 min-w-[180px] mt-2 md:mt-0">
+                    <Label htmlFor="date-filter" className="text-xs font-medium">Filter by Date</Label>
+                    <Select value={dateFilter} onValueChange={value => setDateFilter(value as any)}>
+                      <SelectTrigger id="date-filter" className="h-8 text-xs px-2">
+                        <SelectValue placeholder="All Time" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="7d">Last 7 Days</SelectItem>
+                        <SelectItem value="30d">Last 30 Days</SelectItem>
+                        <SelectItem value="3m">Last 3 Months</SelectItem>
+                        <SelectItem value="6m">Last 6 Months</SelectItem>
+                        <SelectItem value="all">All Time</SelectItem>
+                        <SelectItem value="custom">Custom Range</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {dateFilter === 'custom' && (
+                      <div className="flex items-center space-x-2 mt-1">
+                        <input type="date" value={customStartDate} onChange={e => setCustomStartDate(e.target.value)} className="border rounded px-2 py-1 text-xs h-8" />
+                        <span className="text-xs">to</span>
+                        <input type="date" value={customEndDate} onChange={e => setCustomEndDate(e.target.value)} className="border rounded px-2 py-1 text-xs h-8" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-[180px] mt-2 md:mt-0">
+                    <Label htmlFor="keyword-filter" className="text-xs font-medium">Search by Keyword</Label>
                     <Input
                       id="keyword-filter"
                       placeholder="Search in reviews..."
                       value={reviewFilters.keyword}
-                      onChange={(e) => handleFilterChange("keyword", e.target.value)}
-                      className="mt-1"
+                      onChange={e => handleFilterChange('keyword', e.target.value)}
+                      className="h-8 text-xs px-2"
                     />
                   </div>
                 </div>
@@ -702,29 +821,36 @@ export default function BrandDetailPage() {
                   </div>
 
                   <div className="text-sm text-gray-600">
-                    Showing {filteredReviews.length} of {reviews.length} reviews
+                    Showing {filteredReviews.length} of {dateFilteredReviews.length} reviews
                   </div>
                 </div>
               </div>
             </div>
           </CardHeader>
           <CardContent>
+            <div className="flex items-center gap-2 mb-2">
+              <Checkbox id="show-link-col" checked={showLinkColumn} onCheckedChange={checked => setShowLinkColumn(!!checked)} />
+              <label htmlFor="show-link-col" className="text-sm select-none cursor-pointer">Show Link column</label>
+            </div>
             <label className="flex items-center gap-2 mb-2">
               Category:
               <div className="flex flex-wrap gap-2">
+                {/* All Reviews card */}
+                <Button
+                  key="All Reviews"
+                  variant={selectedCategories.length === 0 ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategories([])}
+                  className={selectedCategories.length === 0 ? "bg-blue-600 text-white" : ""}
+                >
+                  All Reviews
+                </Button>
                 {keywordCategories.map(cat => (
                   <Button
                     key={cat.name}
                     variant={selectedCategories.includes(cat.name) ? "default" : "outline"}
                     size="sm"
-                    onClick={() => {
-                      if (["Sizing Issues", "Fit Issues"].includes(cat.name)) {
-                        // If clicking either default, select both
-                        setSelectedCategories(["Sizing Issues", "Fit Issues"]);
-                      } else {
-                        setSelectedCategories([cat.name]);
-                      }
-                    }}
+                    onClick={() => setSelectedCategories([cat.name])}
                     className={selectedCategories.includes(cat.name) ? "bg-blue-600 text-white" : ""}
                   >
                     {cat.name}
@@ -736,28 +862,11 @@ export default function BrandDetailPage() {
               <Table className="bg-background text-foreground">
                 <TableHeader>
                   <TableRow>
-                    <TableHead
-                      className="cursor-pointer select-none"
-                      onClick={() => handleSort("customer")}
-                    >
-                      Customer
-                      {sortBy === "customer" && (sortDirection === "asc" ? " ▲" : " ▼")}
-                    </TableHead>
-                    <TableHead
-                      className="cursor-pointer select-none"
-                      onClick={() => handleSort("date")}
-                    >
-                      Date
-                      {sortBy === "date" && (sortDirection === "asc" ? " ▲" : " ▼")}
-                    </TableHead>
-                    <TableHead
-                      className="cursor-pointer select-none"
-                      onClick={() => handleSort("rating")}
-                    >
-                      Rating
-                      {sortBy === "rating" && (sortDirection === "asc" ? " ▲" : " ▼")}
-                    </TableHead>
-                    <TableHead className="w-1/2">Review</TableHead>
+                    <TableHead className="w-32 cursor-pointer select-none" onClick={() => handleSort("customer")}>Customer{sortBy === "customer" && (sortDirection === "asc" ? " ▲" : " ▼")}</TableHead>
+                    <TableHead className="w-24 cursor-pointer select-none text-nowrap" onClick={() => handleSort("date")}>Date{sortBy === "date" && (sortDirection === "asc" ? " ▲" : " ▼")}</TableHead>
+                    <TableHead className="w-20 cursor-pointer select-none text-nowrap" onClick={() => handleSort("rating")}>Rating{sortBy === "rating" && (sortDirection === "asc" ? " ▲" : " ▼")}</TableHead>
+                    <TableHead className="w-auto max-w-3xl">Review</TableHead>
+                    {showLinkColumn && <TableHead className="w-32">Link</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -767,27 +876,29 @@ export default function BrandDetailPage() {
                       const isExpanded = expandedReviews[reviewKey];
                       return (
                         <TableRow key={reviewKey}>
-                          <TableCell className="font-medium">{review.customerName}</TableCell>
-                          <TableCell>{review.date}</TableCell>
+                          <TableCell className="font-medium text-nowrap">{review.customerName}</TableCell>
+                          <TableCell className="text-nowrap">{review.date}</TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-1">
                               <span>{review.rating}</span>
                               <Star className="w-4 h-4 text-yellow-500" />
                             </div>
                           </TableCell>
-                          <TableCell>
-                            <div className={isExpanded ? undefined : "line-clamp-3"}>
+                          <TableCell className="max-w-3xl whitespace-pre-line">
+                            <div>
                               <span
                                 dangerouslySetInnerHTML={{
                                   __html: highlightKeywords(
-                                    review.review,
+                                    isExpanded || review.review.length <= 200
+                                      ? review.review
+                                      : review.review.slice(0, 200) + '...',
                                     selectedCategories.flatMap(cat => keywordCategoriesMap[cat] || []),
                                     reviewFilters.keyword
                                   ),
                                 }}
                               />
                             </div>
-                            {review.review.split(/\r?\n|\r| /).length > 30 && (
+                            {review.review.length > 200 && (
                               <button
                                 className="text-xs text-blue-600 hover:underline mt-1 focus:outline-none"
                                 onClick={() => toggleReview(reviewKey)}
@@ -796,12 +907,23 @@ export default function BrandDetailPage() {
                               </button>
                             )}
                           </TableCell>
+                          {showLinkColumn && (
+                            <TableCell className="truncate max-w-xs">
+                              {review.link ? (
+                                <a href={review.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">
+                                  {review.link}
+                                </a>
+                              ) : (
+                                <span className="text-gray-400">—</span>
+                              )}
+                            </TableCell>
+                          )}
                         </TableRow>
                       );
                     })
                   ) : (
                     <TableRow key="no-reviews">
-                      <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={showLinkColumn ? 5 : 4} className="text-center py-8 text-gray-500">
                         No reviews match the current filters
                       </TableCell>
                     </TableRow>
@@ -931,9 +1053,9 @@ export default function BrandDetailPage() {
         <SentimentDistributionChart
           isOpen={showDistributionChart}
           onClose={() => setShowDistributionChart(false)}
-          positiveCount={metrics.positiveCount}
-          negativeCount={metrics.negativeCount}
-          neutralCount={neutralCount}
+          positiveCount={filteredPosNegMetrics.positiveCount}
+          negativeCount={filteredPosNegMetrics.negativeCount}
+          neutralCount={filteredPosNegMetrics.neutralCount}
           brandName={meta.name}
         />
 

@@ -2,7 +2,7 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts"
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 import { Button } from "@/components/ui/button"
 import { FileImage, FileSpreadsheet } from "lucide-react"
 import { downloadChartAsImage, downloadSentimentDistributionCSV } from "@/lib/chart-export-utils"
@@ -85,35 +85,42 @@ export function SentimentDistributionChart({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <div className="flex items-center justify-between w-full">
-            <DialogTitle>{brandName} - Review Sentiment Distribution</DialogTitle>
-            <div className="flex items-center space-x-2">
+            <DialogTitle className="truncate">{brandName} - Review Sentiment Distribution</DialogTitle>
+            <div className="flex items-center space-x-1">
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
+                className="w-7 h-7 p-0"
                 onClick={() => downloadChartAsImage("sentiment-distribution", `${brandName}_sentiment_distribution`)}
+                title="Download PNG"
               >
-                <FileImage className="w-4 h-4 mr-1" />
-                PNG
+                <FileImage className="w-4 h-4" />
               </Button>
-              <Button variant="outline" size="sm" onClick={() => downloadSentimentDistributionCSV(data, brandName)}>
-                <FileSpreadsheet className="w-4 h-4 mr-1" />
-                CSV
+              <Button
+                variant="outline"
+                size="icon"
+                className="w-7 h-7 p-0"
+                onClick={() => downloadSentimentDistributionCSV(data, brandName)}
+                title="Download CSV"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
               </Button>
+              <span className="w-2" />
             </div>
           </div>
         </DialogHeader>
         <Card>
           <CardHeader>
-            <CardTitle>Positive vs Negative vs Neutral Reviews</CardTitle>
-            <p className="text-sm text-gray-600">
+            <CardTitle className="text-lg font-semibold">Positive vs Negative vs Neutral Reviews</CardTitle>
+            <p className="text-xs text-gray-600">
               Distribution based on review ratings (≥4 stars = Positive, ≤2 stars = Negative, 3 stars = Neutral)
             </p>
           </CardHeader>
           <CardContent>
-            <div className="h-[400px]" data-chart-id="sentiment-distribution">
+            <div className="h-[220px]" data-chart-id="sentiment-distribution">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -122,7 +129,7 @@ export function SentimentDistributionChart({
                     cy="50%"
                     labelLine={false}
                     label={CustomLabel}
-                    outerRadius={120}
+                    outerRadius={90}
                     fill="#8884d8"
                     dataKey="value"
                   >
@@ -131,13 +138,6 @@ export function SentimentDistributionChart({
                     ))}
                   </Pie>
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend
-                    formatter={(value, entry: any) => (
-                      <span style={{ color: entry.color }}>
-                        {value}: {entry.payload.value} reviews ({entry.payload.percentage}%)
-                      </span>
-                    )}
-                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -147,7 +147,7 @@ export function SentimentDistributionChart({
                 <div key={item.name} className="text-center">
                   <div className="w-4 h-4 rounded mx-auto mb-2" style={{ backgroundColor: item.color }} />
                   <p className="font-medium">{item.name}</p>
-                  <p className="text-2xl font-bold">{item.value}</p>
+                  <p className="text-2xl font-bold">{item.value} <span className="text-base font-normal">reviews</span></p>
                   <p className="text-sm text-gray-600">{item.percentage}%</p>
                 </div>
               ))}

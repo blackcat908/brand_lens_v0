@@ -10,6 +10,7 @@ import { CreateBrandModal } from "@/components/create-brand-modal"
 import { realBrandsList, getRatingColor, getLastScrapedDate } from "@/lib/real-brand-data"
 import { getBrandReviews } from "@/lib/get-brand-reviews"
 import { calculateBrandSentimentMetrics } from "@/lib/sentiment-analysis"
+import { Star as StarIcon } from "lucide-react"
 
 // Import the Sizing & Fit keywords from the detail page or redefine them here
 const sizingFitKeywords = [
@@ -124,23 +125,23 @@ export default function BrandsPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-end items-center p-4">
+      <div className="max-w-6xl mx-auto px-2 py-6">
+        <div className="flex justify-end items-center mb-4">
           <button
             onClick={toggleDarkMode}
-            className="fixed bottom-6 right-6 z-50 rounded-full p-3 border border-gray-300 bg-background shadow-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="fixed bottom-6 right-6 z-50 rounded-full p-2 border border-gray-300 bg-background shadow-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
           >
-            {darkMode ? <Sun className="w-6 h-6 text-yellow-400" /> : <Moon className="w-6 h-6 text-gray-700" />}
+            {darkMode ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-gray-700" />}
           </button>
         </div>
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2 animate-fade-in">Brand Review Dashboard</h1>
+        <div className="mb-4">
+          <h1 className="text-2xl font-semibold text-foreground mb-1 animate-fade-in">Brand Review Dashboard</h1>
           <div className="flex justify-between items-center animate-fade-in-delay">
-            <p className="text-gray-600">Monitor sizing and fit sentiment across tracked brands</p>
+            <p className="text-gray-600 text-sm">Monitor sizing and fit sentiment across tracked brands</p>
             <Button
               onClick={() => setIsCreateModalOpen(true)}
-              className="flex items-center space-x-2 transform transition-all duration-200 hover:scale-105 hover:shadow-lg"
+              className="flex items-center space-x-1.5 h-9 px-3 text-sm font-medium rounded-md shadow-none border border-gray-300 bg-white hover:bg-gray-100 text-black"
             >
               <Plus className="w-4 h-4" />
               <span>Create New Brand</span>
@@ -148,67 +149,85 @@ export default function BrandsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-full">
           {brands.map((brand, index) => (
             <Link key={brand.id} href={`/brands/${brand.id}`}>
               <Card
-                className="group cursor-pointer h-full transform transition-all duration-300 ease-out hover:scale-105 hover:shadow-xl hover:-translate-y-2 animate-slide-up shadow-md hover:shadow-2xl bg-card text-card-foreground"
+                className="group cursor-pointer h-[190px] transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:-translate-y-2 hover:bg-gray-50 bg-card text-card-foreground border border-gray-200 rounded-md p-0 shadow-md"
                 style={{
-                  animationDelay: `${index * 100}ms`,
+                  animationDelay: `${index * 80}ms`,
                   animationFillMode: "both",
                 }}
               >
                 {/* Header Section */}
-                <CardHeader className="pb-3 p-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="relative w-12 h-12 bg-black rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
-                      <img
-                        src={brand.logo || "/placeholder.svg"}
-                        alt={`${brand.name} logo`}
-                        className={`${getLogoSize(brand.id)} object-contain transition-transform duration-300 group-hover:scale-110`}
-                        onError={(e) => {
-                          e.currentTarget.src = "/placeholder.svg?height=48&width=48"
-                        }}
-                      />
-                      <div className="absolute inset-0 rounded-lg bg-gradient-to-tr from-transparent to-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+                <CardHeader className="pb-2 p-3">
+                  <div className="flex items-center justify-between space-x-2">
+                    <div className="flex items-center space-x-2">
+                      <div className="relative w-10 h-10 bg-black rounded-md flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <img
+                          src={brand.logo || "/placeholder.svg"}
+                          alt={`${brand.name} logo`}
+                          className={`${getLogoSize(brand.id)} object-contain transition-transform duration-200 group-hover:scale-105`}
+                          onError={(e) => {
+                            e.currentTarget.src = "/placeholder.svg?height=40&width=40"
+                          }}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-base font-bold text-foreground group-hover:text-blue-600 transition-colors duration-200 truncate">
+                          {brand.name}
+                        </CardTitle>
+                        <p className="text-xs text-gray-500 mt-0.5">Last updated: {brand.lastUpdated}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg font-semibold text-foreground group-hover:text-blue-600 transition-colors duration-300 truncate">
-                        {brand.name}
-                      </CardTitle>
-                      <p className="text-sm text-gray-500 mt-1">Last updated: {brand.lastUpdated}</p>
+                    {/* Avg Rating beside logo with single yellow star */}
+                    <div className="flex flex-col items-end min-w-[80px]">
+                      <div className="flex items-center space-x-1">
+                        <StarIcon className="w-4 h-4 text-yellow-400" fill="none" />
+                        <span className={`text-base font-semibold ${getRatingColor(brand.avgRating)}`}>{brand.avgRating}</span>
+                      </div>
+                      <span className="text-[10px] text-gray-500">Avg Rating</span>
                     </div>
                   </div>
                 </CardHeader>
 
                 {/* Content Section */}
-                <CardContent className="pt-0 p-4 space-y-4">
+                <CardContent className="pt-0 p-3 space-y-2 overflow-hidden">
                   {/* Badges Row */}
-                  <div className="flex justify-between items-center gap-3">
-                    <Badge variant="outline" className="flex items-center space-x-1.5 px-2.5 py-1 text-xs">
+                  <div className="flex justify-between items-center gap-2 mb-1">
+                    <Badge variant="outline" className="flex items-center space-x-1 px-2 py-0.5 text-xs font-normal border border-gray-300 bg-white text-gray-800">
                       <Building2 className="w-3 h-3" />
                       <span>{brand.totalReviews.toLocaleString()} reviews</span>
                     </Badge>
-                    <Badge className={`px-2.5 py-1 text-xs capitalize ${getSentimentColor(brand.sentiment)}`}>
-                      {brand.sentiment}
-                    </Badge>
+                    <Badge className={`px-2 py-0.5 text-xs font-normal capitalize ${getSentimentColor(brand.sentiment)}`}>{brand.sentiment}</Badge>
                   </div>
 
-                  {/* Metrics Row */}
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center space-x-2">
-                      <TrendingUp className="w-4 h-4 text-blue-500" />
-                      <div>
-                        <p className="text-xl font-bold text-blue-600">{brand.sizingFitReviews}</p>
-                        <p className="text-xs text-gray-600">Sizing & Fit</p>
+                  {/* Bars Section */}
+                  <div className="space-y-1">
+                    {/* Sizing & Fit Issue Bar */}
+                    <div className="px-2 py-1">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs text-gray-600 font-medium">Sizing & Fit Mentions</span>
+                        <span className="text-xs text-gray-500">{brand.sizingFitReviews} <span className="text-[10px]">({((brand.sizingFitReviews/brand.totalReviews)*100).toFixed(1)}% of total)</span></span>
+                      </div>
+                      <div className="w-full h-1.5 bg-blue-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-1.5 bg-blue-500 rounded-full transition-all"
+                          style={{ width: `${(brand.sizingFitReviews/brand.totalReviews)*100}%` }}
+                        />
                       </div>
                     </div>
-
-                    <div className="flex items-center space-x-2">
-                      <Star className="w-4 h-4 text-yellow-500" />
-                      <div>
-                        <p className={`text-xl font-bold ${getRatingColor(brand.avgRating)}`}>{brand.avgRating}</p>
-                        <p className="text-xs text-gray-600">Avg Rating</p>
+                    {/* Sentiment Score Bar */}
+                    <div className="px-2 py-1">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs text-gray-600 font-medium">Sentiment Score</span>
+                        <span className={`text-xs font-semibold ${brand.sentiment === "positive" ? "text-green-600" : brand.sentiment === "negative" ? "text-red-600" : "text-yellow-600"}`}>{brand.sentiment === "positive" ? "+" : ""}{brand.avgRating >= 0 ? (brand.avgRating/5-0.5).toFixed(2) : "0.00"}</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-1.5 ${brand.sentiment === "positive" ? "bg-green-500" : brand.sentiment === "negative" ? "bg-red-500" : "bg-yellow-500"} rounded-full transition-all`}
+                          style={{ width: `${Math.max(10, Math.min(100, ((brand.avgRating/5)*100)))}%` }}
+                        />
                       </div>
                     </div>
                   </div>
