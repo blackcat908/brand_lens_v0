@@ -1,0 +1,16 @@
+2025-07-08 18:20:54,193 - INFO - Database initialized successfully
+2025-07-08 18:20:54,194 - INFO - Starting scrape for brand: wanderdoll
+2025-07-08 18:20:56,041 - INFO - Starting scrape for brand: murci
+2025-07-08 18:20:56,394 - INFO - Starting scrape for brand: bbxbrand
+2025-07-08 18:20:56,747 - INFO - Starting scrape for brand: becauseofalice
+2025-07-08 18:20:57,097 - INFO - Starting scrape for brand: oddmuse
+2025-07-08 18:20:57,447 - INFO - Scraping completed. 0/5 brands successful
+2025-07-08 18:20:57,448 - ERROR - Failed to get stats: 'sqlite3.Connection' object has no attribute 'query'
+2025-07-08 20:02:50,728 - INFO - Database initialized successfully
+2025-07-08 20:02:50,729 - INFO - Starting scrape for brand: wanderdoll
+2025-07-08 20:02:51,156 - INFO - Starting scrape for brand: murci
+2025-07-08 20:02:51,531 - INFO - Starting scrape for brand: bbxbrand
+2025-07-08 20:02:51,925 - INFO - Starting scrape for brand: becauseofalice
+2025-07-08 20:02:52,320 - INFO - Starting scrape for brand: oddmuse
+2025-07-08 20:02:52,683 - INFO - Scraping completed. 0/5 brands successful
+2025-07-08 20:02:52,684 - ERROR - Failed to get stats: 'sqlite3.Connection' object has no attribute 'query'
