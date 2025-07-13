@@ -409,4 +409,5 @@ def set_keywords_global():
     return jsonify({'success': True})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False) 
+    app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False) #   T r i g g e r   r e d e p l o y  
+ 
