@@ -1,0 +1,48 @@
+2025-07-01 23:49:53,971 - INFO - Starting scrape for brand: murci
+2025-07-01 23:49:54,131 - INFO - Found 3115 existing review links and 3115 composite reviews for 'murci' in the database.
+2025-07-01 23:49:55,682 - INFO - Browser started.
+2025-07-01 23:49:55,683 - INFO - Starting to scrape all pages for murci...
+2025-07-01 23:49:55,683 - INFO - --- Scraping Page 1 ---
+2025-07-01 23:49:55,683 - INFO - Trying URL: https://uk.trustpilot.com/review/murci.co.uk?page=1
+2025-07-01 23:50:04,264 - INFO - Success! Using URL: https://uk.trustpilot.com/review/murci.co.uk?page=1
+2025-07-01 23:50:04,273 - INFO - Processing 20 reviews on page 1.
+2025-07-01 23:50:04,293 - INFO - Found 19 new reviews on page 1.
+2025-07-01 23:50:04,293 - INFO - Not all reviews on page 1 are new. Stopping scrape.
+2025-07-01 23:50:04,294 - INFO - Finished scraping loop.
+2025-07-01 23:50:04,295 - INFO - Closing browser...
+2025-07-01 23:50:04,449 - INFO - Browser closed.
+2025-07-01 23:50:04,502 - INFO - Duplicate review detected for murci - Kyra Joseph (link or composite). Skipping insert.
+2025-07-01 23:50:04,510 - INFO - Duplicate review detected for murci - Nicole Lang (link or composite). Skipping insert.
+2025-07-01 23:50:04,512 - INFO - Duplicate review detected for murci - Amber Hicks (link or composite). Skipping insert.
+2025-07-01 23:50:04,520 - INFO - Duplicate review detected for murci - MISS KAMMY (link or composite). Skipping insert.
+2025-07-01 23:50:04,525 - INFO - Duplicate review detected for murci - Christina Erl (link or composite). Skipping insert.
+2025-07-01 23:50:04,532 - INFO - Duplicate review detected for murci - Cherry-ann Oliveira Monteiro (link or composite). Skipping insert.
+2025-07-01 23:50:04,540 - INFO - Duplicate review detected for murci - Delia (link or composite). Skipping insert.
+2025-07-01 23:50:04,548 - INFO - Duplicate review detected for murci - Charlotte Colley (link or composite). Skipping insert.
+2025-07-01 23:50:04,552 - INFO - Duplicate review detected for murci - Ieva Pociūnaitė (link or composite). Skipping insert.
+2025-07-01 23:50:04,558 - INFO - Duplicate review detected for murci - Isabella Wu (link or composite). Skipping insert.
+2025-07-01 23:50:04,568 - INFO - Duplicate review detected for murci - joss hudson (link or composite). Skipping insert.
+2025-07-01 23:50:04,572 - INFO - Duplicate review detected for murci - Chantelle Burns (link or composite). Skipping insert.
+2025-07-01 23:50:04,580 - INFO - Duplicate review detected for murci - Angelina Thomas (link or composite). Skipping insert.
+2025-07-01 23:50:04,587 - INFO - Duplicate review detected for murci - Aleisha (link or composite). Skipping insert.
+2025-07-01 23:50:04,596 - INFO - Duplicate review detected for murci - Danique Morgan (link or composite). Skipping insert.
+2025-07-01 23:50:04,602 - INFO - Duplicate review detected for murci - Elleah Brown (link or composite). Skipping insert.
+2025-07-01 23:50:04,603 - INFO - Successfully saved 19 new reviews for 'murci' to the database.
+2025-07-01 23:50:04,604 - INFO - Completed scraping for brand: murci
+2025-07-01 23:50:04,604 - INFO - Scraping completed successfully
+2025-07-01 23:58:02,735 - INFO - Starting scrape for brand: murci
+2025-07-01 23:58:02,867 - INFO - Found 3118 existing review links and 3118 composite reviews for 'murci' in the database.
+2025-07-01 23:58:04,353 - INFO - Browser started.
+2025-07-01 23:58:04,353 - INFO - Starting to scrape all pages for murci...
+2025-07-01 23:58:04,353 - INFO - --- Scraping Page 1 ---
+2025-07-01 23:58:04,354 - INFO - Trying URL: https://uk.trustpilot.com/review/murci.co.uk?page=1
+2025-07-01 23:58:15,827 - INFO - Success! Using URL: https://uk.trustpilot.com/review/murci.co.uk?page=1
+2025-07-01 23:58:15,828 - INFO - Processing 20 reviews on page 1.
+2025-07-01 23:58:15,997 - INFO - Found 0 new reviews on page 1.
+2025-07-01 23:58:15,998 - INFO - Not all reviews on page 1 are new. Stopping scrape.
+2025-07-01 23:58:15,998 - INFO - Finished scraping loop.
+2025-07-01 23:58:15,999 - INFO - Closing browser...
+2025-07-01 23:58:16,138 - INFO - Browser closed.
+2025-07-01 23:58:16,138 - INFO - No new reviews found to save.
+2025-07-01 23:58:16,139 - INFO - Completed scraping for brand: murci
+2025-07-01 23:58:16,139 - INFO - Scraping completed successfully
