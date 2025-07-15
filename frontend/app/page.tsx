@@ -245,7 +245,7 @@ export default function BrandsPage() {
                               e.stopPropagation();
                               if (window.confirm(`Delete brand '${brand.name}' and all its data? This cannot be undone.`)) {
                                 try {
-                                  const res = await fetch(`http://localhost:5000/api/brands/${brand.id}`, { method: 'DELETE' });
+                                  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/brands/${brand.id}`, { method: 'DELETE' });
                                   if (res.ok) {
                                     setBrands(brands.filter(b => b.id !== brand.id));
                                   } else {

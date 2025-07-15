@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     // Check if the Flask API is running to get updated data
     if (scraperBrandName && typeof scraperBrandName === 'string' && scraperBrandName.trim() !== '') {
       try {
-        const flaskResponse = await fetch(`http://localhost:5000/api/brands/${scraperBrandName}/analytics`);
+        const flaskResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/brands/${scraperBrandName}/analytics`);
         if (flaskResponse.ok) {
           const analytics = await flaskResponse.json();
           return NextResponse.json({
