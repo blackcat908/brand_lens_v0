@@ -11,6 +11,14 @@ import threading
 from utils import canonical_brand_id
 import os
 from sqlalchemy import text
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger(__name__)
 
 # Ensure DB tables exist at startup
 from database import init_db
@@ -80,7 +88,7 @@ def create_brand():
         try:
             scraper.scrape_brand_reviews(extracted_brand_name, max_pages=50, start_page=1)
         except Exception as e:
-            print(f"Error scraping new brand {canon_id} (pages 1-50): {e}")
+            logger.error(f"Error scraping new brand {canon_id} (pages 1-50): {e}", exc_info=True)
     threading.Thread(target=run_scraper, daemon=True).start()
 
     return jsonify({'success': True, 'brand': extracted_brand_name, 'trustpilot_url': trustpilot_url, 'logo_url': logo_url})
@@ -307,31 +315,31 @@ def set_brand_source_url_api():
 
 @app.route('/api/scrape_brand', methods=['POST'])
 def scrape_brand_api():
-    print('--- /api/scrape_brand called ---')
+    logger.info('--- /api/scrape_brand called ---')
     try:
         data = request.get_json()
-        print('Request data:', data)
+        logger.info('Request data:', data)
         brand = data.get('brand')
         if not brand:
-            print('Missing brand in request')
+            logger.error('Missing brand in request')
             return jsonify({'error': 'Missing brand'}), 400
         from database import init_db, get_db_session, Review
-        print('Initializing DB...')
+        logger.info('Initializing DB...')
         init_db()
-        print('Starting scraper...')
+        logger.info('Starting scraper...')
         scraper = TrustpilotScraper(headless=True)
         new_reviews_count = scraper.scrape_brand_reviews(brand, max_pages=3)
-        print('Scraper finished. new_reviews_count:', new_reviews_count)
+        logger.info('Scraper finished. new_reviews_count:', new_reviews_count)
         if new_reviews_count is None:
             new_reviews_count = 0
-        print('Browser closed.')
+        logger.info('Browser closed.')
         with get_db_session() as db:
-            print('Getting total_reviews...')
+            logger.info('Getting total_reviews...')
             total_reviews = db.execute(
                 text('SELECT COUNT(*) FROM reviews WHERE brand_name = :brand_name'),
                 {'brand_name': brand}
             ).fetchone()[0]
-        print(f"Returning: success=True, brand={brand}, new_reviews={new_reviews_count}, total_reviews={total_reviews}")
+        logger.info(f"Returning: success=True, brand={brand}, new_reviews={new_reviews_count}, total_reviews={total_reviews}")
         return jsonify({
             'success': True,
             'brand': brand,
@@ -340,9 +348,9 @@ def scrape_brand_api():
         })
     except Exception as e:
         import traceback
-        print('Exception in /api/scrape_brand:')
+        logger.error('Exception in /api/scrape_brand:')
         traceback.print_exc()
-        print(f"Error in /api/scrape_brand: {e}")
+        logger.error(f"Error in /api/scrape_brand: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/brands/<brand_id>', methods=['DELETE'])
@@ -350,19 +358,19 @@ def delete_brand(brand_id):
     from database import delete_brand_and_reviews, get_db_session, get_brands
     try:
         canon_id = canonical_brand_id(brand_id)
-        print(f"[DELETE] Received delete request for brand_id: {brand_id} (canonical: {canon_id})")
+        logger.info(f"[DELETE] Received delete request for brand_id: {brand_id} (canonical: {canon_id})")
         with get_db_session() as db:
             all_brands = get_brands(db)
             canon_brands = [canonical_brand_id(b) for b in all_brands]
-            print(f"[DELETE] All brand IDs in DB: {all_brands}")
-            print(f"[DELETE] Canonical brand IDs in DB: {canon_brands}")
+            logger.info(f"[DELETE] All brand IDs in DB: {all_brands}")
+            logger.info(f"[DELETE] Canonical brand IDs in DB: {canon_brands}")
         # Delete from DB using canonical ID
         delete_brand_and_reviews(canon_id)
         # Remove logo files from public/logos
         logo_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../frontend/public/logos')
         removed_files = []
         all_files = os.listdir(logo_dir)
-        print(f"[DELETE] Logo files in directory: {all_files}")
+        logger.info(f"[DELETE] Logo files in directory: {all_files}")
         for fname in all_files:
             fname_noext = fname.split('.')[0]
             fname_canon = canonical_brand_id(fname_noext)
@@ -371,11 +379,11 @@ def delete_brand(brand_id):
                     os.remove(os.path.join(logo_dir, fname))
                     removed_files.append(fname)
                 except Exception as e:
-                    print(f"[DELETE] Failed to remove logo file {fname}: {e}")
-        print(f"[DELETE] Removed files: {removed_files}")
+                    logger.error(f"[DELETE] Failed to remove logo file {fname}: {e}")
+        logger.info(f"[DELETE] Removed files: {removed_files}")
         return {'success': True, 'removed_files': removed_files}
     except Exception as e:
-        print(f"[DELETE] Error deleting brand {brand_id}: {e}")
+        logger.error(f"[DELETE] Error deleting brand {brand_id}: {e}")
         return {'success': False, 'error': str(e)}, 500
 
 @app.route('/api/brands/<brand_id>/keywords', methods=['GET'])
