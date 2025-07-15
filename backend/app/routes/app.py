@@ -77,7 +77,7 @@ def create_brand():
     # Start review scraping for pages 1-100 in the background (single browser session)
     def run_scraper():
         try:
-            scraper.scrape_brand_reviews(extracted_brand_name, max_pages=100, start_page=1)
+            scraper.scrape_brand_reviews(extracted_brand_name, max_pages=1, start_page=1)
         except Exception as e:
             print(f"Error scraping new brand {canon_id} (pages 1-100): {e}")
     threading.Thread(target=run_scraper, daemon=True).start()
@@ -409,5 +409,6 @@ def set_keywords_global():
     return jsonify({'success': True})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False) #   T r i g g e r   r e d e p l o y  
+    app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False) #   T r i g g e r   r e d e p l o y 
+ 
  
