@@ -2,19 +2,20 @@
 
 import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
-import { ArrowLeft, Star, ThumbsUp, ThumbsDown, Download, FileText, Filter, X, BarChart3, PieChart, Settings, Globe, SlidersHorizontal, ChevronDown, Loader2, RotateCw, Meh } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card"
-import { Badge } from "../../../components/ui/badge"
-import { Button } from "../../../components/ui/button"
-import { Input } from "../../../components/ui/input"
-import { Label } from "../../../components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select"
-import { Separator } from "../../../components/ui/separator"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table"
-import { KeywordsManager } from "../../../components/keywords-manager"
-import { SentimentTrendChart } from "../../../components/charts/sentiment-trend-chart"
-import { SentimentDistributionChart } from "../../../components/charts/sentiment-distribution-chart"
-import { calculateBrandSentimentMetrics, calculateSentimentScore } from "../../../lib/sentiment-analysis"
+import { ArrowLeft, Star, ThumbsUp, ThumbsDown, Download, FileText, Filter, X, BarChart3, PieChart, Settings, Globe, SlidersHorizontal, ChevronDown, Meh, Loader2, RotateCw } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { KeywordsManager } from "@/components/keywords-manager"
+import { SentimentTrendChart } from "@/components/charts/sentiment-trend-chart"
+import { SentimentDistributionChart } from "@/components/charts/sentiment-distribution-chart"
+import { getBrandReviews } from "@/lib/get-brand-reviews"
+import { calculateBrandSentimentMetrics, calculateSentimentScore } from "@/lib/sentiment-analysis"
 import React from "react"
 import {
   Pagination,
@@ -25,104 +26,67 @@ import {
   PaginationLink,
   PaginationEllipsis,
 } from "@/components/ui/pagination"
-import { Popover, PopoverContent, PopoverTrigger } from "../../../components/ui/popover"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useParams } from "next/navigation"
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "../../../components/ui/tooltip"
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "../../../components/ui/dropdown-menu"
-import { Checkbox } from "../../../components/ui/checkbox"
-import { useToast } from "../../../components/ui/use-toast"
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu"
+import { realBrandData } from "@/lib/real-brand-data"
+import { Checkbox } from "@/components/ui/checkbox"
+import { useToast } from "@/components/ui/use-toast"
 import { format, subDays, subMonths, isAfter, isBefore, parseISO } from "date-fns"
-import { apiService, canonicalBrandId } from "../../../lib/api-service"
-import { BrandLogo } from "../../../components/brand-logo";
-import winkLemmatizer from 'wink-lemmatizer';
 
-// Helper: lemmatize all words in a string using wink-lemmatizer
-function lemmatizeWords(text: string) {
-  // Split text into words, remove punctuation, and lemmatize each word
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/gi, '')
-    .split(/\s+/)
-    .map(word => winkLemmatizer.noun(word) || winkLemmatizer.verb(word) || winkLemmatizer.adjective(word) || word)
-    .filter(Boolean);
+interface ReviewFilters {
+  rating: string;
+  keyword: string;
+  ratings: number[];
 }
-// NLP-based keyword match: does any lemmatized keyword appear as a word in the lemmatized review?
-function matchesAnyKeywordNLP(text: string, keywords: string[]) {
-  const lemmas = lemmatizeWords(text);
-  const keywordLemmas = keywords.map(k => winkLemmatizer.noun(k.toLowerCase()) || winkLemmatizer.verb(k.toLowerCase()) || winkLemmatizer.adjective(k.toLowerCase()) || k.toLowerCase());
-  return keywordLemmas.some(kw => lemmas.includes(kw));
-}
-// Patch highlightKeywords to support both single-word and multi-word (phrase) keyword highlighting
+
 function highlightKeywords(text: string, keywords: string[], searchKeyword?: string) {
-  // Separate phrase and single-word keywords
-  const phraseKeywords = keywords.filter(k => k.trim().includes(' '));
-  const singleKeywords = keywords.filter(k => !k.trim().includes(' '));
-  // Highlight phrase keywords first (case-insensitive, global)
-  let highlightedText = text;
-  phraseKeywords.forEach(phrase => {
-    const regex = new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), 'gi');
-    highlightedText = highlightedText.replace(regex, match => `<mark class=\"bg-yellow-200 text-yellow-900 dark:bg-yellow-700 dark:text-yellow-100 px-1 rounded font-medium\">${match}</mark>`);
-  });
-  // Tokenize text, preserving punctuation and spaces
-  const tokens = highlightedText.match(/\w+|[^\w\s]+|\s+/g) || [];
-  const keywordLemmas = singleKeywords.map(k => winkLemmatizer.noun(k.toLowerCase()) || winkLemmatizer.verb(k.toLowerCase()) || winkLemmatizer.adjective(k.toLowerCase()) || k.toLowerCase());
-  const highlightedTokens = tokens.map(token => {
-    // Only lemmatize word tokens
-    if (/^\w+$/.test(token)) {
-      const lemma = winkLemmatizer.noun(token.toLowerCase()) || winkLemmatizer.verb(token.toLowerCase()) || winkLemmatizer.adjective(token.toLowerCase()) || token.toLowerCase();
-      if (keywordLemmas.includes(lemma)) {
-        return `<mark class=\"bg-yellow-200 text-yellow-900 dark:bg-yellow-700 dark:text-yellow-100 px-1 rounded font-medium\">${token}</mark>`;
-      }
-    }
-    return token;
-  });
-  highlightedText = highlightedTokens.join('');
-  // Highlight search keyword as before
+  let highlightedText = text
+
+  // First highlight the predefined sizing/fit keywords in yellow
+  keywords.forEach((keyword) => {
+    const regex = new RegExp(`\\b(${keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})\\b`, "gi")
+    highlightedText = highlightedText.replace(regex, '<mark class="bg-yellow-200 text-yellow-900 dark:bg-yellow-700 dark:text-yellow-100 px-1 rounded font-medium">$1</mark>')
+  })
+
+  // Then highlight the search keyword in blue (if it's different from the predefined keywords)
   if (searchKeyword && searchKeyword.trim()) {
-    const searchTerm = searchKeyword.trim().toLowerCase();
-    const searchLemma = winkLemmatizer.noun(searchTerm) || winkLemmatizer.verb(searchTerm) || winkLemmatizer.adjective(searchTerm) || searchTerm;
-    const isAlreadyHighlighted = keywordLemmas.some((lemma) => lemma === searchLemma) || phraseKeywords.some(phrase => phrase.toLowerCase() === searchTerm);
+    const searchTerm = searchKeyword.trim()
+    // Only highlight if it's not already highlighted as a sizing keyword
+    const isAlreadyHighlighted = keywords.some((keyword) => keyword.toLowerCase() === searchTerm.toLowerCase())
+
     if (!isAlreadyHighlighted) {
-      const searchRegex = new RegExp(`\\b${searchTerm.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}\\b`, "gi");
+      const searchRegex = new RegExp(`\\b(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})\\b`, "gi")
       highlightedText = highlightedText.replace(
         searchRegex,
-        '<mark class="bg-blue-200 px-1 rounded font-medium border border-blue-300">$&</mark>',
-      );
+        '<mark class="bg-blue-200 px-1 rounded font-medium border border-blue-300">$1</mark>',
+      )
     }
   }
-  return highlightedText;
+
+  return highlightedText
 }
 
-function SentimentSpark({ data }: { data: number[] }) {
-  if (!data.length) return null;
-  const max = Math.max(...data);
-  const min = Math.min(...data);
-  const range = max - min || 1;
-  const width = 60;
-  const height = 32;
-  const n = data.length;
-  // Calculate points for polyline
-  const points = data.map((value, i) => {
-    const x = (i / (n - 1 || 1)) * (width - 4) + 2; // padding 2px
-    const y = height - 2 - ((value - min) / range) * (height - 4); // padding 2px
-    return `${x},${y}`;
-  }).join(' ');
+function SentimentSparkline({ data }: { data: number[] }) {
+  const max = Math.max(...data)
+  const min = Math.min(...data)
+  const range = max - min || 1
+
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="block">
-      <polyline
-        fill="none"
-        stroke="#3b82f6"
-        strokeWidth="3"
-        points={points}
-      />
-      {/* Optionally, add dots for each point */}
-      {data.map((value, i) => {
-        const x = (i / (n - 1 || 1)) * (width - 4) + 2;
-        const y = height - 2 - ((value - min) / range) * (height - 4);
-        return <circle key={i} cx={x} cy={y} r="2" fill="#3b82f6" />;
-      })}
-    </svg>
-  );
+    <div className="flex items-end space-x-1 h-8">
+      {data.map((value, index) => (
+        <div
+          key={index}
+          className="bg-blue-500 w-2 rounded-t transition-colors"
+          style={{
+            height: `${((value - min) / range) * 100}%`,
+            minHeight: "2px",
+          }}
+        />
+      ))}
+    </div>
+  )
 }
 
 // Get specific logo size for detail page
@@ -137,144 +101,96 @@ function getDetailLogoSize(brandId: string) {
   }
 }
 
-// Helper to get fallback Trustpilot URL for a brand
-function getFallbackTrustpilotUrl(brandId: string) {
-  const map: Record<string, string> = {
-    'wander-doll': 'https://uk.trustpilot.com/review/www.wander-doll.com',
-    'oddmuse': 'https://uk.trustpilot.com/review/oddmuse.co.uk',
-    'because-of-alice': 'https://uk.trustpilot.com/review/www.becauseofalice.com',
-    'bbxbrand': 'https://uk.trustpilot.com/review/bbxbrand.com',
-    'murci': 'https://uk.trustpilot.com/review/murci.co.uk',
-  };
-  return map[brandId] || '';
-}
-
-const UPDATE_STEPS = [
-  { key: 'initiated', label: 'Scraper Initiated' },
-  { key: 'started', label: 'Scraping Started' },
-  { key: 'done', label: 'Scraping Done' },
-  { key: 'updating', label: 'Updating Data' },
-  { key: 'complete', label: 'Complete' },
-  { key: 'error', label: 'Error' },
-];
-
-// Replace ModernProgressBar with a thin, long, minimal bar and progress text
-function ThinProgressBar({ percent, label }: { percent: number, label?: string }) {
-  return (
-    <div className="w-full flex flex-col items-center my-4">
-      {label && <div className="mb-1 text-sm font-medium text-blue-400">{label}</div>}
-      <div className="w-full max-w-2xl">
-        <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
-          <div
-            className="h-1.5 bg-blue-500 rounded-full transition-all duration-500"
-            style={{ width: `${percent}%` }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function BrandDetailPage() {
   const params = useParams();
   const id = typeof params.id === "string" ? params.id : Array.isArray(params.id) ? params.id[0] : "";
-  const canonicalId = canonicalBrandId(id);
 
-  // State for real data
-  const [brand, setBrand] = useState<any>(null);
-  const [analytics, setAnalytics] = useState<any>(null);
-  const [reviews, setReviews] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [pageSize, setPageSize] = useState(20);
-
-  useEffect(() => {
-    let isMounted = true;
-    setLoading(true);
-    setError(null);
-    async function fetchData() {
-      try {
-        // Debug: log brandId and API URL
-        const backendBrand = apiService["mapBrandId"](id);
-        const apiUrl = `http://localhost:5000/api/brands/${backendBrand}/reviews?page=1&per_page=10000`;
-        console.log('Fetching reviews for brandId:', id, 'backendBrand:', backendBrand, 'API URL:', apiUrl);
-        // Fetch analytics and reviews from backend
-        const analyticsData = await apiService.getBrandAnalyticsByFrontendId(id);
-        const reviewsResp = await apiService.getBrandReviewsByFrontendId(id, 1, 10000);
-        // Fetch display_name from brand-source-url endpoint
-        const brandSourceRes = await fetch(`http://localhost:5000/api/brand-source-url?brand_id=${canonicalId}`);
-        const brandSourceData = await brandSourceRes.json();
-        const displayName = brandSourceData.display_name || analyticsData.brand || id;
-        if (!isMounted) return;
-        // Debug logging
-        console.log('Fetched analytics:', analyticsData);
-        console.log('Fetched reviews response:', reviewsResp);
-        setAnalytics(analyticsData);
-        console.log('monthly_trends for chart:', analyticsData.monthly_trends);
-        const mappedReviews = reviewsResp.reviews.map(r => ({
-          ...r,
-          customer: (r as any).customer_name || (r as any).customer || '',
-        }));
-        setReviews(mappedReviews);
-        setBrand({ id, name: displayName });
-      } catch (err: any) {
-        setError(err.message || "Failed to load data");
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-    fetchData();
-    return () => { isMounted = false; };
-  }, [id, pageSize]);
-
-  useEffect(() => {
-    console.log('All review sentiment scores:', reviews.map(r => r.sentiment_score));
-  }, [reviews]);
-
-  // Poll for new reviews and analytics after scraping
-  useEffect(() => {
-    if (!id) return;
-    let prevReviewCount = 0;
-    let stableCount = 0;
-    let attempts = 0;
-    const maxAttempts = 180; // 180 attempts * 1s = 3 minutes
-    const interval = setInterval(async () => {
-      try {
-        const analyticsData = await apiService.getBrandAnalyticsByFrontendId(id);
-        const reviewsResp = await apiService.getBrandReviewsByFrontendId(id, 1, 10000);
-        const mappedReviews = reviewsResp.reviews.map(r => ({
-          ...r,
-          customer: (r as any).customer_name || (r as any).customer || '',
-        }));
-        setAnalytics(analyticsData);
-        setReviews(mappedReviews);
-        if (mappedReviews.length === prevReviewCount && mappedReviews.length > 0) {
-          stableCount++;
-        } else {
-          stableCount = 0;
-        }
-        prevReviewCount = mappedReviews.length;
-        // Stop polling if review count hasn't changed for 5 polls in a row
-        if (stableCount >= 5) {
-          clearInterval(interval);
-        }
-      } catch (err) {
-        // Optionally handle error
-      }
-      attempts++;
-      if (attempts >= maxAttempts) {
-        clearInterval(interval);
-      }
-    }, 1000); // Poll every 1 second
-    return () => clearInterval(interval);
-  }, [id]);
-
-  // Meta state for brand info
-  const meta = {
-    name: brand?.name || id,
-    logo: `/logos/${id}-logo.jpg`,
+  // Use realBrandData for brand info
+  const meta = (realBrandData[id as keyof typeof realBrandData] as any) || {
+    name: id ? id : id.split(/[-_]/g).map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join(" "),
+    logo: `/logos/${id}-logo.png`,
     trustpilotUrl: `https://www.trustpilot.com/review/${id}.com`,
   };
+
+  console.log('DEBUG Trustpilot URL:', meta.trustpilotUrl)
+
+  const [reviews, setReviews] = useState<any[]>([])
+  const [metrics, setMetrics] = useState({
+    totalSizingFitReviews: 0,
+    avgRating: 0,
+    positiveCount: 0,
+    negativeCount: 0,
+    neutralCount: 0,
+    sentimentScore: 0,
+    monthlyTrend: [] as number[],
+  })
+  const [monthlySentimentData, setMonthlySentimentData] = useState<any[]>([])
+
+  useEffect(() => {
+    getBrandReviews(id || "").then((data) => {
+      // Map customer name to customerName for each review
+      const mappedData = (data || []).map((r: any) => ({
+        ...r,
+        customerName: r.customerName || r["customer name"] || "Anonymous"
+      }));
+      setReviews(mappedData);
+      // Calculate metrics
+      if (mappedData && mappedData.length > 0) {
+        const sentimentMetrics = calculateBrandSentimentMetrics(mappedData)
+        const avgRating = mappedData.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / mappedData.length
+        // Monthly trend: percentage of positive reviews per month (last 6 months)
+        const months: Record<string, any[]> = {}
+        mappedData.forEach((r: any) => {
+          const d = new Date(r.date)
+          const key = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}`
+          months[key] ||= []
+          months[key].push(r)
+        })
+        const sortedMonths = Object.keys(months).sort()
+        const last6 = sortedMonths.slice(-6)
+        const monthlyTrend = last6.map((m) => {
+          const list = months[m]
+          const pos = list.filter((r) => r.rating >= 4).length
+          return Number(((pos / list.length) || 0).toFixed(2))
+        })
+        setMetrics({
+          totalSizingFitReviews: mappedData.length,
+          avgRating: Number(avgRating.toFixed(1)),
+          positiveCount: sentimentMetrics.positiveCount,
+          negativeCount: sentimentMetrics.negativeCount,
+          neutralCount: sentimentMetrics.neutralCount,
+          sentimentScore: calculateSentimentScore(mappedData.map((r: any) => r.review)),
+          monthlyTrend,
+        })
+        // Monthly sentiment breakdown for chart
+        const monthlySentiment = sortedMonths.map((m) => {
+          const list = months[m]
+          const positive = list.filter((r) => r.rating >= 4).length
+          const negative = list.filter((r) => r.rating <= 2).length
+          const neutral = list.filter((r) => r.rating === 3).length
+          return {
+            month: m,
+            positive,
+            negative,
+            neutral,
+            total: list.length,
+          }
+        })
+        setMonthlySentimentData(monthlySentiment)
+      } else {
+        setMetrics({
+          totalSizingFitReviews: 0,
+          avgRating: 0,
+          positiveCount: 0,
+          negativeCount: 0,
+          neutralCount: 0,
+          sentimentScore: 0,
+          monthlyTrend: [],
+        })
+        setMonthlySentimentData([])
+      }
+    })
+  }, [id])
 
   const [showTrendChart, setShowTrendChart] = useState(false)
   const [showDistributionChart, setShowDistributionChart] = useState(false)
@@ -287,7 +203,7 @@ export default function BrandDetailPage() {
   /* no more notFound() — we always have a brand object */
 
   // State to track current keywords from the Keywords Manager
-  const defaultKeywords = [
+  const [currentKeywords, setCurrentKeywords] = useState<string[]>([
     "sizing",
     "size",
     "fit",
@@ -314,30 +230,7 @@ export default function BrandDetailPage() {
     "return",
     "refund",
     "exchange",
-  ];
-  // Remove all brandId usage for keywords
-  // Use global keywords for all brands
-  // Update useEffect to fetch global keywords
-  const [customKeywords, setCustomKeywords] = useState<any>({});
-  const [currentKeywords, setCurrentKeywords] = useState<string[]>(defaultKeywords);
-
-  // Fetch custom keywords from backend on mount
-  useEffect(() => {
-    apiService.getGlobalKeywords()
-      .then(res => {
-        if (res && res.keywords && Object.keys(res.keywords).length > 0) {
-          setCustomKeywords(res.keywords);
-          setCurrentKeywords(Object.values(res.keywords).flat() as string[]);
-        } else {
-          setCustomKeywords({});
-          setCurrentKeywords(defaultKeywords);
-        }
-      })
-      .catch(() => {
-        setCustomKeywords({});
-        setCurrentKeywords(defaultKeywords);
-      });
-  }, []);
+  ])
 
   // Calculate neutral count for pie chart
   const neutralCount = reviews.filter((r) => r.rating === 3).length
@@ -345,11 +238,11 @@ export default function BrandDetailPage() {
   // State for category filter
   const [selectedCategories, setSelectedCategories] = useState<string[]>(["Sizing & Fit Mentions"]);
 
-  // Combine sizing and fit keywords into one category in keywordCategories
+  // Update keywordCategories to merge Sizing and Fit Mentions
   const keywordCategories = [
     { name: "Sizing & Fit Mentions", keywords: [
       // Sizing Issues
-      "sizing", "size", "sizes", "wrong size", "ordered wrong size", "poor sizing", "poor sizing information", "lack of sizing information", "wrong sizing information", "true to size", "runs small", "runs large", "size up", "size down", "don't know my size", "didn't know which size", "idk which size", "what size", "which size", "what's the size",
+      "sizing", "size", "wrong size", "ordered wrong size", "poor sizing", "poor sizing information", "lack of sizing information", "wrong sizing information", "true to size", "runs small", "runs large", "size up", "size down", "don't know my size", "didn't know which size", "idk which size", "what size", "which size", "what's the size",
       // Fit Issues
       "fit", "fits", "fitted", "fitting", "poor fit", "didn't fit", "too small", "too tight", "too big", "too loose", "would this fit", "large", "small", "tight", "loose", "narrow", "wide", "comfort", "comfortable"
     ] },
@@ -366,23 +259,6 @@ export default function BrandDetailPage() {
   ];
   // Create a mapping for category name to keywords
   const keywordCategoriesMap = Object.fromEntries(keywordCategories.map(cat => [cat.name, cat.keywords]));
-
-  // Build dynamic category-to-keywords mapping from customKeywords
-  const dynamicKeywordCategoriesMap = React.useMemo(() => {
-    if (customKeywords && Object.keys(customKeywords).length > 0) {
-      return customKeywords;
-    }
-    // fallback to static
-    return Object.fromEntries(keywordCategories.map(cat => [cat.name, cat.keywords]));
-  }, [customKeywords]);
-
-  // Helper: fallback to static keywords if dynamic is empty
-  const getCategoryKeywords = (cat: string) => {
-    if (dynamicKeywordCategoriesMap[cat] && dynamicKeywordCategoriesMap[cat].length > 0) {
-      return dynamicKeywordCategoriesMap[cat];
-    }
-    return keywordCategoriesMap[cat] || [];
-  };
 
   // Move date filter state and date range calculation above filteredReviews
   const [dateFilter, setDateFilter] = useState<'7d' | '30d' | '3m' | '6m' | 'all' | 'custom'>('all');
@@ -401,72 +277,52 @@ export default function BrandDetailPage() {
   }
 
   // Update filteredReviews logic
-  const dedupedReviews = useMemo(() => {
-    const seen = new Set();
-    return reviews.filter(r => {
-      const key = r.review_link || r.id || `${r.customer}-${r.date}-${r.review?.slice(0, 20)}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }, [reviews]);
-
   const dateFilteredReviews = useMemo(() => {
-    if (dateFilter === 'all') return dedupedReviews;
-    if (!startDate) return dedupedReviews;
-    return dedupedReviews.filter(r => {
+    if (dateFilter === 'all') return reviews;
+    if (!startDate) return reviews;
+    return reviews.filter(r => {
       const d = new Date(r.date);
       if (dateFilter === 'custom' && endDate) {
         return d >= startDate! && d <= endDate;
       }
       return d >= startDate!;
     });
-  }, [dedupedReviews, dateFilter, startDate, endDate]);
+  }, [reviews, dateFilter, startDate, endDate]);
 
-  // Fix filteredReviews logic
   const filteredReviews = useMemo(() => {
-    // If 'All Reviews' is selected, show all dateFilteredReviews
-    if (selectedCategories.length === 0) {
+    // Determine which keywords to use
+    let keywordsToUse: string[] = [];
+    if (selectedCategories.length > 0) {
+      keywordsToUse = selectedCategories.flatMap(cat => keywordCategoriesMap[cat] || []);
+    } else {
+      // If no category selected, show all reviews
       return dateFilteredReviews.filter((review) => {
-        // Single rating filter (from dropdown)
-        if (reviewFilters.rating !== 'all' && Number(review.rating) !== Number(reviewFilters.rating)) {
+        // Multi-rating filter
+        if (reviewFilters.ratings.length > 0 && !reviewFilters.ratings.includes(Number(review.rating))) {
           return false;
         }
         // Keyword filter (search box)
-        if (reviewFilters.keyword && !(review.review || "").toLowerCase().includes(reviewFilters.keyword.toLowerCase())) {
+        if (reviewFilters.keyword && !review.review.toLowerCase().includes(reviewFilters.keyword.toLowerCase())) {
           return false;
         }
         return true;
       });
     }
-    // Otherwise, filter by selected category's keywords (with fallback)
-    const keywordsToUse = selectedCategories.flatMap(getCategoryKeywords);
-    console.log('Category filter:', selectedCategories, 'Keywords to use:', keywordsToUse);
-    if (keywordsToUse.length === 0) return [];
     return dateFilteredReviews.filter((review) => {
-      // Single rating filter (from dropdown)
-      if (reviewFilters.rating !== 'all' && Number(review.rating) !== Number(reviewFilters.rating)) {
+      // Multi-rating filter
+      if (reviewFilters.ratings.length > 0 && !reviewFilters.ratings.includes(Number(review.rating))) {
         return false;
       }
       // Keyword filter (search box)
-      if (reviewFilters.keyword && !(review.review || "").toLowerCase().includes(reviewFilters.keyword.toLowerCase())) {
+      if (reviewFilters.keyword && !review.review.toLowerCase().includes(reviewFilters.keyword.toLowerCase())) {
         return false;
       }
       // Category keywords filter
-      const reviewText = (review.review || "").toLowerCase();
-      const matchesKeyword = keywordsToUse.some((keyword) => {
-        const match = reviewText.includes(keyword.toLowerCase());
-        if (match) {
-          console.log('MATCH:', keyword, 'IN REVIEW:', review.review);
-        }
-        return match;
-      });
-      if (!matchesKeyword) {
-        console.log('NO MATCH for review:', review.review);
-      }
+      const reviewText = review.review.toLowerCase();
+      const matchesKeyword = keywordsToUse.some((keyword) => reviewText.includes(keyword.toLowerCase()));
       return matchesKeyword;
     });
-  }, [dateFilteredReviews, reviewFilters, selectedCategories, dynamicKeywordCategoriesMap, keywordCategoriesMap]);
+  }, [dateFilteredReviews, reviewFilters, selectedCategories, keywordCategoriesMap]);
 
   const handleFilterChange = (key: keyof ReviewFilters, value: any) => {
     setReviewFilters((prev) => ({ ...prev, [key]: value }))
@@ -484,10 +340,10 @@ export default function BrandDetailPage() {
     setCurrentKeywords(keywords)
   }, [])
 
+  const [currentPage, setCurrentPage] = useState(1)
   const [showKeywordsModal, setShowKeywordsModal] = useState(false)
   const [showSourcePopover, setShowSourcePopover] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.ceil(filteredReviews.length / pageSize);
+  const [pageSize, setPageSize] = useState(20)
   const [visibleColumns, setVisibleColumns] = useState({
     customer: true,
     date: true,
@@ -513,8 +369,8 @@ export default function BrandDetailPage() {
     const sorted = [...filteredReviews];
     sorted.sort((a, b) => {
       if (sortBy === "customer") {
-        const nameA = (a.customer || "").toLowerCase();
-        const nameB = (b.customer || "").toLowerCase();
+        const nameA = (a.customerName || "").toLowerCase();
+        const nameB = (b.customerName || "").toLowerCase();
         if (nameA < nameB) return sortDirection === "asc" ? -1 : 1;
         if (nameA > nameB) return sortDirection === "asc" ? 1 : -1;
         return 0;
@@ -534,79 +390,26 @@ export default function BrandDetailPage() {
 
   const paginatedReviews = sortedReviews.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  const [sourceUrl, setSourceUrl] = useState("");
-  const [sourceUrlLoading, setSourceUrlLoading] = useState(true);
-  const [sourceUrlError, setSourceUrlError] = useState("");
+  const [sourceUrl, setSourceUrl] = useState(meta.trustpilotUrl);
 
-  // Always fetch the correct Trustpilot source URL for the brand from the backend
+  // On mount, load from localStorage if available
   useEffect(() => {
-    let isMounted = true;
-    async function fetchSourceUrl() {
-      setSourceUrlLoading(true);
-      setSourceUrlError("");
-      try {
-        const res = await fetch(`http://localhost:5000/api/brand-source-url?brand_id=${canonicalId}`);
-        const data = await res.json();
-        if (isMounted) setSourceUrl(data.sourceUrl);
-      } catch (err) {
-        if (isMounted) setSourceUrlError("Failed to load source URL");
-      } finally {
-        if (isMounted) setSourceUrlLoading(false);
-      }
-    }
-    fetchSourceUrl();
-    return () => { isMounted = false; };
-  }, [canonicalId]);
+    const savedUrl = localStorage.getItem(`sourceUrl-${id}`);
+    if (savedUrl) setSourceUrl(savedUrl);
+  }, [id]);
 
-  // Fetch source URL every time the popover is opened
-  useEffect(() => {
-    if (showSourcePopover) {
-      setSourceUrlLoading(true);
-      setSourceUrlError("");
-      fetch(`http://localhost:5000/api/brand-source-url?brand_id=${canonicalId}`)
-        .then(res => res.json())
-        .then(data => {
-          console.log('Fetched source URL response:', data);
-          let url = data.sourceUrl || data.url || data.source_url || "";
-          if (!url) url = getFallbackTrustpilotUrl(id);
-          console.log('Setting sourceUrl to:', url);
-          setSourceUrl(url);
-        })
-        .catch(() => {
-          setSourceUrl(getFallbackTrustpilotUrl(id));
-          setSourceUrlError("Failed to load source URL");
-        })
-        .finally(() => setSourceUrlLoading(false));
-    }
-  }, [showSourcePopover, canonicalId, id]);
-
-  const handleSaveUrl = async () => {
-    setSourceUrlLoading(true);
-    setSourceUrlError("");
-    try {
-      const res = await fetch(`http://localhost:5000/api/brand-source-url`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brand: canonicalId, sourceUrl }),
-      });
-      if (!res.ok) throw new Error("Failed to save");
+  const handleSaveUrl = () => {
+    localStorage.setItem(`sourceUrl-${id}`, sourceUrl);
     setShowSourcePopover(false);
-    } catch (err) {
-      setSourceUrlError("Failed to save source URL");
-    } finally {
-      setSourceUrlLoading(false);
-    }
   };
-
   const handleCancelUrlEdit = () => {
-    setSourceUrlLoading(true);
-    setSourceUrlError("");
-    fetch(`http://localhost:5000/api/brand-source-url?brand_id=${canonicalId}`)
-      .then(res => res.json())
-      .then(data => setSourceUrl(data.sourceUrl))
-      .catch(() => setSourceUrlError("Failed to load source URL"))
-      .finally(() => setSourceUrlLoading(false));
+    const savedUrl = localStorage.getItem(`sourceUrl-${id}`) || meta.trustpilotUrl;
+    setSourceUrl(savedUrl);
     setShowSourcePopover(false);
+  };
+  const handleUpdateReviews = () => {
+    // TODO: Trigger re-scrape or refresh reviews (API call or placeholder)
+    alert('Updating reviews from: ' + sourceUrl);
   };
 
   // State to track which reviews are expanded
@@ -615,28 +418,9 @@ export default function BrandDetailPage() {
     setExpandedReviews(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Helper: Get reviews with size & fit mentions (for Total Reviews card)
-  const sizingFitKeywords = getCategoryKeywords("Sizing & Fit Mentions");
-  const reviewsWithSizingFitMentions = useMemo(() =>
-    dedupedReviews.filter((review) =>
-      sizingFitKeywords.some((keyword: string) => (review.review || "").toLowerCase().includes(keyword.toLowerCase()))
-    ),
-    [dedupedReviews, sizingFitKeywords]
-  );
+  const totalPages = Math.max(1, Math.ceil(sortedReviews.length / pageSize));
 
-  // Fix Sizing & Fit Mentions total count (with fallback)
-  const totalSizingFitReviews = reviewsWithSizingFitMentions.length;
-
-  // Helper: Get all reviews (for avg rating, sentiment score)
-  const allReviews = dedupedReviews;
-
-  // Average Rating: from all reviews
-  const averageRating = allReviews.length > 0 ? (allReviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / allReviews.length) : 0;
-
-  // Sentiment Score: from all reviews
-  const sentimentScore = allReviews.length > 0 ? (allReviews.reduce((sum, r) => sum + (Number(r.sentiment_score) || 0), 0) / allReviews.length) : 0;
-
-  // Positive/Negative/Neutral chart: from filteredReviews
+  // Calculate metrics for filtered reviews (only for total and pos/neg, using only rating)
   const filteredPosNegMetrics = useMemo(() => {
     if (filteredReviews.length === 0) {
       return {
@@ -659,99 +443,10 @@ export default function BrandDetailPage() {
 
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
-  const [updateStep, setUpdateStep] = useState('idle');
-  const [updateMessage, setUpdateMessage] = useState("");
-  const [updateStatus, setUpdateStatus] = useState("idle");
-  const [newlyAddedReviewIds, setNewlyAddedReviewIds] = useState<Set<string>>(new Set());
-
-  // Helper to get a unique key for a review
-  function getReviewKey(review: any, idx: number) {
-    return review.review_link
-      ?? review.id
-      ?? `${review.customer}-${review.date}-${review.review?.slice(0, 20) ?? ''}-${idx}`;
-  }
-
-  const handleUpdate = async () => {
-    setIsUpdating(true);
-    setUpdateStep('initiated');
-    setUpdateStatus("idle");
-    setUpdateMessage("");
-    const prevKeys = new Set(reviews.map((r, idx) => getReviewKey(r, idx)));
-    await new Promise(res => setTimeout(res, 400));
-    setUpdateStep('started');
-    await new Promise(res => setTimeout(res, 600));
-    try {
-      // Instead of calling the Next.js /api/scrape endpoint, call the Flask backend /api/scrape_brand endpoint
-      const backendBrand = apiService["mapBrandId"](id);
-      const res = await fetch('http://localhost:5000/api/scrape_brand', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brand: backendBrand })
-      });
-      setUpdateStep('done');
-      await new Promise(res => setTimeout(res, 400));
-      setUpdateStep('updating');
-      if (!res.ok) throw new Error("Failed to fetch");
-      const data = await res.json();
-      const newReviews = data.newReviews ?? data.new_reviews ?? data.newReviewsCount ?? data.added_count ?? 0;
-      const reviewsResp = await apiService.getBrandReviewsByFrontendId(id, 1, 10000);
-      const mappedReviews = reviewsResp.reviews.map(r => ({
-        ...r,
-        customer: (r as any).customer_name || (r as any).customer || '',
-      }));
-      setReviews(mappedReviews);
-      const newKeys = new Set(reviewsResp.reviews.map((r, idx) => getReviewKey(r, idx)).filter(k => !prevKeys.has(k)));
-      setNewlyAddedReviewIds(newKeys);
-      if (newKeys.size > 0) {
-        toast({
-          title: `Added ${newKeys.size} new review${newKeys.size > 1 ? 's' : ''}`,
-          description: `Recently added reviews are highlighted.`,
-          duration: 60000,
-        });
-        setTimeout(() => setNewlyAddedReviewIds(new Set()), 60000);
-      }
-      setUpdateStep('complete');
-      if (newReviews > 0) {
-        setUpdateStatus("success");
-        setUpdateMessage(`Brand data updated! Latest reviews and analytics fetched for ${meta.name}.`);
-      } else if (newReviews === 0) {
-        setUpdateStatus("nonew");
-        setUpdateMessage("No new reviews found for this brand.");
-      } else {
-        setUpdateStatus("error");
-        setUpdateMessage("Failed to fetch latest data.");
-      }
-    } catch (e) {
-      setUpdateStep('error');
-      setUpdateStatus("error");
-      setUpdateMessage("Failed to fetch latest data.");
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  useEffect(() => {
-    if (updateMessage) {
-      const timer = setTimeout(() => {
-        setUpdateMessage("");
-        setUpdateStatus("idle");
-      }, 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [updateMessage]);
-
-  // Show loading spinner or error if needed
-  if (loading || reviews.length === 0) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="animate-spin mr-2" /> Loading reviews and analytics...</div>;
-  }
-  if (error) {
-    return <div className="text-red-500 p-4">{error}</div>;
-  }
-
-  const allCategoryKeywords = keywordCategories.flatMap(cat => getCategoryKeywords(cat.name));
+  const [updateStatus, setUpdateStatus] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 text-black dark:text-white">
+    <div className="min-h-screen bg-background text-foreground px-4 md:px-12">
       <div className="container mx-auto px-4 pt-6">
         <Link href="/" className="flex items-center text-gray-600 hover:text-blue-600 active:text-blue-800 text-sm font-medium transition-colors">
           <ArrowLeft className="w-4 h-4 mr-1" />
@@ -762,30 +457,46 @@ export default function BrandDetailPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <BrandLogo src={meta.logo} alt={`${meta.name} logo`} maxWidth={80} maxHeight={80} />
+            <div className="w-16 h-16 bg-black rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+              <img
+                src={meta.logo || "/placeholder.svg"}
+                alt={`${meta.name} logo`}
+                className={`${getDetailLogoSize(id)} object-contain`}
+                onError={(e) => {
+                  e.currentTarget.src = "/placeholder.svg?height=64&width=64"
+                }}
+              />
+            </div>
             <div>
               <h1 className="text-3xl font-bold text-foreground">{meta.name}</h1>
               <p className="text-gray-600">Sizing & Fit Analysis</p>
             </div>
           </div>
           <div className="flex items-center space-x-2 mb-6 justify-end">
-            {/* Progress bar and label to the left of Update button */}
-            {isUpdating && (
-              <div className="flex flex-col items-end mr-4 min-w-[180px]">
-                <div className="text-xs font-medium text-blue-400 mb-1">{UPDATE_STEPS.find(s => s.key === updateStep)?.label}</div>
-                <div className="w-36">
-                  <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-1.5 bg-blue-500 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.round((UPDATE_STEPS.findIndex(s => s.key === updateStep) / (UPDATE_STEPS.length - 2)) * 100)}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-            <Button onClick={handleUpdate} className="flex items-center space-x-2" variant="outline" disabled={isUpdating}>
-              <RotateCw className={`w-4 h-4 mr-1 ${isUpdating ? 'text-gray-400' : ''}`} />
-              {isUpdating ? 'Updating...' : 'Update'}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isUpdating}
+              onClick={async () => {
+                setIsUpdating(true);
+                setUpdateStatus(null);
+                try {
+                  // Simulate fetch/update (replace with real API call later)
+                  await new Promise((resolve) => setTimeout(resolve, 2000));
+                  setUpdateStatus({ message: `Brand data updated! Latest reviews and analytics fetched for ${meta.name}.`, type: 'success' });
+                  toast({ title: "Brand data updated!", description: `Latest reviews and analytics fetched for ${meta.name}.` });
+                } catch (err) {
+                  setUpdateStatus({ message: "Update failed. Could not update brand data.", type: 'error' });
+                  toast({ title: "Update failed", description: "Could not update brand data.", variant: "destructive" });
+                } finally {
+                  setIsUpdating(false);
+                  setTimeout(() => setUpdateStatus(null), 4000);
+                }
+              }}
+              className="flex items-center"
+            >
+              {isUpdating ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <RotateCw className="w-4 h-4 mr-1" />}
+              {isUpdating ? "Updating..." : "Update"}
             </Button>
             <Popover open={showSourcePopover} onOpenChange={setShowSourcePopover}>
               <PopoverTrigger asChild>
@@ -796,17 +507,17 @@ export default function BrandDetailPage() {
               </PopoverTrigger>
               <PopoverContent className="w-96">
                 <div className="flex flex-col space-y-3">
-                    <Label htmlFor="source-url" className="text-xs font-medium">Source URL</Label>
-                    <Input
-                      id="source-url"
-                      value={sourceUrl}
-                      onChange={e => setSourceUrl(e.target.value)}
-                      className="text-sm"
-                    />
-                    <div className="flex space-x-2 mt-1">
+                  <Label htmlFor="source-url" className="text-xs font-medium">Source URL</Label>
+                  <Input
+                    id="source-url"
+                    value={sourceUrl}
+                    onChange={e => setSourceUrl(e.target.value)}
+                    className="text-sm"
+                  />
+                  <div className="flex space-x-2 mt-1">
                     <Button type="button" size="sm" variant="default" onClick={handleSaveUrl}>Save</Button>
-                      <Button type="button" size="sm" variant="outline" onClick={handleCancelUrlEdit}>Cancel</Button>
-                    </div>
+                    <Button type="button" size="sm" variant="outline" onClick={handleCancelUrlEdit}>Cancel</Button>
+                  </div>
                   <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-xs mt-2">View on Trustpilot</a>
                 </div>
               </PopoverContent>
@@ -817,45 +528,47 @@ export default function BrandDetailPage() {
             </Button>
           </div>
         </div>
-        {updateMessage && (
-          <div className={`mb-2 text-sm font-medium ${updateStatus === "success" ? "text-green-600" : updateStatus === "nonew" ? "text-blue-600" : "text-red-600"}`}>
-            {updateMessage}
-          </div>
+        {updateStatus && (
+          <div className={`mb-4 text-sm font-medium ${updateStatus.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>{updateStatus.message}</div>
         )}
 
         {/* Metrics Tiles */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
-          <Card className="bg-card text-card-foreground h-full p-0 min-w-[160px] shadow-lg transition-transform transition-shadow duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
-            <CardHeader className="pt-2 pb-0 px-2">
-              <CardTitle className="text-base font-bold text-foreground mb-1 text-center">Total Reviews</CardTitle>
+          <Card className="bg-card text-card-foreground h-full p-1">
+            <CardHeader className="pt-2 pb-1 px-2">
+              <CardTitle className="text-base font-bold text-foreground mb-2">Total Reviews</CardTitle>
             </CardHeader>
-            <CardContent className="px-2 pb-2 flex flex-col items-center justify-center">
-              <div className="text-2xl font-bold text-center">{totalSizingFitReviews}</div>
-              <p className="text-[11px] text-gray-500 text-center">Sizing & Fit mentions</p>
+            <CardContent className="px-2 pb-1">
+              <div className="text-xl font-bold">{filteredPosNegMetrics.totalSizingFitReviews}</div>
+              <p className="text-[11px] text-gray-500">
+                {selectedCategories.length === 1 && selectedCategories[0] === "Sizing & Fit Mentions"
+                  ? "Sizing & Fit mentions"
+                  : "Filtered Reviews"}
+              </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-card text-card-foreground h-full p-0 min-w-[160px] shadow-lg transition-transform transition-shadow duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
-            <CardHeader className="pt-2 pb-0 px-2">
-              <CardTitle className="text-base font-bold text-foreground mb-1 text-center">Average Rating</CardTitle>
+          <Card className="bg-card text-card-foreground h-full p-1">
+            <CardHeader className="pt-2 pb-1 px-2">
+              <CardTitle className="text-base font-bold text-foreground mb-2">Average Rating</CardTitle>
             </CardHeader>
-            <CardContent className="px-2 pb-2 flex flex-col items-center justify-center">
-              <div className="flex items-center justify-center space-x-2 text-center">
-                <div className="text-2xl font-bold">{averageRating.toFixed(1)}</div>
+            <CardContent className="px-2 pb-1">
+              <div className="flex items-center space-x-2">
+                <div className="text-2xl font-bold">{metrics.avgRating}</div>
                 <Star className="w-5 h-5 text-yellow-500" />
               </div>
-              <p className="text-xs text-gray-500 text-center">From all reviews</p>
+              <p className="text-xs text-gray-500">From all reviews</p>
             </CardContent>
           </Card>
 
-          {/* Clickable Positive vs Negative Card */}
-          <Card className="relative overflow-hidden bg-card text-card-foreground h-full p-0 min-w-[180px] shadow-lg transition-transform transition-shadow duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
-            <CardHeader className="pt-2 pb-0 px-2">
-              <CardTitle className="text-base font-bold text-foreground mb-1 text-center">Positive vs Negative</CardTitle>
+          {/* Clickable Positive vs Negative vs Neutral Card */}
+          <Card className="relative overflow-hidden bg-card text-card-foreground h-full p-1">
+            <CardHeader className="pt-2 pb-1 px-2">
+              <CardTitle className="text-base font-bold text-foreground mb-2">Positive vs Negative</CardTitle>
             </CardHeader>
-            <CardContent className="pb-2 flex flex-col items-center justify-center">
-              <div className="flex items-center mb-1 w-full justify-center space-x-4">
-                <div className="flex items-center space-x-2">
+            <CardContent className="pb-1">
+              <div className="flex items-center mb-2 w-full space-x-4">
+                <div className="flex items-center space-x-2 -ml-5">
                   <ThumbsUp className="w-4 h-4 text-green-500" />
                   <span className="font-bold">{filteredPosNegMetrics.positiveCount}</span>
                 </div>
@@ -868,11 +581,9 @@ export default function BrandDetailPage() {
                   <span className="font-bold">{filteredPosNegMetrics.neutralCount}</span>
                 </div>
               </div>
-              {/* Spacer to align button with Monthly Trend card */}
-              <div className="h-4 mb-1" />
               <Button
                 onClick={() => setShowDistributionChart(true)}
-                className="w-full bg-black text-white border border-black hover:bg-zinc-800 hover:text-white mt-1"
+                className="w-full bg-gray-900 hover:bg-gray-800 text-white"
                 size="sm"
               >
                 <PieChart className="w-4 h-4 mr-2" />
@@ -881,51 +592,34 @@ export default function BrandDetailPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card text-card-foreground h-full p-0 min-w-[160px] shadow-lg transition-transform transition-shadow duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
-            <CardHeader className="pt-2 pb-0 px-2">
-              <CardTitle className="text-base font-bold text-foreground mb-1 text-center">Sentiment Score</CardTitle>
+          <Card className="bg-card text-card-foreground h-full p-1">
+            <CardHeader className="pt-2 pb-1 px-2">
+              <CardTitle className="text-base font-bold text-foreground mb-2">Sentiment Score</CardTitle>
             </CardHeader>
-            <CardContent className="px-2 pb-2 flex flex-col items-center justify-center">
-              <div className="text-2xl font-bold text-center">{(analytics?.average_sentiment_score ?? 0).toFixed(2)}</div>
+            <CardContent className="px-2 pb-1">
+              <div className="text-2xl font-bold">{metrics.sentimentScore}</div>
               <Badge
                 className={
-                  ((analytics?.average_sentiment_score ?? 0) > 0.3
-                    ? "bg-green-100 text-green-800"
-                    : (analytics?.average_sentiment_score ?? 0) <= -0.1
-                    ? "bg-red-100 text-red-800"
-                    : "bg-yellow-100 text-yellow-800") +
-                  " text-base font-bold px-4 py-1.5 min-w-[70px]"
+                  metrics.sentimentScore > 0.6 ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
                 }
               >
-                {(analytics?.average_sentiment_score ?? 0) > 0.3
-                  ? "Positive"
-                  : (analytics?.average_sentiment_score ?? 0) <= -0.1
-                  ? "Negative"
-                  : "Neutral"}
+                {metrics.sentimentScore > 0.6 ? "Positive" : "Neutral"}
               </Badge>
             </CardContent>
           </Card>
 
           {/* Clickable Monthly Trend Card */}
-          <Card className="relative overflow-hidden bg-card text-card-foreground h-full p-0 min-w-[180px] shadow-lg transition-transform transition-shadow duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
-            <CardHeader className="pt-2 pb-0 px-2">
-              <CardTitle className="text-base font-bold text-foreground mb-1 text-center">Monthly Trend</CardTitle>
+          <Card className="relative overflow-hidden bg-card text-card-foreground h-full p-1">
+            <CardHeader className="pt-0 pb-1 px-2">
+              <CardTitle className="text-base font-bold text-foreground mb-2">Monthly Trend</CardTitle>
             </CardHeader>
-            <CardContent className="pt-1 pb-2 flex flex-col items-center justify-center">
-              <div className="flex justify-center items-center h-10 mb-1">
-                <svg width="72" height="40" viewBox="0 0 72 40">
-                  <rect x="3" y="33" width="6" height="12" rx="3" fill="#3b82f6" />
-                  <rect x="12" y="24" width="6" height="21" rx="3" fill="#3b82f6" />
-                  <rect x="21" y="15" width="6" height="30" rx="3" fill="#3b82f6" />
-                  <rect x="30" y="9" width="6" height="36" rx="3" fill="#3b82f6" />
-                  <rect x="39" y="15" width="6" height="30" rx="3" fill="#3b82f6" />
-                  <rect x="48" y="21" width="6" height="24" rx="3" fill="#3b82f6" />
-                  <rect x="57" y="27" width="6" height="18" rx="3" fill="#3b82f6" />
-                </svg>
+            <CardContent className="pt-2">
+              <div className="mb-2">
+                <SentimentSparkline data={metrics.monthlyTrend} />
               </div>
               <Button
                 onClick={() => setShowTrendChart(true)}
-                className="w-full bg-black text-white border border-black hover:bg-zinc-800 hover:text-white mt-1"
+                className="w-full bg-gray-900 hover:bg-gray-800 text-white"
                 size="sm"
               >
                 <BarChart3 className="w-4 h-4 mr-2" />
@@ -934,7 +628,7 @@ export default function BrandDetailPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card text-card-foreground h-full p-1 shadow-lg transition-transform transition-shadow duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
+          <Card className="bg-card text-card-foreground h-full p-1">
             <CardHeader className="pt-0 pb-1 px-2">
               <CardTitle className="text-base font-bold text-foreground mb-2">Top Issues</CardTitle>
             </CardHeader>
@@ -943,11 +637,11 @@ export default function BrandDetailPage() {
                 {(() => {
                   const keywordCounts: Record<string, { count: number; sentiment: string[] }> = {};
                   filteredReviews.forEach(r => {
-                    currentKeywords.forEach((keyword: string) => {
+                    currentKeywords.forEach(keyword => {
                       if (r.review && r.review.toLowerCase().includes(keyword.toLowerCase())) {
                         if (!keywordCounts[keyword]) keywordCounts[keyword] = { count: 0, sentiment: [] };
                         keywordCounts[keyword].count++;
-                        if (r.sentiment) keywordCounts[keyword].sentiment.push(r.sentiment);
+                        if (r.sentiment_label) keywordCounts[keyword].sentiment.push(r.sentiment_label);
                       }
                     });
                   });
@@ -980,7 +674,7 @@ export default function BrandDetailPage() {
         </div>
 
         {/* Data Table with Integrated Filters */}
-        <Card className="mb-8 bg-card text-card-foreground shadow-lg">
+        <Card className="mb-8 bg-card text-card-foreground">
           <CardHeader>
             <div className="space-y-4">
               <div className="flex justify-between items-start">
@@ -1020,6 +714,18 @@ export default function BrandDetailPage() {
                     <Download className="w-4 h-4 mr-1" />
                     Excel
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      import("@/lib/export-utils").then(({ exportReviewsAsPDF }) => {
+                        exportReviewsAsPDF(filteredReviews, meta.name)
+                      })
+                    }}
+                  >
+                    <Download className="w-4 h-4 mr-1" />
+                    PDF
+                  </Button>
                 </div>
               </div>
 
@@ -1044,7 +750,7 @@ export default function BrandDetailPage() {
                   <div className="flex-1 min-w-[180px]">
                     <Label htmlFor="rating-filter" className="text-xs font-medium">Filter by Rating</Label>
                     <Select value={reviewFilters.rating} onValueChange={value => handleFilterChange('rating', value)}>
-                      <SelectTrigger id="rating-filter" className="h-8 text-xs px-2 bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-300 dark:border-zinc-700">
+                      <SelectTrigger id="rating-filter" className="h-8 text-xs px-2">
                         <SelectValue placeholder="All Ratings" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1060,7 +766,7 @@ export default function BrandDetailPage() {
                   <div className="flex-1 min-w-[180px] mt-2 md:mt-0">
                     <Label htmlFor="date-filter" className="text-xs font-medium">Filter by Date</Label>
                     <Select value={dateFilter} onValueChange={value => setDateFilter(value as any)}>
-                      <SelectTrigger id="date-filter" className="h-8 text-xs px-2 bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-300 dark:border-zinc-700">
+                      <SelectTrigger id="date-filter" className="h-8 text-xs px-2">
                         <SelectValue placeholder="All Time" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1135,7 +841,7 @@ export default function BrandDetailPage() {
                   variant={selectedCategories.length === 0 ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedCategories([])}
-                  className={selectedCategories.length === 0 ? "bg-black text-white border border-black" : "bg-white dark:bg-zinc-900 text-black dark:text-white border border-gray-300 dark:border-zinc-700"}
+                  className={selectedCategories.length === 0 ? "bg-blue-600 text-white" : ""}
                 >
                   All Reviews
                 </Button>
@@ -1145,7 +851,7 @@ export default function BrandDetailPage() {
                     variant={selectedCategories.includes(cat.name) ? "default" : "outline"}
                     size="sm"
                     onClick={() => setSelectedCategories([cat.name])}
-                    className={selectedCategories.includes(cat.name) ? "bg-black text-white border border-black" : "bg-white dark:bg-zinc-900 text-black dark:text-white border border-gray-300 dark:border-zinc-700"}
+                    className={selectedCategories.includes(cat.name) ? "bg-blue-600 text-white" : ""}
                   >
                     {cat.name}
                   </Button>
@@ -1153,73 +859,62 @@ export default function BrandDetailPage() {
               </div>
             </label>
             <TooltipProvider>
-              <Table className="bg-white text-black table-fixed w-full">
+              <Table className="bg-background text-foreground">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-32 min-w-[8rem] max-w-[8rem] cursor-pointer select-none font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700" onClick={() => handleSort("customer")}>Customer{sortBy === "customer" && (sortDirection === "asc" ? " ▲" : " ▼")}</TableHead>
-                    <TableHead className="w-28 min-w-[7rem] max-w-[7rem] cursor-pointer select-none text-nowrap font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700" onClick={() => handleSort("date")}>Date{sortBy === "date" && (sortDirection === "asc" ? " ▲" : " ▼")}</TableHead>
-                    <TableHead className="w-20 min-w-[5rem] max-w-[5rem] cursor-pointer select-none text-nowrap font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700" onClick={() => handleSort("rating")}>Rating{sortBy === "rating" && (sortDirection === "asc" ? " ▲" : " ▼")} <Star className="inline w-4 h-4 text-yellow-500 ml-1" /></TableHead>
-                    <TableHead className="w-auto font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">Review</TableHead>
-                    {showLinkColumn && <TableHead className="w-32 min-w-[8rem] max-w-[8rem] font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">Link</TableHead>}
+                    <TableHead className="w-32 cursor-pointer select-none" onClick={() => handleSort("customer")}>Customer{sortBy === "customer" && (sortDirection === "asc" ? " ▲" : " ▼")}</TableHead>
+                    <TableHead className="w-24 cursor-pointer select-none text-nowrap" onClick={() => handleSort("date")}>Date{sortBy === "date" && (sortDirection === "asc" ? " ▲" : " ▼")}</TableHead>
+                    <TableHead className="w-20 cursor-pointer select-none text-nowrap" onClick={() => handleSort("rating")}>Rating{sortBy === "rating" && (sortDirection === "asc" ? " ▲" : " ▼")}</TableHead>
+                    <TableHead className="w-auto max-w-3xl">Review</TableHead>
+                    {showLinkColumn && <TableHead className="w-32">Link</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedReviews.length > 0 ? (
                     paginatedReviews.map((review, idx) => {
-                      const reviewKey = getReviewKey(review, idx);
+                      const reviewKey = review.id || review.link || `${review.customerName}-${review.date}-${idx}`;
                       const isExpanded = expandedReviews[reviewKey];
-                      const isNew = newlyAddedReviewIds.has(reviewKey);
-                      // Determine which keywords to highlight for this review
-                      const highlightKeywordsForReview = selectedCategories.length === 0
-                        ? allCategoryKeywords
-                        : selectedCategories.flatMap(getCategoryKeywords);
                       return (
-                        <TableRow key={reviewKey} className={`${isNew ? "bg-green-100 animate-fade-highlight" : ""} bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-700 min-h-[56px]`}>
-                          <TableCell className="font-medium break-words bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">
-                            <span className="break-words line-clamp-2 block">
-                              {review.customer}
-                            </span>
-                            {isNew && (
-                              <span className="ml-2 inline-block px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800 border border-green-300 align-middle">New</span>
-                            )}
+                        <TableRow key={reviewKey}>
+                          <TableCell className="font-medium text-nowrap">{review.customerName}</TableCell>
+                          <TableCell className="text-nowrap">{review.date}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-1">
+                              <span>{review.rating}</span>
+                              <Star className="w-4 h-4 text-yellow-500" />
+                            </div>
                           </TableCell>
-                          <TableCell className="text-nowrap bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">{review.date}</TableCell>
-                          <TableCell className="text-black bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">
-                            <span>{review.rating}</span>
-                          </TableCell>
-                          <TableCell className="whitespace-pre-line bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">
+                          <TableCell className="max-w-3xl whitespace-pre-line">
                             <div>
                               <span
-                                className="text-black dark:text-white"
                                 dangerouslySetInnerHTML={{
                                   __html: highlightKeywords(
                                     isExpanded || review.review.length <= 200
                                       ? review.review
                                       : review.review.slice(0, 200) + '...',
-                                    highlightKeywordsForReview,
+                                    selectedCategories.flatMap(cat => keywordCategoriesMap[cat] || []),
                                     reviewFilters.keyword
                                   ),
                                 }}
                               />
+                            </div>
                             {review.review.length > 200 && (
                               <button
-                                  className="text-xs text-blue-600 hover:text-blue-800 underline ml-2 align-baseline focus:outline-none"
-                                  style={{ display: 'inline', padding: 0, background: 'none', border: 'none' }}
+                                className="text-xs text-blue-600 hover:underline mt-1 focus:outline-none"
                                 onClick={() => toggleReview(reviewKey)}
                               >
                                 {isExpanded ? "Show less" : "Show more"}
                               </button>
                             )}
-                            </div>
                           </TableCell>
                           {showLinkColumn && (
-                            <TableCell className="truncate max-w-xs bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">
-                              {review.review_link ? (
-                                <a href={review.review_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">
-                                  {review.review_link}
+                            <TableCell className="truncate max-w-xs">
+                              {review.link ? (
+                                <a href={review.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">
+                                  {review.link}
                                 </a>
                               ) : (
-                                <span className="text-black" style={{ color: '#000' }}>—</span>
+                                <span className="text-gray-400">—</span>
                               )}
                             </TableCell>
                           )}
@@ -1228,7 +923,7 @@ export default function BrandDetailPage() {
                     })
                   ) : (
                     <TableRow key="no-reviews">
-                      <TableCell colSpan={showLinkColumn ? 5 : 4} className="text-center py-8 text-black" style={{ color: '#000' }}>
+                      <TableCell colSpan={showLinkColumn ? 5 : 4} className="text-center py-8 text-gray-500">
                         No reviews match the current filters
                       </TableCell>
                     </TableRow>
@@ -1327,11 +1022,21 @@ export default function BrandDetailPage() {
           <div className="text-center">
             <Button
               size="lg"
-              onClick={() => {}}
+              onClick={() => {
+                import("@/lib/export-utils").then(({ exportBrandReportAsPDF }) => {
+                  exportBrandReportAsPDF({
+                    name: meta.name,
+                    trustpilotUrl: meta.trustpilotUrl,
+                    metrics: metrics,
+                    reviews: reviews,
+                    keywords: currentKeywords,
+                  })
+                })
+              }}
               className="flex items-center space-x-2"
             >
-              <FileText className="w-4 h-4 mr-2" />
-              Download Complete Brand Report (PDF)
+              <FileText className="w-5 h-5" />
+              <span>Download Complete Brand Report (PDF)</span>
             </Button>
             <p className="text-sm text-gray-500 mt-2">Includes all metrics, trends, keywords, and review details</p>
           </div>
@@ -1341,7 +1046,7 @@ export default function BrandDetailPage() {
         <SentimentTrendChart
           isOpen={showTrendChart}
           onClose={() => setShowTrendChart(false)}
-          data={analytics?.monthly_trends || []}
+          data={monthlySentimentData}
           brandName={meta.name}
         />
 
@@ -1356,25 +1061,15 @@ export default function BrandDetailPage() {
 
         {/* Modal for managing keywords (reuse KeywordsManager or a modal version) */}
         {showKeywordsModal && (
-          <>
-            <div className="fixed inset-0 bg-black bg-opacity-40 z-40 transition-opacity" />
-            <div className="fixed inset-0 z-50 flex items-center justify-center">
-              <div className="bg-white dark:bg-[#18181b] dark:border dark:border-gray-700 dark:shadow-2xl rounded-lg shadow-lg p-6 w-full max-w-lg transition-colors">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-bold text-black dark:text-white">Manage Sizing & Fit Keywords</h2>
-                  <Button variant="ghost" className="bg-black hover:bg-black focus:bg-black active:bg-black transition-transform duration-150 transform hover:scale-110 focus:scale-110" onClick={() => setShowKeywordsModal(false)}>
-                    <X className="w-5 h-5 text-white" />
-                  </Button>
-                </div>
-                <KeywordsManager
-                  onKeywordsChange={setCurrentKeywords}
-                  hideTitle
-                  hideDescription
-                  initialKeywords={customKeywords}
-                />
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold">Manage Sizing & Fit Keywords</h2>
+                <Button variant="ghost" onClick={() => setShowKeywordsModal(false)}><X className="w-5 h-5" /></Button>
               </div>
+              <KeywordsManager onKeywordsChange={setCurrentKeywords} hideTitle hideDescription />
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>
