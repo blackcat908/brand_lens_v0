@@ -196,13 +196,13 @@ export default function BrandDetailPage() {
       try {
         // Debug: log brandId and API URL
         const backendBrand = apiService["mapBrandId"](id);
-        const apiUrl = `http://localhost:5000/api/brands/${backendBrand}/reviews?page=1&per_page=10000`;
+        const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/brands/${backendBrand}/reviews?page=1&per_page=10000`;
         console.log('Fetching reviews for brandId:', id, 'backendBrand:', backendBrand, 'API URL:', apiUrl);
         // Fetch analytics and reviews from backend
         const analyticsData = await apiService.getBrandAnalyticsByFrontendId(id);
         const reviewsResp = await apiService.getBrandReviewsByFrontendId(id, 1, 10000);
         // Fetch display_name from brand-source-url endpoint
-        const brandSourceRes = await fetch(`http://localhost:5000/api/brand-source-url?brand_id=${canonicalId}`);
+        const brandSourceRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/brand-source-url?brand_id=${canonicalId}`);
         const brandSourceData = await brandSourceRes.json();
         const displayName = brandSourceData.display_name || analyticsData.brand || id;
         if (!isMounted) return;
@@ -545,7 +545,7 @@ export default function BrandDetailPage() {
       setSourceUrlLoading(true);
       setSourceUrlError("");
       try {
-        const res = await fetch(`http://localhost:5000/api/brand-source-url?brand_id=${canonicalId}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/brand-source-url?brand_id=${canonicalId}`);
         const data = await res.json();
         if (isMounted) setSourceUrl(data.sourceUrl);
       } catch (err) {
@@ -563,7 +563,7 @@ export default function BrandDetailPage() {
     if (showSourcePopover) {
       setSourceUrlLoading(true);
       setSourceUrlError("");
-      fetch(`http://localhost:5000/api/brand-source-url?brand_id=${canonicalId}`)
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/brand-source-url?brand_id=${canonicalId}`)
         .then(res => res.json())
         .then(data => {
           console.log('Fetched source URL response:', data);
@@ -584,7 +584,7 @@ export default function BrandDetailPage() {
     setSourceUrlLoading(true);
     setSourceUrlError("");
     try {
-      const res = await fetch(`http://localhost:5000/api/brand-source-url`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/brand-source-url`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ brand: canonicalId, sourceUrl }),
@@ -601,7 +601,7 @@ export default function BrandDetailPage() {
   const handleCancelUrlEdit = () => {
     setSourceUrlLoading(true);
     setSourceUrlError("");
-    fetch(`http://localhost:5000/api/brand-source-url?brand_id=${canonicalId}`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/brand-source-url?brand_id=${canonicalId}`)
       .then(res => res.json())
       .then(data => setSourceUrl(data.sourceUrl))
       .catch(() => setSourceUrlError("Failed to load source URL"))
@@ -683,7 +683,7 @@ export default function BrandDetailPage() {
     try {
       // Instead of calling the Next.js /api/scrape endpoint, call the Flask backend /api/scrape_brand endpoint
       const backendBrand = apiService["mapBrandId"](id);
-      const res = await fetch('http://localhost:5000/api/scrape_brand', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/scrape_brand`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ brand: backendBrand })
