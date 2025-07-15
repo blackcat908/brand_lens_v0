@@ -1,0 +1,113 @@
+{
+  "sampleApiResponse": {
+    "brand": {
+      "id": "nike",
+      "name": "Nike",
+      "trustpilotUrl": "https://www.trustpilot.com/review/nike.com",
+      "lastScraped": "2024-01-16T10:30:00Z",
+      "totalReviews": 1247,
+      "sizingFitKeywords": [
+        "sizing",
+        "size",
+        "fit",
+        "fits",
+        "fitted",
+        "fitting",
+        "large",
+        "small",
+        "tight",
+        "loose",
+        "narrow",
+        "wide",
+        "length",
+        "width",
+        "comfort",
+        "comfortable",
+        "true to size",
+        "runs small",
+        "runs large",
+        "size up",
+        "size down"
+      ]
+    },
+    "metrics": {
+      "totalSizingFitReviews": 89,
+      "avgRating": 4.2,
+      "ratingDistribution": {
+        "5": 34,
+        "4": 33,
+        "3": 12,
+        "2": 7,
+        "1": 3
+      },
+      "sentimentAnalysis": {
+        "overallScore": 0.73,
+        "positive": 67,
+        "negative": 22,
+        "neutral": 0,
+        "monthlyTrend": [
+          { "month": "2023-08", "score": 0.65 },
+          { "month": "2023-09", "score": 0.68 },
+          { "month": "2023-10", "score": 0.71 },
+          { "month": "2023-11", "score": 0.69 },
+          { "month": "2023-12", "score": 0.73 },
+          { "month": "2024-01", "score": 0.75 }
+        ]
+      }
+    },
+    "reviews": [
+      {
+        "id": "rev_001",
+        "customerName": "Sarah M.",
+        "customerInitials": "S.M.",
+        "date": "2024-01-15T14:22:00Z",
+        "rating": 5,
+        "title": "Perfect fit as always",
+        "review": "The sizing was perfect! I ordered my usual size and the fit was exactly what I expected. Great quality and comfort. Nike's sizing is very consistent across their product lines.",
+        "verified": true,
+        "helpfulVotes": 12,
+        "sizingFitKeywords": ["sizing", "size", "fit", "comfort"],
+        "sentiment": {
+          "score": 0.85,
+          "classification": "positive"
+        }
+      },
+      {
+        "id": "rev_002",
+        "customerName": "Mike R.",
+        "customerInitials": "M.R.",
+        "date": "2024-01-14T09:15:00Z",
+        "rating": 2,
+        "title": "Runs small - had to return",
+        "review": "Disappointed with the sizing. The shoes run small compared to other brands. Had to return and order a size up. The return process was smooth though.",
+        "verified": true,
+        "helpfulVotes": 8,
+        "sizingFitKeywords": ["sizing", "small", "size"],
+        "sentiment": {
+          "score": -0.45,
+          "classification": "negative"
+        }
+      },
+      {
+        "id": "rev_003",
+        "customerName": "Emma L.",
+        "customerInitials": "E.L.",
+        "date": "2024-01-13T16:45:00Z",
+        "rating": 4,
+        "title": "Good fit, slightly narrow",
+        "review": "Good fit overall, though the width is a bit narrow for my feet. The size chart was helpful in making the right choice. Would recommend going up half a size if you have wide feet.",
+        "verified": true,
+        "helpfulVotes": 15,
+        "sizingFitKeywords": ["fit", "narrow", "width", "size"],
+        "sentiment": {
+          "score": 0.32,
+          "classification": "positive"
+        }
+      }
+    ],
+    "exportOptions": {
+      "formats": ["pdf", "csv", "excel"],
+      "includeFields": ["customerName", "date", "rating", "review", "sizingFitKeywords", "sentiment", "helpfulVotes"]
+    }
+  }
+}
