@@ -11,6 +11,8 @@ import json
 import requests
 from PIL import Image
 from io import BytesIO
+import logging
+logger = logging.getLogger(__name__)
 
 # Import our new database modules
 from database import get_db_session, init_db, Review
@@ -81,7 +83,7 @@ class TrustpilotScraper:
                         if parsed_date:
                             date_text = parsed_date.strftime("%Y-%m-%d")
                         else:
-                            print(f"[ERROR] Could not parse date '{raw_date}' for review: {p_content[:100]}")
+                            logger.error(f"[ERROR] Could not parse date '{raw_date}' for review: {p_content[:100]}")
                             date_text = None
                         break
                 
@@ -143,7 +145,7 @@ class TrustpilotScraper:
                 })
             return page_reviews
         except Exception as e:
-            print(f"Error scraping page {url}: {e}")
+            logger.error(f"Error scraping page {url}: {e}")
             return []
 
     def get_trustpilot_url(self, brand_name, page_num):
@@ -204,7 +206,7 @@ class TrustpilotScraper:
 
     def extract_brand_name(self, trustpilot_url: str) -> str | None:
         """Extract the official brand name from a Trustpilot page using Playwright."""
-        print(f"[BRANDNAME] Extracting brand name from: {trustpilot_url}")
+        logger.info(f"[BRANDNAME] Extracting brand name from: {trustpilot_url}")
         from playwright.sync_api import sync_playwright
         import re
         with sync_playwright() as p:
@@ -218,7 +220,7 @@ class TrustpilotScraper:
                     brand_name_raw = brand_elem.text_content()
                     if brand_name_raw:
                         brand_name = brand_name_raw.strip()
-                        print(f"[BRANDNAME] Found brand name (span): {brand_name}")
+                        logger.info(f"[BRANDNAME] Found brand name (span): {brand_name}")
                         browser.close()
                         return brand_name
                 # Fallback: try the main <h1> selector
@@ -227,7 +229,7 @@ class TrustpilotScraper:
                     h1_text = h1_elem.text_content()
                     if h1_text:
                         brand_name = re.sub(r"Reviews.*", "", h1_text).strip()
-                        print(f"[BRANDNAME] Found brand name (h1): {brand_name}")
+                        logger.info(f"[BRANDNAME] Found brand name (h1): {brand_name}")
                         browser.close()
                         return brand_name
                 # Fallback: try a more specific selector if needed
@@ -236,60 +238,60 @@ class TrustpilotScraper:
                     h1_alt_text = h1_alt.text_content()
                     if h1_alt_text:
                         brand_name = re.sub(r"Reviews.*", "", h1_alt_text).strip()
-                        print(f"[BRANDNAME] Found brand name (alt): {brand_name}")
+                        logger.info(f"[BRANDNAME] Found brand name (alt): {brand_name}")
                         browser.close()
                         return brand_name
-                print("[BRANDNAME] Brand name not found on page.")
+                logger.info("[BRANDNAME] Brand name not found on page.")
                 browser.close()
                 return None
             except Exception as e:
-                print(f"[BRANDNAME] Error extracting brand name: {e}")
+                logger.error(f"[BRANDNAME] Error extracting brand name: {e}")
                 browser.close()
                 return None
 
-    def scrape_brand_reviews(self, brand_name, max_pages=None, start_page=1):
+    def scrape_brand_reviews(self, brand_name, max_pages=1, start_page=1):
         """Scrapes reviews for a brand, using ONLY the user-provided Trustpilot URL from the DB. No guessing."""
         from database import get_brand_source_url, get_db_session
         canon_id = canonical_brand_id(brand_name)
-        print(f"[DEBUG] brand_name passed to scraper: '{brand_name}', canonical: '{canon_id}'")
+        logger.debug(f"[DEBUG] brand_name passed to scraper: '{brand_name}', canonical: '{canon_id}'")
         with get_db_session() as db:
             brand_source = get_brand_source_url(db, canon_id)
-            print(f"[DEBUG] brand_source_url lookup result: {brand_source}")
+            logger.debug(f"[DEBUG] brand_source_url lookup result: {brand_source}")
             if brand_source and 'source_url' in brand_source:
                 user_url = brand_source['source_url']
             else:
-                print(f"[ERROR] No Trustpilot URL found for brand '{brand_name}'. Aborting.")
+                logger.error(f"[ERROR] No Trustpilot URL found for brand '{brand_name}'. Aborting.")
                 return 0
             result = db.execute(text("SELECT review_link FROM reviews WHERE brand_name = :brand_name"), {"brand_name": canon_id})
             existing_links = {row[0] for row in result.fetchall() if row[0]}
-        print(f"Found {len(existing_links)} existing review links for '{brand_name}' in the database.")
-        print("Starting browser...")
+        logger.info(f"Found {len(existing_links)} existing review links for '{brand_name}' in the database.")
+        logger.info("Starting browser...")
         self.start_browser()
-        print("Browser started.")
+        logger.info("Browser started.")
         all_new_reviews = []
         page_num = start_page
         consecutive_empty_pages = 0
         max_consecutive_empty = 3  # Stop after 3 consecutive empty pages
         try:
-            print(f"Starting to scrape {'all pages' if max_pages is None else f'pages {start_page} to {max_pages}'}...")
+            logger.info(f"Starting to scrape {'all pages' if max_pages is None else f'pages {start_page} to {max_pages}'}...")
             consecutive_empty_pages = 0
             while True:
                 if max_pages is not None and page_num > max_pages:
-                    print(f"Reached max_pages limit ({max_pages}). Stopping.")
+                    logger.info(f"Reached max_pages limit ({max_pages}). Stopping.")
                     break
-                print(f"\n--- Scraping Page {page_num} ---")
+                logger.info(f"\n--- Scraping Page {page_num} ---")
                 page_url = f"{user_url.split('?')[0]}?page={page_num}"
-                print(f"Trying URL: {page_url}")
+                logger.info(f"Trying URL: {page_url}")
                 try:
                     page_reviews = self.scrape_page(page_url)
                 except Exception as e:
-                    print(f"Error accessing {page_url}: {e}")
+                    logger.error(f"Error accessing {page_url}: {e}")
                     page_reviews = []
                 if not page_reviews:
                     consecutive_empty_pages += 1
-                    print(f"No reviews found on page {page_num}. Consecutive empty pages: {consecutive_empty_pages}")
+                    logger.warning(f"No reviews found on page {page_num}. Consecutive empty pages: {consecutive_empty_pages}")
                     if consecutive_empty_pages >= max_consecutive_empty:
-                        print(f"Stopping: {consecutive_empty_pages} consecutive empty pages reached.")
+                        logger.warning(f"Stopping: {consecutive_empty_pages} consecutive empty pages reached.")
                         break
                     page_num += 1
                     time.sleep(random.uniform(3, 7))
@@ -302,47 +304,47 @@ class TrustpilotScraper:
                     all_new_reviews.extend(newly_found_on_page)
                     for review in newly_found_on_page:
                         existing_links.add(review['review_link'])
-                    print(f"Found {len(newly_found_on_page)} new reviews on page {page_num}")
+                    logger.info(f"Found {len(newly_found_on_page)} new reviews on page {page_num}")
                 else:
-                    print(f"No new reviews found on page {page_num}")
+                    logger.info(f"No new reviews found on page {page_num}")
                 if len(newly_found_on_page) < len(page_reviews):
-                    print("Encountered previously saved reviews. Likely reached the end of new content.")
+                    logger.info("Encountered previously saved reviews. Likely reached the end of new content.")
                     if len(newly_found_on_page) == 0:
                         consecutive_empty_pages += 1
                         if consecutive_empty_pages >= 2:
-                            print("Stopping: No new reviews found for 2 consecutive pages.")
+                            logger.warning("Stopping: No new reviews found for 2 consecutive pages.")
                     break
-                print(f"Page {page_num} scraped successfully. Continuing...")
+                logger.info(f"Page {page_num} scraped successfully. Continuing...")
                 page_num += 1
                 time.sleep(random.uniform(3, 7))
-            print("Finished scraping loop.")
+            logger.info("Finished scraping loop.")
         finally:
             try:
                 self.close_browser()
             except Exception as e:
-                print("Error closing browser:", e)
+                logger.error("Error closing browser:", e)
         if all_new_reviews:
             with get_db_session() as db:
                 for review_data in all_new_reviews:
                     try:
                         analysis = self.sentiment_analyzer.process_review(review_data['review'])
                         if analysis['sentiment_score'] is None:
-                            print(f"[ERROR] Sentiment analysis returned None for review: {review_data['review'][:100]}")
+                            logger.error(f"[ERROR] Sentiment analysis returned None for review: {review_data['review'][:100]}")
                             continue
                         valid_categories = {'positive', 'negative', 'neutral'}
                         if analysis['sentiment_category'] not in valid_categories:
-                            print(f"[ERROR] Invalid sentiment_category '{analysis['sentiment_category']}' for review: {review_data['review'][:100]}")
+                            logger.error(f"[ERROR] Invalid sentiment_category '{analysis['sentiment_category']}' for review: {review_data['review'][:100]}")
                             continue
                         date_val = review_data.get('date')
                         if not date_val or not isinstance(date_val, str) or len(date_val) < 10:
-                            print(f"[ERROR] Invalid or missing date for review: {review_data['review'][:100]}")
+                            logger.error(f"[ERROR] Invalid or missing date for review: {review_data['review'][:100]}")
                             continue
                         import re
                         if not re.match(r"^\d{4}-\d{2}-\d{2}$", date_val[:10]):
-                            print(f"[ERROR] Date not in YYYY-MM-DD format for review: {review_data['review'][:100]}, date: {date_val}")
+                            logger.error(f"[ERROR] Date not in YYYY-MM-DD format for review: {review_data['review'][:100]}, date: {date_val}")
                             continue
                     except Exception as e:
-                        print(f"[ERROR] Sentiment analysis failed for review: {review_data['review'][:100]} | Error: {e}")
+                        logger.error(f"[ERROR] Sentiment analysis failed for review: {review_data['review'][:100]} | Error: {e}")
                         continue
                     db.execute(
                         text("INSERT INTO reviews (brand_name, customer_name, review, rating, date, review_link, sentiment_score, sentiment_category, categories) VALUES (:brand_name, :customer_name, :review, :rating, :date, :review_link, :sentiment_score, :sentiment_category, :categories)"),
@@ -359,18 +361,18 @@ class TrustpilotScraper:
                         }
                     )
                 db.commit()
-            print(f"Successfully saved {len(all_new_reviews)} new reviews for '{brand_name}' to the database.")
+            logger.info(f"Successfully saved {len(all_new_reviews)} new reviews for '{brand_name}' to the database.")
             return len(all_new_reviews)
         else:
-            print("No new reviews found to save.")
+            logger.info("No new reviews found to save.")
             return 0
 
 def fetch_trustpilot_logo(trustpilot_url, brand_id, display_name, output_dir="frontend/public/logos"):
-    print("[LOGO] fetch_trustpilot_logo CALLED")
+    logger.info("[LOGO] fetch_trustpilot_logo CALLED")
     try:
         from playwright.sync_api import sync_playwright
         import os
-        print(f"[LOGO] Fetching logo for brand: {display_name} (ID: {brand_id}) from {trustpilot_url}")
+        logger.info(f"[LOGO] Fetching logo for brand: {display_name} (ID: {brand_id}) from {trustpilot_url}")
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             page = browser.new_page()
@@ -378,20 +380,20 @@ def fetch_trustpilot_logo(trustpilot_url, brand_id, display_name, output_dir="fr
             # Use the specific selector for Trustpilot business profile logo
             logo_elem = page.query_selector('img.business-profile-image_image__V14jr')
             if not logo_elem:
-                print("[LOGO] Specific selector failed. Printing all image URLs for debugging:")
+                logger.warning("[LOGO] Specific selector failed. Printing all image URLs for debugging:")
                 for img in page.query_selector_all('img'):
-                    print("[LOGO] Found image src:", img.get_attribute('src'))
+                    logger.warning(f"[LOGO] Found image src: {img.get_attribute('src')}")
                 browser.close()
                 return False
             logo_url = logo_elem.get_attribute("src")
             if not logo_url:
-                print("[LOGO] Logo src not found.")
+                logger.warning("[LOGO] Logo src not found.")
                 browser.close()
                 return False
-            print(f"[LOGO] Found logo URL: {logo_url}")
+            logger.info(f"[LOGO] Found logo URL: {logo_url}")
             resp = requests.get(logo_url)
             ext = logo_url.split('.')[-1].split('?')[0].lower()
-            print(f"[LOGO] Logo file type: {ext}")
+            logger.info(f"[LOGO] Logo file type: {ext}")
             os.makedirs(output_dir, exist_ok=True)
             dash_display_name = display_name.lower().replace(' ', '-')
             out_path_id = os.path.join(output_dir, f"{brand_id}-logo.{ext}")
@@ -400,11 +402,11 @@ def fetch_trustpilot_logo(trustpilot_url, brand_id, display_name, output_dir="fr
                 f.write(resp.content)
             with open(out_path_display, "wb") as f:
                 f.write(resp.content)
-            print(f"[LOGO] Saved logo to {out_path_id} and {out_path_display}")
+            logger.info(f"[LOGO] Saved logo to {out_path_id} and {out_path_display}")
             browser.close()
             return True
     except Exception as e:
-        print(f"[LOGO] ERROR: {e}")
+        logger.error(f"[LOGO] ERROR: {e}")
         return False
 
 def main():
