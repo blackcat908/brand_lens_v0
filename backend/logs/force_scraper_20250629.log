@@ -1,0 +1,68 @@
+2025-06-29 07:55:36,875 - INFO - Starting forced scrape of Wander Doll reviews...
+2025-06-29 07:55:36,899 - INFO - Found 377 existing reviews for 'wanderdoll' in the database.
+2025-06-29 07:55:38,283 - INFO - Browser started.
+2025-06-29 07:55:38,283 - INFO - Starting to scrape up to 50 pages for wanderdoll...
+2025-06-29 07:55:38,284 - INFO - --- Scraping Page 1 ---
+2025-06-29 07:55:38,284 - INFO - Loading page: https://uk.trustpilot.com/review/www.wander-doll.com?page=1
+2025-06-29 07:55:45,153 - INFO - Found 24 review cards on page
+2025-06-29 07:55:49,111 - INFO - Successfully extracted 20 reviews from page
+2025-06-29 07:55:49,120 - INFO - No new reviews found on page 1
+2025-06-29 07:55:49,121 - INFO - Page 1 scraped successfully. Total new reviews so far: 0
+2025-06-29 07:55:57,822 - INFO - --- Scraping Page 2 ---
+2025-06-29 07:55:57,822 - INFO - Loading page: https://uk.trustpilot.com/review/www.wander-doll.com?page=2
+2025-06-29 07:56:03,248 - INFO - Found 24 review cards on page
+2025-06-29 07:56:07,337 - INFO - Successfully extracted 20 reviews from page
+2025-06-29 07:56:07,338 - INFO - No new reviews found on page 2
+2025-06-29 07:56:07,338 - INFO - Page 2 scraped successfully. Total new reviews so far: 0
+2025-06-29 07:56:16,513 - INFO - --- Scraping Page 3 ---
+2025-06-29 07:56:16,514 - INFO - Loading page: https://uk.trustpilot.com/review/www.wander-doll.com?page=3
+2025-06-29 07:56:22,506 - INFO - Found 24 review cards on page
+2025-06-29 07:56:26,840 - INFO - Successfully extracted 20 reviews from page
+2025-06-29 07:56:26,841 - INFO - No new reviews found on page 3
+2025-06-29 07:56:26,842 - INFO - Page 3 scraped successfully. Total new reviews so far: 0
+2025-06-29 07:56:33,153 - INFO - --- Scraping Page 4 ---
+2025-06-29 07:56:33,155 - INFO - Loading page: https://uk.trustpilot.com/review/www.wander-doll.com?page=4
+2025-06-29 07:56:38,942 - INFO - Found 24 review cards on page
+2025-06-29 07:56:44,326 - INFO - Successfully extracted 20 reviews from page
+2025-06-29 07:56:44,327 - INFO - No new reviews found on page 4
+2025-06-29 07:56:44,328 - INFO - Page 4 scraped successfully. Total new reviews so far: 0
+2025-06-29 07:56:52,090 - INFO - --- Scraping Page 5 ---
+2025-06-29 07:56:52,092 - INFO - Loading page: https://uk.trustpilot.com/review/www.wander-doll.com?page=5
+2025-06-29 07:56:57,894 - INFO - Found 24 review cards on page
+2025-06-29 07:57:03,407 - INFO - Successfully extracted 20 reviews from page
+2025-06-29 07:57:03,408 - INFO - No new reviews found on page 5
+2025-06-29 07:57:03,409 - INFO - Page 5 scraped successfully. Total new reviews so far: 0
+2025-06-29 07:57:11,955 - INFO - --- Scraping Page 6 ---
+2025-06-29 07:57:11,956 - INFO - Loading page: https://uk.trustpilot.com/review/www.wander-doll.com?page=6
+2025-06-29 07:57:17,856 - INFO - Found 24 review cards on page
+2025-06-29 07:57:23,497 - INFO - Successfully extracted 20 reviews from page
+2025-06-29 07:57:23,498 - INFO - No new reviews found on page 6
+2025-06-29 07:57:23,498 - INFO - Page 6 scraped successfully. Total new reviews so far: 0
+2025-06-29 07:57:30,664 - INFO - --- Scraping Page 7 ---
+2025-06-29 07:57:30,666 - INFO - Loading page: https://uk.trustpilot.com/review/www.wander-doll.com?page=7
+2025-06-29 07:57:36,876 - INFO - Found 24 review cards on page
+2025-06-29 07:57:42,152 - INFO - Successfully extracted 20 reviews from page
+2025-06-29 07:57:42,154 - INFO - No new reviews found on page 7
+2025-06-29 07:57:42,154 - INFO - Page 7 scraped successfully. Total new reviews so far: 0
+2025-06-29 07:57:50,356 - INFO - --- Scraping Page 8 ---
+2025-06-29 07:57:50,357 - INFO - Loading page: https://uk.trustpilot.com/review/www.wander-doll.com?page=8
+2025-06-29 07:57:56,151 - INFO - Found 24 review cards on page
+2025-06-29 07:58:01,019 - INFO - Successfully extracted 20 reviews from page
+2025-06-29 07:58:01,019 - INFO - No new reviews found on page 8
+2025-06-29 07:58:01,020 - INFO - Page 8 scraped successfully. Total new reviews so far: 0
+2025-06-29 07:58:06,063 - INFO - --- Scraping Page 9 ---
+2025-06-29 07:58:06,066 - INFO - Loading page: https://uk.trustpilot.com/review/www.wander-doll.com?page=9
+2025-06-29 07:58:11,984 - INFO - Found 24 review cards on page
+2025-06-29 07:58:16,506 - INFO - Successfully extracted 20 reviews from page
+2025-06-29 07:58:16,506 - INFO - No new reviews found on page 9
+2025-06-29 07:58:16,507 - INFO - Page 9 scraped successfully. Total new reviews so far: 0
+2025-06-29 07:58:23,488 - INFO - --- Scraping Page 10 ---
+2025-06-29 07:58:23,490 - INFO - Loading page: https://uk.trustpilot.com/review/www.wander-doll.com?page=10
+2025-06-29 07:58:29,411 - INFO - Found 24 review cards on page
+2025-06-29 07:58:34,375 - INFO - Successfully extracted 20 reviews from page
+2025-06-29 07:58:34,375 - INFO - No new reviews found on page 10
+2025-06-29 07:58:34,376 - INFO - Stopping: 10 consecutive pages with no new reviews.
+2025-06-29 07:58:34,376 - INFO - Finished scraping loop.
+2025-06-29 07:58:34,376 - INFO - Closing browser...
+2025-06-29 07:58:34,569 - INFO - Browser closed.
+2025-06-29 07:58:34,569 - INFO - No new reviews found to save.
