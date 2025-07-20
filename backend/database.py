@@ -10,16 +10,7 @@ from config import DATABASE_CONFIG
 print(f"Connecting to database: {DATABASE_CONFIG['url']}")
 
 Base = declarative_base()
-# Add connection pooling and timeout settings for better concurrent access
-engine = create_engine(
-    DATABASE_CONFIG['url'], 
-    echo=DATABASE_CONFIG.get('echo', False),
-    pool_size=10,  # Allow up to 10 concurrent connections
-    max_overflow=20,  # Allow up to 20 additional connections
-    pool_timeout=30,  # Wait up to 30 seconds for a connection
-    pool_recycle=3600,  # Recycle connections after 1 hour
-    connect_args={"timeout": 30}  # SQLite timeout
-)
+engine = create_engine(DATABASE_CONFIG['url'], echo=DATABASE_CONFIG.get('echo', False))
 SessionLocal = scoped_session(sessionmaker(bind=engine))
 
 class Review(Base):
@@ -60,16 +51,15 @@ class GlobalKeyword(Base):
     category = Column(String(100), primary_key=True)
     keywords = Column(Text, nullable=False)  # JSON array as string
 
-# Session/context management with better timeout handling
+# Session/context management
 @contextmanager
 def get_db_session():
     session = SessionLocal()
     try:
         yield session
         session.commit()
-    except Exception as e:
+    except Exception:
         session.rollback()
-        print(f"Database session error: {e}")
         raise
     finally:
         session.close()

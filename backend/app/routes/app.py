@@ -99,6 +99,7 @@ def create_brand():
 
 @app.route('/api/brands/<brand_name>/reviews', methods=['GET'])
 def get_brand_reviews(brand_name):
+    raise Exception("TESTING IF THIS CODE IS RUN - REMOVE THIS LINE AFTER TESTING")
     page = int(request.args.get('page', 1))
     per_page = int(request.args.get('per_page', 20))
     rating_filter = request.args.get('rating')
@@ -117,7 +118,7 @@ def get_brand_reviews(brand_name):
 
     with get_db_session() as db:
         reviews = get_reviews_by_brand(db, brand_name)
-        log_info(f"Total reviews for brand '{brand_name}': {len(reviews)}")
+        print(f"[DEBUG] Total reviews fetched for brand '{brand_name}': {len(reviews)}")
 
         # Log the SQL query for global keywords
         if category_filter and category_filter != 'all':
@@ -175,19 +176,26 @@ def get_brand_reviews(brand_name):
                 except Exception as e:
                     log_warning(f"Skipping review with malformed date: {review_date} (error: {e})")
                     continue
-            # Category filter (by categories field)
+            # Robust Category filter (by categories field)
             if category_filter and category_filter != 'all':
-                try:
-                    review_categories = json.loads(review['categories']) if isinstance(review['categories'], str) else review['categories']
-                except Exception:
-                    review_categories = []
-                if not review_categories or category_filter not in review_categories:
+                review_categories = []
+                cats = review.get('categories')
+                if cats:
+                    try:
+                        if isinstance(cats, str):
+                            review_categories = json.loads(cats)
+                        elif isinstance(cats, list):
+                            review_categories = cats
+                    except Exception:
+                        review_categories = []
+                # Normalize for whitespace/case
+                if not review_categories or not any(category_filter.strip().lower() == str(c).strip().lower() for c in review_categories):
                     continue
             filtered_reviews.append(review)
 
-        log_info(f"Filtered reviews count: {len(filtered_reviews)} (after all filters)")
+        print(f"[DEBUG] Filtered reviews count: {len(filtered_reviews)} (after all filters)")
         if filtered_reviews:
-            log_info(f"First 3 filtered reviews: {[r['review'][:100] for r in filtered_reviews[:3]]}")
+            print(f"[DEBUG] First 3 filtered review categories: {[r.get('categories') for r in filtered_reviews[:3]]}")
         else:
             log_info("No reviews matched the filters.")
 
