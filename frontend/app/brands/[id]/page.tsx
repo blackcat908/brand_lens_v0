@@ -3,18 +3,18 @@
 import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
 import { ArrowLeft, Star, ThumbsUp, ThumbsDown, Download, FileText, Filter, X, BarChart3, PieChart, Settings, Globe, SlidersHorizontal, ChevronDown, Loader2, RotateCw, Meh } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card"
-import { Badge } from "../../../components/ui/badge"
-import { Button } from "../../../components/ui/button"
-import { Input } from "../../../components/ui/input"
-import { Label } from "../../../components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select"
-import { Separator } from "../../../components/ui/separator"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table"
-import { KeywordsManager } from "../../../components/keywords-manager"
-import { SentimentTrendChart } from "../../../components/charts/sentiment-trend-chart"
-import { SentimentDistributionChart } from "../../../components/charts/sentiment-distribution-chart"
-import { calculateBrandSentimentMetrics, calculateSentimentScore } from "../../../lib/sentiment-analysis"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { KeywordsManager } from "@/components/keywords-manager"
+import { SentimentTrendChart } from "@/components/charts/sentiment-trend-chart"
+import { SentimentDistributionChart } from "@/components/charts/sentiment-distribution-chart"
+import { calculateBrandSentimentMetrics, calculateSentimentScore } from "@/lib/sentiment-analysis"
 import React from "react"
 import {
   Pagination,
@@ -25,15 +25,15 @@ import {
   PaginationLink,
   PaginationEllipsis,
 } from "@/components/ui/pagination"
-import { Popover, PopoverContent, PopoverTrigger } from "../../../components/ui/popover"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useParams } from "next/navigation"
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "../../../components/ui/tooltip"
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "../../../components/ui/dropdown-menu"
-import { Checkbox } from "../../../components/ui/checkbox"
-import { useToast } from "../../../components/ui/use-toast"
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu"
+import { Checkbox } from "@/components/ui/checkbox"
+import { useToast } from "@/components/ui/use-toast"
 import { format, subDays, subMonths, isAfter, isBefore, parseISO } from "date-fns"
-import { apiService, canonicalBrandId } from "../../../lib/api-service"
-import { BrandLogo } from "../../../components/brand-logo";
+import { apiService, canonicalBrandId } from "@/lib/api-service"
+import { BrandLogo } from "@/components/brand-logo";
 import winkLemmatizer from 'wink-lemmatizer';
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 

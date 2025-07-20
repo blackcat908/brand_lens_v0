@@ -181,13 +181,13 @@ def get_brand_reviews(brand_name):
                 review_categories = []
                 cats = review.get('categories')
                 if cats:
-                    try:
+                try:
                         if isinstance(cats, str):
                             review_categories = json.loads(cats)
                         elif isinstance(cats, list):
                             review_categories = cats
-                    except Exception:
-                        review_categories = []
+                except Exception:
+                    review_categories = []
                 # Normalize for whitespace/case
                 if not review_categories or not any(category_filter.strip().lower() == str(c).strip().lower() for c in review_categories):
                     continue
