@@ -35,6 +35,7 @@ import { format, subDays, subMonths, isAfter, isBefore, parseISO } from "date-fn
 import { apiService, canonicalBrandId } from "../../../lib/api-service"
 import { BrandLogo } from "../../../components/brand-logo";
 import winkLemmatizer from 'wink-lemmatizer';
+import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 // Helper: lemmatize all words in a string using wink-lemmatizer
 function lemmatizeWords(text: string) {
@@ -52,45 +53,20 @@ function matchesAnyKeywordNLP(text: string, keywords: string[]) {
   const keywordLemmas = keywords.map(k => winkLemmatizer.noun(k.toLowerCase()) || winkLemmatizer.verb(k.toLowerCase()) || winkLemmatizer.adjective(k.toLowerCase()) || k.toLowerCase());
   return keywordLemmas.some(kw => lemmas.includes(kw));
 }
-// Patch highlightKeywords to support both single-word and multi-word (phrase) keyword highlighting
-function highlightKeywords(text: string, keywords: string[], searchKeyword?: string) {
-  // Separate phrase and single-word keywords
-  const phraseKeywords = keywords.filter(k => k.trim().includes(' '));
-  const singleKeywords = keywords.filter(k => !k.trim().includes(' '));
-  // Highlight phrase keywords first (case-insensitive, global)
-  let highlightedText = text;
-  phraseKeywords.forEach(phrase => {
-    const regex = new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), 'gi');
-    highlightedText = highlightedText.replace(regex, match => `<mark class=\"bg-yellow-200 text-yellow-900 dark:bg-yellow-700 dark:text-yellow-100 px-1 rounded font-medium\">${match}</mark>`);
-  });
-  // Tokenize text, preserving punctuation and spaces
-  const tokens = highlightedText.match(/\w+|[^\w\s]+|\s+/g) || [];
-  const keywordLemmas = singleKeywords.map(k => winkLemmatizer.noun(k.toLowerCase()) || winkLemmatizer.verb(k.toLowerCase()) || winkLemmatizer.adjective(k.toLowerCase()) || k.toLowerCase());
-  const highlightedTokens = tokens.map(token => {
-    // Only lemmatize word tokens
-    if (/^\w+$/.test(token)) {
-      const lemma = winkLemmatizer.noun(token.toLowerCase()) || winkLemmatizer.verb(token.toLowerCase()) || winkLemmatizer.adjective(token.toLowerCase()) || token.toLowerCase();
-      if (keywordLemmas.includes(lemma)) {
-        return `<mark class=\"bg-yellow-200 text-yellow-900 dark:bg-yellow-700 dark:text-yellow-100 px-1 rounded font-medium\">${token}</mark>`;
-      }
-    }
-    return token;
-  });
-  highlightedText = highlightedTokens.join('');
-  // Highlight search keyword as before
-  if (searchKeyword && searchKeyword.trim()) {
-    const searchTerm = searchKeyword.trim().toLowerCase();
-    const searchLemma = winkLemmatizer.noun(searchTerm) || winkLemmatizer.verb(searchTerm) || winkLemmatizer.adjective(searchTerm) || searchTerm;
-    const isAlreadyHighlighted = keywordLemmas.some((lemma) => lemma === searchLemma) || phraseKeywords.some(phrase => phrase.toLowerCase() === searchTerm);
-    if (!isAlreadyHighlighted) {
-      const searchRegex = new RegExp(`\\b${searchTerm.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}\\b`, "gi");
-      highlightedText = highlightedText.replace(
-        searchRegex,
-        '<mark class="bg-blue-200 px-1 rounded font-medium border border-blue-300">$&</mark>',
+// Replace the highlightKeywords function with a robust version:
+function robustHighlightKeywords(text: string, keywords: string[]) {
+  if (!keywords || keywords.length === 0) return text;
+  // Escape regex special chars and sort by length (longest first)
+  const escaped = keywords
+    .filter(Boolean)
+    .map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .sort((a, b) => b.length - a.length);
+  if (escaped.length === 0) return text;
+  // Build regex: match whole words or phrases, case-insensitive
+  const regex = new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi');
+  return text.replace(regex, match =>
+    `<mark class="bg-yellow-200 text-yellow-900 px-1 rounded font-medium">${match}</mark>`
       );
-    }
-  }
-  return highlightedText;
 }
 
 function SentimentSpark({ data }: { data: number[] }) {
@@ -175,10 +151,51 @@ function ThinProgressBar({ percent, label }: { percent: number, label?: string }
   );
 }
 
+// Helper function to get API base URL
+function getApiBaseUrl() {
+  return (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000') + '/api';
+}
+
+// 1. Add type for ReviewFilters if missing
+type ReviewFilters = {
+  rating: string;
+  keyword: string;
+  ratings: string[];
+};
+
+// 1. Add toTitleCase helper
+function toTitleCase(str: string) {
+  return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+}
+
 export default function BrandDetailPage() {
+  // All hooks at the top level, before any conditionals or returns
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+  // Declare filter-related state first
+  const [selectedCategory, setSelectedCategory] = useState("Sizing & Fit Mentions");
+  const [selectedRating, setSelectedRating] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
+
+  // 1. Replace individual filter states with a single filters state object:
+  const [filters, setFilters] = useState({
+    category: "Sizing & Fit Mentions",
+    rating: "all",
+    dateFilter: "all",
+    customStartDate: "",
+    customEndDate: ""
+  });
+  const [pendingFilters, setPendingFilters] = useState(filters);
   const params = useParams();
-  const id = typeof params.id === "string" ? params.id : Array.isArray(params.id) ? params.id[0] : "";
-  const canonicalId = canonicalBrandId(id);
+  let id = "";
+  if (params) {
+    id = typeof params.id === "string"
+      ? decodeURIComponent(params.id)
+      : Array.isArray(params.id)
+        ? decodeURIComponent(params.id[0])
+        : "";
+  }
 
   // State for real data
   const [brand, setBrand] = useState<any>(null);
@@ -187,36 +204,54 @@ export default function BrandDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pageSize, setPageSize] = useState(20);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalReviews, setTotalReviews] = useState(0);
 
+  // 1. Declare all state first
+  const now = new Date();
+  let startDate: Date | null = null;
+  let endDate: Date | null = null;
+  if (dateFilter === '7d') startDate = subDays(now, 7);
+  else if (dateFilter === '30d') startDate = subDays(now, 30);
+  else if (dateFilter === '3m') startDate = subMonths(now, 3);
+  else if (dateFilter === '6m') startDate = subMonths(now, 6);
+  else if (dateFilter === 'custom' && customStartDate && customEndDate) {
+    startDate = parseISO(customStartDate);
+    endDate = parseISO(customEndDate);
+  }
+
+  // Fetch reviews from backend with pagination and filters
   useEffect(() => {
+    console.log('Current filters state:', filters);
     let isMounted = true;
     setLoading(true);
     setError(null);
     async function fetchData() {
       try {
-        // Debug: log brandId and API URL
-        const backendBrand = apiService["mapBrandId"](id);
-        const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/brands/${backendBrand}/reviews?page=1&per_page=10000`;
-        console.log('Fetching reviews for brandId:', id, 'backendBrand:', backendBrand, 'API URL:', apiUrl);
-        // Fetch analytics and reviews from backend
-        const analyticsData = await apiService.getBrandAnalyticsByFrontendId(id);
-        const reviewsResp = await apiService.getBrandReviewsByFrontendId(id, 1, 10000);
-        // Fetch display_name from brand-source-url endpoint
-        const brandSourceRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/brand-source-url?brand_id=${canonicalId}`);
-        const brandSourceData = await brandSourceRes.json();
-        const displayName = brandSourceData.display_name || analyticsData.brand || id;
+        const apiFilters: any = {};
+        if (filters.category && filters.category !== "all") {
+          apiFilters.category = filters.category;
+        }
+        if (filters.rating && filters.rating !== "all") {
+          apiFilters.rating = Number(filters.rating);
+        }
+        if (filters.dateFilter && filters.dateFilter !== 'all') {
+          if (filters.dateFilter === 'custom' && filters.customStartDate && filters.customEndDate) {
+            apiFilters.dateFrom = filters.customStartDate;
+            apiFilters.dateTo = filters.customEndDate;
+          } else if (startDate) {
+            apiFilters.dateFrom = startDate.toISOString().slice(0, 10);
+          }
+        }
+        console.log('Sending apiFilters to reviews API:', apiFilters);
+        const reviewsResp = await apiService.getBrandReviewsByFrontendId(id, currentPage, pageSize, apiFilters);
         if (!isMounted) return;
-        // Debug logging
-        console.log('Fetched analytics:', analyticsData);
-        console.log('Fetched reviews response:', reviewsResp);
-        setAnalytics(analyticsData);
-        console.log('monthly_trends for chart:', analyticsData.monthly_trends);
-        const mappedReviews = reviewsResp.reviews.map(r => ({
-          ...r,
-          customer: (r as any).customer_name || (r as any).customer || '',
-        }));
-        setReviews(mappedReviews);
-        setBrand({ id, name: displayName });
+        setReviews(reviewsResp.reviews);
+        setTotalReviews(reviewsResp.total_reviews || 0);
+        // 2. Fix analytics fetch to use correct brand id mapping
+        const analyticsResp = await apiService.getBrandAnalyticsByFrontendId(id, apiFilters);
+        if (!isMounted) return;
+        setAnalytics(analyticsResp);
       } catch (err: any) {
         setError(err.message || "Failed to load data");
       } finally {
@@ -225,55 +260,38 @@ export default function BrandDetailPage() {
     }
     fetchData();
     return () => { isMounted = false; };
-  }, [id, pageSize]);
+  }, [id, currentPage, pageSize, filters]);
 
-  useEffect(() => {
-    console.log('All review sentiment scores:', reviews.map(r => r.sentiment_score));
-  }, [reviews]);
+  // Handler for category change
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    setCurrentPage(1); // Reset to first page on filter change
+  };
 
-  // Poll for new reviews and analytics after scraping
+  // Handler for rating change
+  const handleRatingChange = (rating: string) => {
+    setSelectedRating(rating);
+    setCurrentPage(1); // Reset to first page on filter change
+  };
+
+  // Handler for page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Fetch all brands and set the current brand by raw brand_name
   useEffect(() => {
-    if (!id) return;
-    let prevReviewCount = 0;
-    let stableCount = 0;
-    let attempts = 0;
-    const maxAttempts = 180; // 180 attempts * 1s = 3 minutes
-    const interval = setInterval(async () => {
-      try {
-        const analyticsData = await apiService.getBrandAnalyticsByFrontendId(id);
-        const reviewsResp = await apiService.getBrandReviewsByFrontendId(id, 1, 10000);
-        const mappedReviews = reviewsResp.reviews.map(r => ({
-          ...r,
-          customer: (r as any).customer_name || (r as any).customer || '',
-        }));
-        setAnalytics(analyticsData);
-        setReviews(mappedReviews);
-        if (mappedReviews.length === prevReviewCount && mappedReviews.length > 0) {
-          stableCount++;
-        } else {
-          stableCount = 0;
-        }
-        prevReviewCount = mappedReviews.length;
-        // Stop polling if review count hasn't changed for 5 polls in a row
-        if (stableCount >= 5) {
-          clearInterval(interval);
-        }
-      } catch (err) {
-        // Optionally handle error
-      }
-      attempts++;
-      if (attempts >= maxAttempts) {
-        clearInterval(interval);
-      }
-    }, 1000); // Poll every 1 second
-    return () => clearInterval(interval);
+    apiService.getBrands().then(brands => {
+      const found = brands.find(b => b.brand === id);
+      setBrand(found || null);
+    });
   }, [id]);
 
   // Meta state for brand info
   const meta = {
-    name: brand?.name || id,
-    logo: `/logos/${id}-logo.jpg`,
-    trustpilotUrl: `https://www.trustpilot.com/review/${id}.com`,
+    name: id, // Use the decoded brand name for display
+    logo: brand?.logo || `/logos/${id || 'placeholder'}-logo.jpg`,
+    trustpilotUrl: brand?.trustpilotUrl || brand?.source_url || '',
   };
 
   const [showTrendChart, setShowTrendChart] = useState(false)
@@ -384,89 +402,10 @@ export default function BrandDetailPage() {
     return keywordCategoriesMap[cat] || [];
   };
 
-  // Move date filter state and date range calculation above filteredReviews
-  const [dateFilter, setDateFilter] = useState<'7d' | '30d' | '3m' | '6m' | 'all' | 'custom'>('all');
-  const [customStartDate, setCustomStartDate] = useState<string>("");
-  const [customEndDate, setCustomEndDate] = useState<string>("");
-  const now = new Date();
-  let startDate: Date | null = null;
-  let endDate: Date | null = null;
-  if (dateFilter === '7d') startDate = subDays(now, 7);
-  else if (dateFilter === '30d') startDate = subDays(now, 30);
-  else if (dateFilter === '3m') startDate = subMonths(now, 3);
-  else if (dateFilter === '6m') startDate = subMonths(now, 6);
-  else if (dateFilter === 'custom' && customStartDate && customEndDate) {
-    startDate = parseISO(customStartDate);
-    endDate = parseISO(customEndDate);
-  }
-
-  // Update filteredReviews logic
-  const dedupedReviews = useMemo(() => {
-    const seen = new Set();
-    return reviews.filter(r => {
-      const key = r.review_link || r.id || `${r.customer}-${r.date}-${r.review?.slice(0, 20)}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }, [reviews]);
-
-  const dateFilteredReviews = useMemo(() => {
-    if (dateFilter === 'all') return dedupedReviews;
-    if (!startDate) return dedupedReviews;
-    return dedupedReviews.filter(r => {
-      const d = new Date(r.date);
-      if (dateFilter === 'custom' && endDate) {
-        return d >= startDate! && d <= endDate;
-      }
-      return d >= startDate!;
-    });
-  }, [dedupedReviews, dateFilter, startDate, endDate]);
-
-  // Fix filteredReviews logic
-  const filteredReviews = useMemo(() => {
-    // If 'All Reviews' is selected, show all dateFilteredReviews
-    if (selectedCategories.length === 0) {
-      return dateFilteredReviews.filter((review) => {
-        // Single rating filter (from dropdown)
-        if (reviewFilters.rating !== 'all' && Number(review.rating) !== Number(reviewFilters.rating)) {
-          return false;
-        }
-        // Keyword filter (search box)
-        if (reviewFilters.keyword && !(review.review || "").toLowerCase().includes(reviewFilters.keyword.toLowerCase())) {
-          return false;
-        }
-        return true;
-      });
-    }
-    // Otherwise, filter by selected category's keywords (with fallback)
-    const keywordsToUse = selectedCategories.flatMap(getCategoryKeywords);
-    console.log('Category filter:', selectedCategories, 'Keywords to use:', keywordsToUse);
-    if (keywordsToUse.length === 0) return [];
-    return dateFilteredReviews.filter((review) => {
-      // Single rating filter (from dropdown)
-      if (reviewFilters.rating !== 'all' && Number(review.rating) !== Number(reviewFilters.rating)) {
-        return false;
-      }
-      // Keyword filter (search box)
-      if (reviewFilters.keyword && !(review.review || "").toLowerCase().includes(reviewFilters.keyword.toLowerCase())) {
-        return false;
-      }
-      // Category keywords filter
-      const reviewText = (review.review || "").toLowerCase();
-      const matchesKeyword = keywordsToUse.some((keyword) => {
-        const match = reviewText.includes(keyword.toLowerCase());
-        if (match) {
-          console.log('MATCH:', keyword, 'IN REVIEW:', review.review);
-        }
-        return match;
-      });
-      if (!matchesKeyword) {
-        console.log('NO MATCH for review:', review.review);
-      }
-      return matchesKeyword;
-    });
-  }, [dateFilteredReviews, reviewFilters, selectedCategories, dynamicKeywordCategoriesMap, keywordCategoriesMap]);
+  // Only use backend-filtered reviews; if you want to keep client-side search, filter here
+  const filteredReviews = reviewFilters.keyword
+    ? reviews.filter(r => (r.review || '').toLowerCase().includes(reviewFilters.keyword.toLowerCase()))
+    : reviews;
 
   const handleFilterChange = (key: keyof ReviewFilters, value: any) => {
     setReviewFilters((prev) => ({ ...prev, [key]: value }))
@@ -486,14 +425,12 @@ export default function BrandDetailPage() {
 
   const [showKeywordsModal, setShowKeywordsModal] = useState(false)
   const [showSourcePopover, setShowSourcePopover] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.ceil(filteredReviews.length / pageSize);
-  const [visibleColumns, setVisibleColumns] = useState({
-    customer: true,
-    date: true,
-    rating: true,
-    review: true,
-  })
+  const totalPages = Math.ceil(totalReviews / pageSize);
+  // 1. Add state for dynamic columns
+  const [showCustomerColumn, setShowCustomerColumn] = useState(false);
+  const [showLinkColumn, setShowLinkColumn] = useState(false);
+  // Add state for showing matched keywords column
+  const [showMatchedKeywords, setShowMatchedKeywords] = useState(false);
 
   // Add sorting state
   const [sortBy, setSortBy] = useState<'customer' | 'date' | 'rating'>("date");
@@ -545,7 +482,7 @@ export default function BrandDetailPage() {
       setSourceUrlLoading(true);
       setSourceUrlError("");
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/brand-source-url?brand_id=${canonicalId}`);
+        const res = await fetch(`${getApiBaseUrl()}/brand-source-url?brand_id=${id}`);
         const data = await res.json();
         if (isMounted) setSourceUrl(data.sourceUrl);
       } catch (err) {
@@ -556,14 +493,14 @@ export default function BrandDetailPage() {
     }
     fetchSourceUrl();
     return () => { isMounted = false; };
-  }, [canonicalId]);
+  }, [id]);
 
   // Fetch source URL every time the popover is opened
   useEffect(() => {
     if (showSourcePopover) {
       setSourceUrlLoading(true);
       setSourceUrlError("");
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/brand-source-url?brand_id=${canonicalId}`)
+      fetch(`${getApiBaseUrl()}/brand-source-url?brand_id=${id}`)
         .then(res => res.json())
         .then(data => {
           console.log('Fetched source URL response:', data);
@@ -578,16 +515,16 @@ export default function BrandDetailPage() {
         })
         .finally(() => setSourceUrlLoading(false));
     }
-  }, [showSourcePopover, canonicalId, id]);
+  }, [showSourcePopover, id]);
 
   const handleSaveUrl = async () => {
     setSourceUrlLoading(true);
     setSourceUrlError("");
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/brand-source-url`, {
+      const res = await fetch(`${getApiBaseUrl()}/brand-source-url`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brand: canonicalId, sourceUrl }),
+        body: JSON.stringify({ brand: id, sourceUrl }),
       });
       if (!res.ok) throw new Error("Failed to save");
     setShowSourcePopover(false);
@@ -601,7 +538,7 @@ export default function BrandDetailPage() {
   const handleCancelUrlEdit = () => {
     setSourceUrlLoading(true);
     setSourceUrlError("");
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/brand-source-url?brand_id=${canonicalId}`)
+    fetch(`${getApiBaseUrl()}/brand-source-url?brand_id=${id}`)
       .then(res => res.json())
       .then(data => setSourceUrl(data.sourceUrl))
       .catch(() => setSourceUrlError("Failed to load source URL"))
@@ -618,17 +555,17 @@ export default function BrandDetailPage() {
   // Helper: Get reviews with size & fit mentions (for Total Reviews card)
   const sizingFitKeywords = getCategoryKeywords("Sizing & Fit Mentions");
   const reviewsWithSizingFitMentions = useMemo(() =>
-    dedupedReviews.filter((review) =>
+    reviews.filter((review) =>
       sizingFitKeywords.some((keyword: string) => (review.review || "").toLowerCase().includes(keyword.toLowerCase()))
     ),
-    [dedupedReviews, sizingFitKeywords]
+    [reviews, sizingFitKeywords]
   );
 
   // Fix Sizing & Fit Mentions total count (with fallback)
   const totalSizingFitReviews = reviewsWithSizingFitMentions.length;
 
   // Helper: Get all reviews (for avg rating, sentiment score)
-  const allReviews = dedupedReviews;
+  const allReviews = reviews;
 
   // Average Rating: from all reviews
   const averageRating = allReviews.length > 0 ? (allReviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / allReviews.length) : 0;
@@ -655,7 +592,7 @@ export default function BrandDetailPage() {
   }, [filteredReviews]);
 
   // State for visible columns
-  const [showLinkColumn, setShowLinkColumn] = useState(false);
+  // const [showLinkColumn, setShowLinkColumn] = useState(false); // This state is now managed by the checkbox
 
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
@@ -682,11 +619,10 @@ export default function BrandDetailPage() {
     await new Promise(res => setTimeout(res, 600));
     try {
       // Instead of calling the Next.js /api/scrape endpoint, call the Flask backend /api/scrape_brand endpoint
-      const backendBrand = apiService["mapBrandId"](id);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/scrape_brand`, {
+      const res = await fetch(`${getApiBaseUrl()}/scrape_brand`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brand: backendBrand })
+        body: JSON.stringify({ brand: id })
       });
       setUpdateStep('done');
       await new Promise(res => setTimeout(res, 400));
@@ -750,6 +686,24 @@ export default function BrandDetailPage() {
 
   const allCategoryKeywords = keywordCategories.flatMap(cat => getCategoryKeywords(cat.name));
 
+  // Define category names as a constant to ensure consistency
+  const CATEGORY_NAMES = [
+    "Sizing & Fit Mentions",
+    "Model Reference",
+    "Length & Body Suitability",
+    "Returns & Exchanges",
+    "Custom Category"
+  ];
+
+  // Before rendering the table, check for empty reviews and not loading:
+  if (!loading && reviews.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64 text-lg text-gray-500">
+        No reviews match the selected category.
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 text-black dark:text-white">
       <div className="container mx-auto px-4 pt-6">
@@ -765,7 +719,7 @@ export default function BrandDetailPage() {
             <BrandLogo src={meta.logo} alt={`${meta.name} logo`} maxWidth={80} maxHeight={80} />
             <div>
               <h1 className="text-3xl font-bold text-foreground">{meta.name}</h1>
-              <p className="text-gray-600">Sizing & Fit Analysis</p>
+              <p className="text-gray-600">Last updated: {analytics?.last_updated || 'Never'}</p>
             </div>
           </div>
           <div className="flex items-center space-x-2 mb-6 justify-end">
@@ -995,10 +949,98 @@ export default function BrandDetailPage() {
                     )}
                   </p>
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex items-center gap-2 justify-end mb-4">
+                  <Dialog open={filterDialogOpen} onOpenChange={setFilterDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="h-10 px-6 text-base hover:scale-105 transition-transform duration-200">Filter</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogTitle>Filter Reviews</DialogTitle>
+                      {/* Category dropdown */}
+                      <div className="mb-4">
+                        <Label htmlFor="filter-category">Category</Label>
+                        <Select value={pendingFilters.category} onValueChange={value => setPendingFilters(f => ({ ...f, category: value }))}>
+                          <SelectTrigger className="h-8 text-xs px-2 bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-300 dark:border-zinc-700">
+                            <SelectValue placeholder="All Reviews" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Reviews</SelectItem>
+                            {Object.keys(customKeywords).map((cat: string) => (
+                              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {/* Rating dropdown */}
+                      <div className="mb-4">
+                        <Label htmlFor="filter-rating">Rating</Label>
+                        <Select value={pendingFilters.rating} onValueChange={value => setPendingFilters(f => ({ ...f, rating: value }))}>
+                          <SelectTrigger className="h-8 text-xs px-2 bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-300 dark:border-zinc-700">
+                            <SelectValue placeholder="All Ratings" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Ratings</SelectItem>
+                            <SelectItem value="5">5 Stars</SelectItem>
+                            <SelectItem value="4">4 Stars</SelectItem>
+                            <SelectItem value="3">3 Stars</SelectItem>
+                            <SelectItem value="2">2 Stars</SelectItem>
+                            <SelectItem value="1">1 Star</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {/* Date filter dropdown */}
+                      <div className="mb-4">
+                        <Label htmlFor="filter-date">Date</Label>
+                        <Select value={pendingFilters.dateFilter} onValueChange={value => setPendingFilters(f => ({ ...f, dateFilter: value }))}>
+                          <SelectTrigger className="h-8 text-xs px-2 bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-300 dark:border-zinc-700">
+                            <SelectValue placeholder="All Time" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Time</SelectItem>
+                            <SelectItem value="7d">Last 7 Days</SelectItem>
+                            <SelectItem value="30d">Last 30 Days</SelectItem>
+                            <SelectItem value="3m">Last 3 Months</SelectItem>
+                            <SelectItem value="6m">Last 6 Months</SelectItem>
+                            <SelectItem value="custom">Custom Range</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {pendingFilters.dateFilter === 'custom' && (
+                          <div className="flex gap-2 mt-2">
+                            <input type="date" value={pendingFilters.customStartDate} onChange={e => setPendingFilters(f => ({ ...f, customStartDate: e.target.value }))} className="border rounded px-2 py-1 text-xs h-8" />
+                            <span className="text-xs">to</span>
+                            <input type="date" value={pendingFilters.customEndDate} onChange={e => setPendingFilters(f => ({ ...f, customEndDate: e.target.value }))} className="border rounded px-2 py-1 text-xs h-8" />
+                          </div>
+                        )}
+                      </div>
+                      {/* Keyword filter */}
+                      <div className="mb-4">
+                        <Label htmlFor="filter-keyword">Search by Keyword</Label>
+                        <Input
+                          id="filter-keyword"
+                          placeholder="Search in reviews..."
+                          value={reviewFilters.keyword}
+                          onChange={e => handleFilterChange('keyword', e.target.value)}
+                          className="h-8 text-xs px-2"
+                        />
+                      </div>
+                      <DialogFooter>
+                        <Button onClick={() => setFilterDialogOpen(false)} variant="outline">Cancel</Button>
+                        <Button
+                          onClick={() => {
+                            setFilters(pendingFilters);
+                            setCurrentPage(1);
+                            setFilterDialogOpen(false);
+                          }}
+                          variant="default"
+                        >
+                          Apply Filters
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  {/* CSV and Excel download buttons */}
                   <Button
                     variant="outline"
-                    size="sm"
                     onClick={() => {
                       import("@/lib/export-utils").then(({ exportReviewsAsCSV }) => {
                         exportReviewsAsCSV(filteredReviews, meta.name)
@@ -1010,7 +1052,6 @@ export default function BrandDetailPage() {
                   </Button>
                   <Button
                     variant="outline"
-                    size="sm"
                     onClick={() => {
                       import("@/lib/export-utils").then(({ exportReviewsAsExcel }) => {
                         exportReviewsAsExcel(filteredReviews, meta.name)
@@ -1026,146 +1067,60 @@ export default function BrandDetailPage() {
               <Separator />
 
               {/* Filters Section */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Filter className="w-4 h-4 text-gray-600" />
-                    <h3 className="font-medium text-foreground">Filter Reviews</h3>
-                  </div>
-                  {hasActiveFilters && (
-                    <Button variant="outline" size="sm" onClick={clearFilters}>
-                      <X className="w-4 h-4 mr-1" />
-                      Clear Filters
-                    </Button>
-                  )}
-                </div>
-
-                <div className="flex flex-col md:flex-row md:items-center md:space-x-4 w-full mb-2">
-                  <div className="flex-1 min-w-[180px]">
-                    <Label htmlFor="rating-filter" className="text-xs font-medium">Filter by Rating</Label>
-                    <Select value={reviewFilters.rating} onValueChange={value => handleFilterChange('rating', value)}>
-                      <SelectTrigger id="rating-filter" className="h-8 text-xs px-2 bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-300 dark:border-zinc-700">
-                        <SelectValue placeholder="All Ratings" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Ratings</SelectItem>
-                        <SelectItem value="5">5 Stars</SelectItem>
-                        <SelectItem value="4">4 Stars</SelectItem>
-                        <SelectItem value="3">3 Stars</SelectItem>
-                        <SelectItem value="2">2 Stars</SelectItem>
-                        <SelectItem value="1">1 Star</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex-1 min-w-[180px] mt-2 md:mt-0">
-                    <Label htmlFor="date-filter" className="text-xs font-medium">Filter by Date</Label>
-                    <Select value={dateFilter} onValueChange={value => setDateFilter(value as any)}>
-                      <SelectTrigger id="date-filter" className="h-8 text-xs px-2 bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-300 dark:border-zinc-700">
-                        <SelectValue placeholder="All Time" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="7d">Last 7 Days</SelectItem>
-                        <SelectItem value="30d">Last 30 Days</SelectItem>
-                        <SelectItem value="3m">Last 3 Months</SelectItem>
-                        <SelectItem value="6m">Last 6 Months</SelectItem>
-                        <SelectItem value="all">All Time</SelectItem>
-                        <SelectItem value="custom">Custom Range</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {dateFilter === 'custom' && (
-                      <div className="flex items-center space-x-2 mt-1">
-                        <input type="date" value={customStartDate} onChange={e => setCustomStartDate(e.target.value)} className="border rounded px-2 py-1 text-xs h-8" />
-                        <span className="text-xs">to</span>
-                        <input type="date" value={customEndDate} onChange={e => setCustomEndDate(e.target.value)} className="border rounded px-2 py-1 text-xs h-8" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-[180px] mt-2 md:mt-0">
-                    <Label htmlFor="keyword-filter" className="text-xs font-medium">Search by Keyword</Label>
-                    <Input
-                      id="keyword-filter"
-                      placeholder="Search in reviews..."
-                      value={reviewFilters.keyword}
-                      onChange={e => handleFilterChange('keyword', e.target.value)}
-                      className="h-8 text-xs px-2"
-                    />
-                  </div>
-                </div>
-
-                {/* Active Filters Display */}
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-wrap gap-2">
-                    {reviewFilters.ratings.length > 0 && reviewFilters.ratings.map((star) => (
-                      <Badge key={star} variant="secondary" className="flex items-center space-x-1">
-                        <Star className="w-3 h-3" />
-                        <span>{star} stars</span>
-                        <button onClick={() => handleFilterChange("ratings", reviewFilters.ratings.filter((r) => r !== star))} className="ml-1 hover:text-red-500">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                    {reviewFilters.keyword && (
-                      <Badge variant="secondary" className="flex items-center space-x-1">
-                        <span>"{reviewFilters.keyword}"</span>
-                        <button onClick={() => handleFilterChange("keyword", "")} className="ml-1 hover:text-red-500">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </Badge>
-                    )}
-                  </div>
-
-                  <div className="text-sm text-gray-600">
-                    Showing {filteredReviews.length} of {dateFilteredReviews.length} reviews
-                  </div>
-                </div>
-              </div>
+              {/* The category filter tabs are removed from here */}
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2 mb-2">
-              <Checkbox id="show-link-col" checked={showLinkColumn} onCheckedChange={checked => setShowLinkColumn(!!checked)} />
-              <label htmlFor="show-link-col" className="text-sm select-none cursor-pointer">Show Link column</label>
-            </div>
-            <label className="flex items-center gap-2 mb-2">
-              Category:
-              <div className="flex flex-wrap gap-2">
-                {/* All Reviews card */}
-                <Button
-                  key="All Reviews"
-                  variant={selectedCategories.length === 0 ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedCategories([])}
-                  className={selectedCategories.length === 0 ? "bg-black text-white border border-black" : "bg-white dark:bg-zinc-900 text-black dark:text-white border border-gray-300 dark:border-zinc-700"}
-                >
-                  All Reviews
-                </Button>
-                {keywordCategories.map(cat => (
-                  <Button
-                    key={cat.name}
-                    variant={selectedCategories.includes(cat.name) ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedCategories([cat.name])}
-                    className={selectedCategories.includes(cat.name) ? "bg-black text-white border border-black" : "bg-white dark:bg-zinc-900 text-black dark:text-white border border-gray-300 dark:border-zinc-700"}
-                  >
-                    {cat.name}
-                  </Button>
-                ))}
+            {/* 2. Add checkboxes above the table */}
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-4">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={showCustomerColumn}
+                    onChange={e => setShowCustomerColumn(e.target.checked)}
+                  />
+                  <span style={{ marginLeft: '0.5rem' }}>Show Customer Name</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={showLinkColumn}
+                    onChange={e => setShowLinkColumn(e.target.checked)}
+                  />
+                  <span style={{ marginLeft: '0.5rem' }}>Show Link column</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={showMatchedKeywords}
+                    onChange={e => setShowMatchedKeywords(e.target.checked)}
+                  />
+                  <span style={{ marginLeft: '0.5rem' }}>Show Matched Keywords</span>
+                </label>
               </div>
-            </label>
+              <div className="text-sm text-gray-600">
+                Showing {reviews.length} of {totalReviews} reviews
+              </div>
+            </div>
+            {/* The category filter tabs are removed from here */}
             <TooltipProvider>
               <Table className="bg-white text-black table-fixed w-full">
+                {/* 3. Table header: render columns conditionally */}
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-32 min-w-[8rem] max-w-[8rem] cursor-pointer select-none font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700" onClick={() => handleSort("customer")}>Customer{sortBy === "customer" && (sortDirection === "asc" ? " ▲" : " ▼")}</TableHead>
+                    {showCustomerColumn && <TableHead className="w-32 min-w-[8rem] max-w-[8rem] cursor-pointer select-none font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700" onClick={() => handleSort("customer")}>Customer{sortBy === "customer" && (sortDirection === "asc" ? " ▲" : " ▼")}</TableHead>}
                     <TableHead className="w-28 min-w-[7rem] max-w-[7rem] cursor-pointer select-none text-nowrap font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700" onClick={() => handleSort("date")}>Date{sortBy === "date" && (sortDirection === "asc" ? " ▲" : " ▼")}</TableHead>
                     <TableHead className="w-20 min-w-[5rem] max-w-[5rem] cursor-pointer select-none text-nowrap font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700" onClick={() => handleSort("rating")}>Rating{sortBy === "rating" && (sortDirection === "asc" ? " ▲" : " ▼")} <Star className="inline w-4 h-4 text-yellow-500 ml-1" /></TableHead>
                     <TableHead className="w-auto font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">Review</TableHead>
                     {showLinkColumn && <TableHead className="w-32 min-w-[8rem] max-w-[8rem] font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">Link</TableHead>}
+                    {showMatchedKeywords && <TableHead className="w-48 min-w-[12rem] max-w-[16rem] font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">Matched Keywords</TableHead>}
                   </TableRow>
                 </TableHeader>
+                {/* 3. Table body: render columns conditionally */}
                 <TableBody>
-                  {paginatedReviews.length > 0 ? (
-                    paginatedReviews.map((review, idx) => {
+                  {reviews.length > 0 ? (
+                    reviews.map((review, idx) => {
                       const reviewKey = getReviewKey(review, idx);
                       const isExpanded = expandedReviews[reviewKey];
                       const isNew = newlyAddedReviewIds.has(reviewKey);
@@ -1173,44 +1128,36 @@ export default function BrandDetailPage() {
                       const highlightKeywordsForReview = selectedCategories.length === 0
                         ? allCategoryKeywords
                         : selectedCategories.flatMap(getCategoryKeywords);
+                      const highlightKeywordsArray =
+                        filters.category === "all" || filters.category === "All Reviews"
+                          ? review.matched_keywords || []
+                          : getCategoryKeywords(filters.category);
+                      console.log('Selected category:', filters.category);
+                      console.log('Highlighting with keywords:', highlightKeywordsArray);
+                      const highlightedHTML = robustHighlightKeywords(review.review, highlightKeywordsArray);
+                      console.log('Highlighted HTML:', highlightedHTML);
                       return (
                         <TableRow key={reviewKey} className={`${isNew ? "bg-green-100 animate-fade-highlight" : ""} bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-700 min-h-[56px]`}>
-                          <TableCell className="font-medium break-words bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">
+                          {showCustomerColumn && <TableCell className="font-medium break-words bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">
                             <span className="break-words line-clamp-2 block">
-                              {review.customer}
+                              {review.customer_name || review.customer || ""}
                             </span>
+                          </TableCell>}
+                          <TableCell className="text-nowrap bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">
+                            {review.date}
                             {isNew && (
                               <span className="ml-2 inline-block px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800 border border-green-300 align-middle">New</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-nowrap bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">{review.date}</TableCell>
                           <TableCell className="text-black bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">
                             <span>{review.rating}</span>
                           </TableCell>
-                          <TableCell className="whitespace-pre-line bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">
-                            <div>
-                              <span
-                                className="text-black dark:text-white"
+                          <TableCell className="whitespace-pre-line text-sm">
+                            <div
                                 dangerouslySetInnerHTML={{
-                                  __html: highlightKeywords(
-                                    isExpanded || review.review.length <= 200
-                                      ? review.review
-                                      : review.review.slice(0, 200) + '...',
-                                    highlightKeywordsForReview,
-                                    reviewFilters.keyword
-                                  ),
+                                __html: highlightedHTML
                                 }}
                               />
-                            {review.review.length > 200 && (
-                              <button
-                                  className="text-xs text-blue-600 hover:text-blue-800 underline ml-2 align-baseline focus:outline-none"
-                                  style={{ display: 'inline', padding: 0, background: 'none', border: 'none' }}
-                                onClick={() => toggleReview(reviewKey)}
-                              >
-                                {isExpanded ? "Show less" : "Show more"}
-                              </button>
-                            )}
-                            </div>
                           </TableCell>
                           {showLinkColumn && (
                             <TableCell className="truncate max-w-xs bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">
@@ -1221,6 +1168,11 @@ export default function BrandDetailPage() {
                               ) : (
                                 <span className="text-black" style={{ color: '#000' }}>—</span>
                               )}
+                            </TableCell>
+                          )}
+                          {showMatchedKeywords && (
+                            <TableCell className="whitespace-pre-line text-xs text-gray-700 dark:text-gray-300">
+                              {(review.matched_keywords || []).join(", ")}
                             </TableCell>
                           )}
                         </TableRow>
@@ -1376,6 +1328,9 @@ export default function BrandDetailPage() {
             </div>
           </>
         )}
+
+        {/* Unified Filter Dialog/Modal */}
+        {/* This dialog is now handled by the button above the table */}
       </div>
     </div>
   )

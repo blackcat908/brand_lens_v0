@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-from database import get_db_session, Review, get_brand_source_url, set_brand_source_url, get_reviews_by_brand, get_all_reviews, get_brands, add_review, delete_brand_and_reviews, get_brand_keywords, set_brand_keywords, get_global_keywords, set_global_keywords
+from database import get_db_session, Review, get_brand_source_url, set_brand_source_url, get_reviews_by_brand, get_all_reviews, get_brands, add_review, delete_brand_and_reviews, get_brand_keywords, set_brand_keywords, get_global_keywords, set_global_keywords, get_reviews_by_brand_optimized, get_brand_analytics_optimized, get_brands_with_counts_optimized
 from sentiment_analyzer import SentimentAnalyzer
 from datetime import datetime, timedelta
 import json
@@ -8,7 +8,6 @@ from collections import defaultdict, Counter
 from trustpilot_scraper import TrustpilotScraper, fetch_trustpilot_logo
 import re, requests
 import threading
-from utils import canonical_brand_id
 import os
 from sqlalchemy import text
 import logging
@@ -26,7 +25,12 @@ init_db()
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
+# Update CORS to allow only Vercel frontend
 CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "*", "methods": ["GET", "POST", "DELETE", "OPTIONS"]}})
+# Serve favicon.ico for browser compatibility
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, ''), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 # Initialize sentiment analyzer
 sentiment_analyzer = SentimentAnalyzer()
@@ -40,16 +44,34 @@ def home():
 @app.route('/api/brands', methods=['GET'])
 def get_brands_api():
     with get_db_session() as db:
-        brands = get_brands(db)
-        # Get review count and display name for each brand
-        brand_counts = []
-        for brand in brands:
-            reviews = get_reviews_by_brand(db, brand)
-            # Fetch display name from brand_source_urls
+        brand_counts = get_brands_with_counts_optimized(db)
+        summary = []
+        for brand_info in brand_counts:
+            brand = brand_info['brand']
+            review_count = brand_info.get('review_count', 0)
+            # Get analytics summary for each brand
+            analytics = get_brand_analytics_optimized(db, brand)
+            avg_rating = analytics.get('average_rating', 0)
+            sentiment_score = analytics.get('average_sentiment_score', 0)
+            sentiment = (
+                'positive' if sentiment_score > 0.15 else
+                'negative' if sentiment_score < -0.15 else
+                'neutral'
+            )
+            last_updated = analytics.get('last_updated', None)
+            logo_url = f"/logos/{brand}-logo.jpg"
             brand_source = get_brand_source_url(db, brand)
-            display_name = brand_source['brand_display_name'] if brand_source and 'brand_display_name' in brand_source else brand
-            brand_counts.append({"brand": brand, "display_name": display_name, "review_count": len(reviews)})
-    return jsonify({'brands': brand_counts})
+            if brand_source is not None and 'logo_url' in brand_source and brand_source['logo_url']:
+                logo_url = brand_source['logo_url']
+            summary.append({
+                'brand': brand,
+                'logo': logo_url,
+                'reviewCount': review_count,
+                'avgRating': avg_rating,
+                'sentiment': sentiment,
+                'lastUpdated': last_updated
+            })
+    return jsonify({'brands': summary})
 
 @app.route('/api/brands', methods=['POST'])
 def create_brand():
@@ -57,8 +79,6 @@ def create_brand():
     trustpilot_url = data.get('trustpilot_url')
     if not trustpilot_url:
         return jsonify({'error': 'trustpilot_url is required'}), 400
-
-    # Validate Trustpilot URL format
     url_pattern = r"^https?://([a-zA-Z0-9-]+\.)?trustpilot\.com/review/[\w\-\.]+"
     if not re.match(url_pattern, trustpilot_url):
         return jsonify({'error': 'Invalid Trustpilot URL format'}), 400
@@ -68,29 +88,20 @@ def create_brand():
             return jsonify({'error': 'Trustpilot page not found or not accessible'}), 400
     except Exception as e:
         return jsonify({'error': f'Error reaching Trustpilot: {str(e)}'}), 400
-
-    # Extract the official brand name from the Trustpilot page
     scraper = TrustpilotScraper(headless=True)
     extracted_brand_name = scraper.extract_brand_name(trustpilot_url)
     if not extracted_brand_name:
         return jsonify({'error': 'Could not extract brand name from Trustpilot page.'}), 400
-    canon_id = canonical_brand_id(extracted_brand_name)
     with get_db_session() as db:
-        set_brand_source_url(db, canon_id, trustpilot_url, extracted_brand_name)
-
-    # Fetch logo synchronously and get logo URL
-    logo_success = fetch_trustpilot_logo(trustpilot_url, canon_id, extracted_brand_name, output_dir="../frontend/public/logos")
-    dash_display_name = extracted_brand_name.lower().replace(' ', '-')
-    logo_url = f"/logos/{canon_id}-logo.jpg" if logo_success else "/placeholder-logo.png"
-
-    # Start review scraping for pages 1-50 in the background (single browser session)
+        set_brand_source_url(db, extracted_brand_name, trustpilot_url)
+    logo_success = fetch_trustpilot_logo(trustpilot_url, extracted_brand_name, extracted_brand_name, output_dir="../frontend/public/logos")
+    logo_url = f"/logos/{extracted_brand_name}-logo.jpg" if logo_success else "/placeholder-logo.png"
     def run_scraper():
         try:
             scraper.scrape_brand_reviews(extracted_brand_name, max_pages=50, start_page=1)
         except Exception as e:
-            logger.error(f"Error scraping new brand {canon_id} (pages 1-50): {e}", exc_info=True)
+            print(f"Error scraping new brand {extracted_brand_name} (pages 1-50): {e}")
     threading.Thread(target=run_scraper, daemon=True).start()
-
     return jsonify({'success': True, 'brand': extracted_brand_name, 'trustpilot_url': trustpilot_url, 'logo_url': logo_url})
 
 @app.route('/api/brands/<brand>/reviews', methods=['GET'])
@@ -101,37 +112,19 @@ def get_brand_reviews(brand):
     sentiment_filter = request.args.get('sentiment')
     date_from = request.args.get('date_from')
     date_to = request.args.get('date_to')
+    category_filter = request.args.get('category')
+    
+    # Convert rating filter to int if provided
+    rating_filter_int = int(rating_filter) if rating_filter else None
     
     with get_db_session() as db:
-        reviews = get_reviews_by_brand(db, brand)
+        # Use optimized function that uses database-level filtering and pagination
+        result = get_reviews_by_brand_optimized(
+            db, brand, page, per_page, 
+            rating_filter_int, sentiment_filter or None, date_from or None, date_to or None, category_filter or None
+        )
         
-        # Apply filters
-        filtered_reviews = []
-        for review in reviews:
-            # Rating filter
-            if rating_filter and review['rating'] != int(rating_filter):
-                continue
-            
-            # Sentiment filter
-            if sentiment_filter and review['sentiment_category'] != sentiment_filter:
-                continue
-            
-            # Date filters
-            if date_from and review['date'] < date_from:
-                continue
-            if date_to and review['date'] > date_to:
-                continue
-            
-            filtered_reviews.append(review)
-        
-        # Sort by date descending
-        filtered_reviews.sort(key=lambda x: x['date'] or '', reverse=True)
-        
-        total = len(filtered_reviews)
-        start_idx = (page - 1) * per_page
-        end_idx = start_idx + per_page
-        page_reviews = filtered_reviews[start_idx:end_idx]
-        
+        # Format reviews for response
         review_list = [
             {
                 'customer_name': r['customer_name'],
@@ -143,41 +136,28 @@ def get_brand_reviews(brand):
                 'sentiment_category': r['sentiment_category'],
                 'categories': r['categories']
             }
-            for r in page_reviews
+            for r in result['reviews']
         ]
     
     return jsonify({
         'brand': brand,
-        'total_reviews': total,
-        'page': page,
-        'per_page': per_page,
+        'total_reviews': result['total'],
+        'page': result['page'],
+        'per_page': result['per_page'],
         'reviews': review_list
     })
 
 @app.route('/api/brands/<brand>/analytics', methods=['GET'])
 def get_brand_analytics(brand):
     with get_db_session() as db:
+        # Use optimized analytics function
+        analytics_data = get_brand_analytics_optimized(db, brand)
+        
+        # For now, we'll still need to process some data in Python for complex analytics
+        # But the basic stats are now database-optimized
         reviews = get_reviews_by_brand(db, brand)
         
-        # Total reviews
-        total_reviews = len(reviews)
-        
-        # Average rating
-        ratings = [r['rating'] for r in reviews if r['rating'] is not None]
-        avg_rating = round(sum(ratings) / len(ratings), 1) if ratings else 0
-        
-        # Sentiment breakdown
-        positive_count = len([r for r in reviews if r['sentiment_category'] == 'positive'])
-        negative_count = len([r for r in reviews if r['sentiment_category'] == 'negative'])
-        neutral_count = len([r for r in reviews if r['sentiment_category'] == 'neutral'])
-        
-        total_analyzed = positive_count + negative_count + neutral_count
-        
-        # Average sentiment score
-        sentiment_scores = [r['sentiment_score'] for r in reviews if r['sentiment_score'] is not None]
-        avg_sentiment = round(sum(sentiment_scores) / len(sentiment_scores), 3) if sentiment_scores else 0
-        
-        # Monthly sentiment breakdown
+        # Monthly sentiment breakdown (still needs Python processing for now)
         period = request.args.get('period', 'all')
         if period == 'all':
             date_filter = False
@@ -191,52 +171,41 @@ def get_brand_analytics(brand):
         
         # Group by month and sentiment
         monthly_data = defaultdict(lambda: {'positive': 0, 'negative': 0, 'neutral': 0, 'total': 0})
-        
         for review in reviews:
-            if review['date']:
+            if review['date'] and review['sentiment_category']:
                 try:
-                    # Extract month from date (assuming format YYYY-MM-DD)
-                    month = review['date'][:7]  # Get YYYY-MM part
-                    sentiment = review['sentiment_category']
-                    if sentiment in ['positive', 'negative', 'neutral']:
-                        monthly_data[month][sentiment] += 1
-                        monthly_data[month]['total'] += 1
+                    # Parse date and get month
+                    date_obj = datetime.strptime(review['date'], '%Y-%m-%d')
+                    month_key = date_obj.strftime('%Y-%m')
+                    monthly_data[month_key][review['sentiment_category']] += 1
+                    monthly_data[month_key]['total'] += 1
                 except:
                     continue
 
-        # Convert to list format expected by frontend
+        # Convert to list format for frontend
         monthly_trends = []
         for month in sorted(monthly_data.keys()):
             data = monthly_data[month]
-            monthly_trends.append({
-                'month': month,
-                'positive': data['positive'],
-                'negative': data['negative'],
-                'neutral': data['neutral'],
-                'total': data['total']
-            })
+            if data['total'] > 0:
+                monthly_trends.append({
+                    'month': month,
+                    'positive': data['positive'],
+                    'negative': data['negative'],
+                    'neutral': data['neutral'],
+                    'total': data['total']
+                })
 
-        # Top keywords
-        all_keywords = []
-        for review in reviews:
-            if review['categories']:
-                try:
-                    keywords = json.loads(review['categories'])
-                    all_keywords.extend(keywords)
-                except:
-                    continue
+        # Top keywords (still needs Python processing)
+        all_text = ' '.join([r['review'] for r in reviews if r['review']])
+        words = re.findall(r'\b\w+\b', all_text.lower())
+        word_counts = Counter(words)
+        # Filter out common words
+        common_words = {'the', 'and', 'to', 'of', 'a', 'in', 'is', 'it', 'you', 'that', 'was', 'for', 'on', 'are', 'as', 'with', 'his', 'they', 'at', 'be', 'this', 'have', 'from', 'or', 'one', 'had', 'by', 'word', 'but', 'not', 'what', 'all', 'were', 'we', 'when', 'your', 'can', 'said', 'there', 'use', 'an', 'each', 'which', 'she', 'do', 'how', 'their', 'if', 'up', 'out', 'many', 'then', 'them', 'these', 'so', 'some', 'her', 'would', 'make', 'like', 'into', 'him', 'time', 'two', 'more', 'go', 'no', 'way', 'could', 'my', 'than', 'first', 'been', 'call', 'who', 'its', 'now', 'find', 'long', 'down', 'day', 'did', 'get', 'come', 'made', 'may', 'part'}
+        filtered_words = {word: count for word, count in word_counts.items() if word not in common_words and len(word) > 3}
+        top_keywords = sorted(filtered_words.items(), key=lambda x: x[1], reverse=True)[:10]
         
-        keyword_counts = Counter(all_keywords)
-        top_keywords = [{'keyword': word, 'count': count} for word, count in keyword_counts.most_common(10)]
-        
-        # Add last_updated: date of most recent review for this brand
-        dates = [r['date'] for r in reviews if r['date']]
-        last_updated = max(dates) if dates else None
-
-        # Sizing & Fit Mentions
-        sizing_fit_keywords = [
-            "sizing", "size", "fit", "fits", "fitted", "fitting", "large", "small", "tight", "loose", "narrow", "wide", "length", "width", "comfort", "comfortable", "true to size", "runs small", "runs large", "size up", "size down", "too big", "too small", "return", "refund", "exchange"
-        ]
+        # Sizing/fit mentions
+        sizing_fit_keywords = ['size', 'sizing', 'fit', 'fits', 'small', 'large', 'medium', 'tight', 'loose', 'perfect', 'runs', 'true', 'measurements']
         sizing_fit_reviews = 0
         for review in reviews:
             review_text = review['review'].lower() if review['review'] else ''
@@ -245,69 +214,94 @@ def get_brand_analytics(brand):
 
         return jsonify({
             'brand': brand,
-            'total_reviews': total_reviews,
-            'average_rating': avg_rating,
-            'sentiment_breakdown': {
-                'positive': positive_count,
-                'negative': negative_count,
-                'neutral': neutral_count,
-                'total_analyzed': total_analyzed
-            },
-            'average_sentiment_score': avg_sentiment,
+            'total_reviews': analytics_data['total_reviews'],
+            'average_rating': analytics_data['average_rating'],
+            'sentiment_breakdown': analytics_data['sentiment_breakdown'],
+            'average_sentiment_score': analytics_data['average_sentiment_score'],
             'monthly_trends': monthly_trends,
             'top_keywords': top_keywords,
-            'last_updated': last_updated,
+            'last_updated': analytics_data['last_updated'],
             'sizing_fit_mentions': sizing_fit_reviews
         })
 
 @app.route('/api/health', methods=['GET'])
-def health():
-    return jsonify({"status": "healthy", "message": "API is running"})
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "database": "connected"
+    })
 
 @app.route('/api/scrape', methods=['POST'])
-def scrape_brand():
-    data = request.get_json()
-    brand_name = data.get('brand_name')
-    source_url = data.get('source_url')
-    
-    if not brand_name or not source_url:
-        return jsonify({"error": "brand_name and source_url are required"}), 400
-    
+def scrape_api():
+    logger.info('--- /api/scrape called ---')
     try:
-        scraper = TrustpilotScraper()
-        scraper.scrape_brand_reviews(brand_name)
+        data = request.get_json()
+        logger.info('Request data:', data)
+        source_url = data.get('source_url')
+        if not source_url:
+            logger.error('Missing source_url in request')
+            return jsonify({'error': 'Missing source_url'}), 400
+        # Extract brand from URL
+        brand_match = re.search(r'www\.trustpilot\.com/review/([^.]+)', source_url)
+        if not brand_match:
+            logger.error('Invalid Trustpilot URL')
+            return jsonify({'error': 'Invalid Trustpilot URL'}), 400
+        brand = brand_match.group(1)
+        logger.info(f'Extracted brand: {brand}')
+        from database import init_db, get_db_session, Review
+        logger.info('Initializing DB...')
+        init_db()
+        logger.info('Starting scraper...')
+        scraper = TrustpilotScraper(headless=True)
+        new_reviews_count = scraper.scrape_brand_reviews(brand, max_pages=3)
+        logger.info('Scraper finished. new_reviews_count:', new_reviews_count)
+        if new_reviews_count is None:
+            new_reviews_count = 0
+        logger.info('Browser closed.')
+        with get_db_session() as db:
+            logger.info('Getting total_reviews...')
+            row = db.execute(
+                text('SELECT COUNT(*) FROM reviews WHERE brand_name = :brand_name'),
+                {'brand_name': brand}
+            ).fetchone()
+            total_reviews = row[0] if row is not None else 0
+        logger.info(f"Returning: success=True, brand={brand}, new_reviews={new_reviews_count}, total_reviews={total_reviews}")
         return jsonify({
-            "message": f"Scraping complete for {brand_name}."
+            'success': True,
+            'brand': brand,
+            'newReviews': new_reviews_count,
+            'totalReviews': total_reviews
         })
-    
     except Exception as e:
         import traceback
+        logger.error('Exception in /api/scrape:')
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Error in /api/scrape: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/brand-source-url', methods=['GET'])
 def get_brand_source_url_api():
     brand_id = request.args.get('brand_id')
     if not brand_id:
-        return jsonify({'error': 'brand_id is required'}), 400
+        return jsonify({'error': 'Missing brand_id parameter'}), 400
+    
     with get_db_session() as db:
         brand_source = get_brand_source_url(db, brand_id)
-        if not brand_source:
+        if brand_source is not None:
+            return jsonify(brand_source)
+        else:
             return jsonify({'error': 'Brand not found'}), 404
-        return jsonify({
-            'brand_id': brand_source['brand_id'],
-            'sourceUrl': brand_source['source_url'],
-            'display_name': brand_source.get('brand_display_name', brand_source['brand_id'])
-        })
 
 @app.route('/api/brand-source-url', methods=['POST'])
 def set_brand_source_url_api():
     data = request.get_json()
     brand_id = data.get('brand_id')
     source_url = data.get('source_url')
+    brand_display_name = data.get('brand_display_name')
     
     if not brand_id or not source_url:
-        return jsonify({"error": "brand_id and source_url are required"}), 400
+        return jsonify({'error': 'Missing required parameters'}), 400
     
     with get_db_session() as db:
         result = set_brand_source_url(db, brand_id, source_url)
@@ -329,16 +323,17 @@ def scrape_brand_api():
         logger.info('Starting scraper...')
         scraper = TrustpilotScraper(headless=True)
         new_reviews_count = scraper.scrape_brand_reviews(brand, max_pages=3)
-        logger.info('Scraper finished. new_reviews_count:', new_reviews_count)
+        logger.info(f'Scraper finished. new_reviews_count: {new_reviews_count}')
         if new_reviews_count is None:
             new_reviews_count = 0
         logger.info('Browser closed.')
         with get_db_session() as db:
             logger.info('Getting total_reviews...')
-            total_reviews = db.execute(
+            row = db.execute(
                 text('SELECT COUNT(*) FROM reviews WHERE brand_name = :brand_name'),
                 {'brand_name': brand}
-            ).fetchone()[0]
+            ).fetchone()
+            total_reviews = row[0] if row is not None else 0
         logger.info(f"Returning: success=True, brand={brand}, new_reviews={new_reviews_count}, total_reviews={total_reviews}")
         return jsonify({
             'success': True,
@@ -357,15 +352,12 @@ def scrape_brand_api():
 def delete_brand(brand_id):
     from database import delete_brand_and_reviews, get_db_session, get_brands
     try:
-        canon_id = canonical_brand_id(brand_id)
-        logger.info(f"[DELETE] Received delete request for brand_id: {brand_id} (canonical: {canon_id})")
+        logger.info(f"[DELETE] Received delete request for brand_id: {brand_id}")
         with get_db_session() as db:
             all_brands = get_brands(db)
-            canon_brands = [canonical_brand_id(b) for b in all_brands]
             logger.info(f"[DELETE] All brand IDs in DB: {all_brands}")
-            logger.info(f"[DELETE] Canonical brand IDs in DB: {canon_brands}")
         # Delete from DB using canonical ID
-        delete_brand_and_reviews(canon_id)
+        delete_brand_and_reviews(brand_id)
         # Remove logo files from public/logos
         logo_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../frontend/public/logos')
         removed_files = []
@@ -373,8 +365,7 @@ def delete_brand(brand_id):
         logger.info(f"[DELETE] Logo files in directory: {all_files}")
         for fname in all_files:
             fname_noext = fname.split('.')[0]
-            fname_canon = canonical_brand_id(fname_noext)
-            if canon_id in fname_canon:
+            if brand_id in fname_noext:
                 try:
                     os.remove(os.path.join(logo_dir, fname))
                     removed_files.append(fname)
@@ -420,5 +411,5 @@ def set_keywords_global():
         set_global_keywords(db, category, keywords)
     return jsonify({'success': True})
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False) 
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000) 

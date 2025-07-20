@@ -5,8 +5,8 @@ import { ThemeHydrationFix } from '../components/theme-hydration-fix'
 import ThemeToggle from '../components/theme-toggle'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
+  title: 'Brand Lens',
+  description: 'Monitor sizing and fit sentiment across top brands',
   generator: 'v0.dev',
 }
 
@@ -18,6 +18,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/favicon.png" type="image/png" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

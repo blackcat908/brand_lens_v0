@@ -1,7 +1,7 @@
 // lib/api-service.ts
 // API service to connect to Flask backend
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + '/api';
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000') + '/api';
 
 export interface Review {
   customer_name: string;
@@ -84,12 +84,11 @@ class ApiService {
       throw new Error(`Failed to fetch brands: ${response.statusText}`);
     }
     const data = await response.json();
-    // For each brand, fetch display_name from backend if available
     return data.brands.map((brand: any) => ({
       ...brand,
-      name: brand.display_name || brand.brand || brand.brand_name || brand.id,
-      id: brand.brand || brand.brand_name || brand.id,
-      logo: brand.logo_url || `/logos/${brand.brand || brand.brand_name || brand.id}-logo.jpg`,
+      name: brand.brand_name,
+      id: brand.brand_name,
+      logo: brand.logo, // Use the logo field from backend
     }));
   }
 
@@ -103,6 +102,7 @@ class ApiService {
       sentiment?: string;
       dateFrom?: string;
       dateTo?: string;
+      category?: string;
     }
   ): Promise<ReviewsResponse> {
     const params = new URLSearchParams({
@@ -122,6 +122,9 @@ class ApiService {
     if (filters?.dateTo) {
       params.append('date_to', filters.dateTo);
     }
+    if (filters?.category) {
+      params.append('category', filters.category);
+    }
 
     const response = await fetch(`${this.baseUrl}/brands/${normalizeBrandSlug(brand)}/reviews?${params}`);
     if (!response.ok) {
@@ -131,17 +134,31 @@ class ApiService {
   }
 
   // Get analytics for a specific brand
-  async getBrandAnalytics(brand: string): Promise<Analytics> {
+  async getBrandAnalytics(
+    brand: string,
+    filters?: {
+      rating?: number;
+      sentiment?: string;
+      dateFrom?: string;
+      dateTo?: string;
+      category?: string;
+    }
+  ): Promise<Analytics> {
     if (!brand || typeof brand !== 'string' || brand.trim() === '') {
       throw new Error('Invalid brand id for analytics fetch');
     }
-    const response = await fetch(`${this.baseUrl}/brands/${normalizeBrandSlug(brand)}/analytics`);
+    const params = new URLSearchParams();
+    if (filters?.rating) params.append('rating', filters.rating.toString());
+    if (filters?.sentiment) params.append('sentiment', filters.sentiment);
+    if (filters?.dateFrom) params.append('date_from', filters.dateFrom);
+    if (filters?.dateTo) params.append('date_to', filters.dateTo);
+    if (filters?.category) params.append('category', filters.category);
+    const url = `${this.baseUrl}/brands/${normalizeBrandSlug(brand)}/analytics${params.toString() ? '?' + params.toString() : ''}`;
+    const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch analytics for ${brand}: ${response.statusText}`);
     }
     const data = await response.json();
-    
-    // Add aliases for frontend compatibility
     return {
       ...data,
       avgRating: data.average_rating,
@@ -192,12 +209,21 @@ class ApiService {
     return this.getBrandReviews(backendBrand, page, perPage, filters);
   }
 
-  async getBrandAnalyticsByFrontendId(brandId: string): Promise<Analytics> {
+  async getBrandAnalyticsByFrontendId(
+    brandId: string,
+    filters?: {
+      rating?: number;
+      sentiment?: string;
+      dateFrom?: string;
+      dateTo?: string;
+      category?: string;
+    }
+  ): Promise<Analytics> {
     if (!brandId || typeof brandId !== 'string' || brandId.trim() === '') {
       throw new Error('Invalid brand id for analytics fetch');
     }
     const backendBrand = this.mapBrandId(brandId);
-    return this.getBrandAnalytics(backendBrand);
+    return this.getBrandAnalytics(backendBrand, filters);
   }
 
   async getGlobalKeywords() {
@@ -213,6 +239,25 @@ class ApiService {
       body: JSON.stringify({ category, keywords }),
     });
     if (!response.ok) throw new Error('Failed to save keywords');
+    return response.json();
+  }
+
+  async reprocessReviews() {
+    const response = await fetch(`${this.baseUrl}/reprocess-reviews`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to reprocess reviews');
+    return response.json();
+  }
+
+  // Cancel brand scraping
+  async cancelBrandScraping(brandName: string) {
+    const response = await fetch(`${this.baseUrl}/brands/${encodeURIComponent(brandName)}/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to cancel brand scraping');
     return response.json();
   }
 }

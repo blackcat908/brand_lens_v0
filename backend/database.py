@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, Column, Integer, String, Float, Text, UniqueConstraint, JSON
+from sqlalchemy import create_engine, Column, Integer, String, Float, Text, UniqueConstraint, JSON, func, desc, asc
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.exc import IntegrityError
@@ -10,7 +10,16 @@ from config import DATABASE_CONFIG
 print(f"Connecting to database: {DATABASE_CONFIG['url']}")
 
 Base = declarative_base()
-engine = create_engine(DATABASE_CONFIG['url'], echo=DATABASE_CONFIG.get('echo', False))
+# Add connection pooling and timeout settings for better concurrent access
+engine = create_engine(
+    DATABASE_CONFIG['url'], 
+    echo=DATABASE_CONFIG.get('echo', False),
+    pool_size=10,  # Allow up to 10 concurrent connections
+    max_overflow=20,  # Allow up to 20 additional connections
+    pool_timeout=30,  # Wait up to 30 seconds for a connection
+    pool_recycle=3600,  # Recycle connections after 1 hour
+    connect_args={"timeout": 30}  # SQLite timeout
+)
 SessionLocal = scoped_session(sessionmaker(bind=engine))
 
 class Review(Base):
@@ -24,16 +33,17 @@ class Review(Base):
     review_link = Column(String(500))
     sentiment_score = Column(Float)
     sentiment_category = Column(String(20))
-    categories = Column(Text)  # JSON array as string
+    categories = Column(Text)  # JSON array as string (category names)
+    matched_keywords = Column(Text)  # JSON array as string (matched keywords)
     __table_args__ = (
         UniqueConstraint('brand_name', 'review_link', name='uq_brand_review_link'),
     )
 
 class BrandSourceUrl(Base):
     __tablename__ = 'brand_source_urls'
-    brand_id = Column(String(100), primary_key=True)
+    brand_name = Column(String(255), primary_key=True)  # Use raw brand name as PK
     source_url = Column(String(500), nullable=False)
-    brand_display_name = Column(String(255))
+    # No brand_display_name
 
 class BrandKeyword(Base):
     __tablename__ = 'brand_keywords'
@@ -50,15 +60,16 @@ class GlobalKeyword(Base):
     category = Column(String(100), primary_key=True)
     keywords = Column(Text, nullable=False)  # JSON array as string
 
-# Session/context management
+# Session/context management with better timeout handling
 @contextmanager
 def get_db_session():
     session = SessionLocal()
     try:
         yield session
         session.commit()
-    except Exception:
+    except Exception as e:
         session.rollback()
+        print(f"Database session error: {e}")
         raise
     finally:
         session.close()
@@ -66,25 +77,32 @@ def get_db_session():
 def init_db():
     Base.metadata.create_all(bind=engine)
 
-def get_brand_source_url(db, brand_id: str) -> Optional[Dict[str, Any]]:
-    obj = db.query(BrandSourceUrl).filter(BrandSourceUrl.brand_id == brand_id.strip()).first()
-    return obj.__dict__ if obj else None
+def get_brand_source_url(db, brand_name: str) -> Optional[Dict[str, Any]]:
+    obj = db.query(BrandSourceUrl).filter(BrandSourceUrl.brand_name == brand_name.strip()).first()
+    if obj:
+        return {
+            'brand_name': obj.brand_name,
+            'source_url': obj.source_url
+        }
+    return None
 
-def set_brand_source_url(db, brand_id: str, source_url: str, brand_display_name: str = None) -> Dict[str, Any]:
-    obj = db.query(BrandSourceUrl).filter(BrandSourceUrl.brand_id == brand_id).first()
+def set_brand_source_url(db, brand_name: str, source_url: str) -> Dict[str, Any]:
+    obj = db.query(BrandSourceUrl).filter(BrandSourceUrl.brand_name == brand_name).first()
     if obj:
         obj.source_url = source_url
-        obj.brand_display_name = brand_display_name
     else:
-        obj = BrandSourceUrl(brand_id=brand_id, source_url=source_url, brand_display_name=brand_display_name)
+        obj = BrandSourceUrl(brand_name=brand_name, source_url=source_url)
         db.add(obj)
     db.commit()
-    return obj.__dict__
+    return {
+        'brand_name': obj.brand_name,
+        'source_url': obj.source_url
+    }
 
 def add_review(db, brand_name: str, customer_name: str, review: str, 
-               date: str = None, rating: int = None, review_link: str = None,
-               sentiment_score: float = None, sentiment_category: str = None,
-               categories: str = None) -> bool:
+               date: Optional[str] = None, rating: Optional[int] = None, review_link: Optional[str] = None,
+               sentiment_score: Optional[float] = None, sentiment_category: Optional[str] = None,
+               categories: Optional[str] = None) -> bool:
     obj = Review(
         brand_name=brand_name,
         customer_name=customer_name,
@@ -104,6 +122,145 @@ def add_review(db, brand_name: str, customer_name: str, review: str,
         db.rollback()
         return False
 
+# OPTIMIZED: Use database-level filtering and pagination
+def get_reviews_by_brand_optimized(db, brand_name: str, page: int = 1, per_page: int = 20, 
+                                  rating_filter: Optional[int] = None, sentiment_filter: Optional[str] = None,
+                                  date_from: Optional[str] = None, date_to: Optional[str] = None,
+                                  category_filter: Optional[str] = None) -> Dict[str, Any]:
+    """Optimized query that uses database indexes and filtering, now with robust category filtering"""
+    query = db.query(Review).filter(Review.brand_name == brand_name)
+    
+    # Apply filters at database level
+    if rating_filter is not None:
+        query = query.filter(Review.rating == rating_filter)
+    if sentiment_filter:
+        query = query.filter(Review.sentiment_category == sentiment_filter)
+    if date_from:
+        query = query.filter(Review.date >= date_from)
+    if date_to:
+        query = query.filter(Review.date <= date_to)
+    # Do not filter by category at the DB level if using SQLite (JSON string)
+    # We'll filter in Python after fetching
+    
+    # Get total count for pagination (before category filter)
+    total_count = query.count()
+    
+    # Apply pagination and ordering
+    query = query.order_by(desc(Review.date), desc(Review.id))
+    query = query.offset((page - 1) * per_page).limit(per_page)
+    
+    reviews = query.all()
+    reviews_dicts = [r.__dict__ for r in reviews]
+    
+    # Robust category filtering in Python (for SQLite/JSON string)
+    if category_filter and category_filter.lower() != 'all':
+        def normalize(s):
+            return s.strip().lower() if isinstance(s, str) else s
+        filtered_reviews = []
+        for r in reviews_dicts:
+            try:
+                cats = r.get('categories')
+                if cats:
+                    import json
+                    cat_list = json.loads(cats) if isinstance(cats, str) else cats
+                    if isinstance(cat_list, list) and any(normalize(category_filter) == normalize(cat) for cat in cat_list):
+                        filtered_reviews.append(r)
+            except Exception:
+                continue
+        reviews_dicts = filtered_reviews
+        # Update total_count to reflect filtered count
+        total_count = len(reviews_dicts)
+    return {
+        'reviews': reviews_dicts,
+        'total': total_count,
+        'page': page,
+        'per_page': per_page
+    }
+
+# OPTIMIZED: Get brand analytics using database aggregation
+def get_brand_analytics_optimized(db, brand_name: str) -> Dict[str, Any]:
+    """Optimized analytics query using database aggregation"""
+    
+    # Get total reviews count
+    total_reviews = db.query(func.count(Review.id)).filter(Review.brand_name == brand_name).scalar()
+    
+    if total_reviews == 0:
+        return {
+            'brand': brand_name,
+            'total_reviews': 0,
+            'average_rating': 0,
+            'sentiment_breakdown': {'positive': 0, 'negative': 0, 'neutral': 0, 'total_analyzed': 0},
+            'average_sentiment_score': 0,
+            'monthly_trends': [],
+            'top_keywords': [],
+            'last_updated': None,
+            'sizing_fit_mentions': 0
+        }
+    
+    # Get average rating using database aggregation
+    avg_rating_result = db.query(func.avg(Review.rating)).filter(
+        Review.brand_name == brand_name,
+        Review.rating.isnot(None)
+    ).scalar()
+    avg_rating = round(float(avg_rating_result), 1) if avg_rating_result else 0
+    
+    # Get sentiment breakdown using database aggregation
+    sentiment_counts = db.query(
+        Review.sentiment_category,
+        func.count(Review.id)
+    ).filter(
+        Review.brand_name == brand_name,
+        Review.sentiment_category.isnot(None)
+    ).group_by(Review.sentiment_category).all()
+    
+    sentiment_breakdown = {'positive': 0, 'negative': 0, 'neutral': 0}
+    total_analyzed = 0
+    for category, count in sentiment_counts:
+        sentiment_breakdown[category] = count
+        total_analyzed += count
+    
+    # Get average sentiment score
+    avg_sentiment_result = db.query(func.avg(Review.sentiment_score)).filter(
+        Review.brand_name == brand_name,
+        Review.sentiment_score.isnot(None)
+    ).scalar()
+    avg_sentiment = round(float(avg_sentiment_result), 3) if avg_sentiment_result else 0
+    
+    # Get last updated date
+    last_updated_result = db.query(func.max(Review.date)).filter(
+        Review.brand_name == brand_name
+    ).scalar()
+    last_updated = last_updated_result if last_updated_result else None
+    
+    return {
+        'brand': brand_name,
+        'total_reviews': total_reviews,
+        'average_rating': avg_rating,
+        'sentiment_breakdown': sentiment_breakdown,
+        'average_sentiment_score': avg_sentiment,
+        'last_updated': last_updated,
+        'total_analyzed': total_analyzed
+    }
+
+# OPTIMIZED: Get brands with review counts using database aggregation
+def get_brands_with_counts_optimized(db) -> List[Dict[str, Any]]:
+    """Optimized query to get brands with their review counts"""
+    # Use database aggregation to get brand counts
+    brand_counts = db.query(
+        Review.brand_name,
+        func.count(Review.id).label('review_count')
+    ).group_by(Review.brand_name).all()
+    
+    result = []
+    for brand_name, review_count in brand_counts:
+        result.append({
+            "brand": brand_name,
+            "review_count": review_count
+        })
+    
+    return result
+
+# Legacy functions for backward compatibility
 def get_reviews_by_brand(db, brand_name: str) -> List[Dict[str, Any]]:
     objs = db.query(Review).filter(Review.brand_name == brand_name).order_by(Review.id.desc()).all()
     return [o.__dict__ for o in objs]
@@ -113,13 +270,13 @@ def get_all_reviews(db) -> List[Dict[str, Any]]:
     return [o.__dict__ for o in objs]
 
 def get_brands(db) -> List[str]:
-    objs = db.query(BrandSourceUrl.brand_id).distinct().order_by(BrandSourceUrl.brand_id).all()
+    objs = db.query(BrandSourceUrl.brand_name).distinct().order_by(BrandSourceUrl.brand_name).all()
     return [o[0] for o in objs]
 
 def delete_brand_and_reviews(brand_id):
     with get_db_session() as db:
         db.query(Review).filter(Review.brand_name.ilike(f'%{brand_id}%')).delete(synchronize_session=False)
-        db.query(BrandSourceUrl).filter(BrandSourceUrl.brand_id.ilike(f'%{brand_id}%')).delete(synchronize_session=False)
+        db.query(BrandSourceUrl).filter(BrandSourceUrl.brand_name.ilike(f'%{brand_id}%')).delete(synchronize_session=False)
         db.commit()
 
 def get_brand_keywords(db, brand_id: str) -> dict:

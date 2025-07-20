@@ -150,15 +150,14 @@ export function CreateBrandModal({ isOpen, onClose, onCreateBrand }: CreateBrand
       const res = await apiService.createBrand({ trustpilot_url: formData.trustpilotUrl })
       // Use backend's display_name, canon_id, logo_url
       const newBrand = {
-        id: res.canon_id || '',
-        name: res.brand || res.display_name || '',
+        brand: res.brand || '', // Use backend's 'brand' field
         logo: res.logo_url || "/placeholder-logo.png",
-        reviewCount: 0, // Always 0 at creation
+        reviewCount: 0,
         sizingFitReviews: 0,
         avgRating: 0,
         sentiment: "neutral",
         lastUpdated: new Date().toISOString().split("T")[0],
-      }
+      };
       onCreateBrand(newBrand)
       handleClose()
     } catch (e: any) {
