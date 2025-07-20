@@ -2,16 +2,16 @@
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
-import { Badge } from "../components/ui/badge"
-import { Button } from "../components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Building2, TrendingUp, Star, Plus, Moon, Sun, Trash2, MoreHorizontal, Settings, Loader2, X } from "lucide-react"
-import { CreateBrandModal } from "../components/create-brand-modal"
+import { CreateBrandModal } from "@/components/create-brand-modal"
 import { Star as StarIcon, Pin } from "lucide-react"
-import { apiService } from "../lib/api-service"
-import mockBrands from '../lib/mock-brands.json';
-import { BrandLogo } from "../components/brand-logo";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../components/ui/dropdown-menu"
+import { apiService } from "@/lib/api-service"
+import mockBrands from '@/lib/mock-brands.json';
+import { BrandLogo } from "@/components/brand-logo";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import React from "react";
 
 // Import the Sizing & Fit keywords from the detail page or redefine them here

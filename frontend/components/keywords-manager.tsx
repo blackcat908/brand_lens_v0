@@ -12,7 +12,7 @@ import { Separator } from "./ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { Plus, X, Edit2, Save, RotateCcw, ChevronDown, ChevronUp } from "lucide-react"
-import { apiService } from '../lib/api-service';
+import { apiService } from "@/lib/api-service";
 
 interface KeywordCategory {
   name: string

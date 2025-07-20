@@ -12,7 +12,7 @@ import { Badge } from "./ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Separator } from "./ui/separator"
 import { Building2, Globe, Tags, Plus, X, CheckCircle, AlertCircle, RotateCcw } from "lucide-react"
-import { apiService } from '../lib/api-service'
+import { apiService } from "@/lib/api-service"
 
 interface CreateBrandModalProps {
   isOpen: boolean
