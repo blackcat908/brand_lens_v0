@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, Column, Integer, String, Float, Text, UniqueConstraint, JSON
+from sqlalchemy import create_engine, Column, Integer, String, Float, Text, UniqueConstraint, JSON, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.exc import IntegrityError
@@ -7,6 +7,8 @@ from contextlib import contextmanager
 from typing import Optional, List, Dict, Any
 import json
 from config import DATABASE_CONFIG
+import logging
+logger = logging.getLogger(__name__)
 
 Base = declarative_base()
 engine = create_engine(DATABASE_CONFIG['url'], echo=DATABASE_CONFIG.get('echo', False))
@@ -30,9 +32,9 @@ class Review(Base):
 
 class BrandSourceUrl(Base):
     __tablename__ = 'brand_source_urls'
-    brand_id = Column(String(100), primary_key=True)
+    brand_name = Column(String(255), primary_key=True)  # Use raw brand name as PK
     source_url = Column(String(500), nullable=False)
-    brand_display_name = Column(String(255))
+    # No need for brand_display_name, use brand_name everywhere
 
 class BrandKeyword(Base):
     __tablename__ = 'brand_keywords'
@@ -65,17 +67,21 @@ def get_db_session():
 def init_db():
     Base.metadata.create_all(bind=engine)
 
-def get_brand_source_url(db, brand_id: str) -> Optional[Dict[str, Any]]:
-    obj = db.query(BrandSourceUrl).filter(BrandSourceUrl.brand_id == brand_id.strip()).first()
-    return obj.__dict__ if obj else None
+def get_brand_source_url(db, brand_name: str) -> Optional[Dict[str, Any]]:
+    obj = db.query(BrandSourceUrl).filter(BrandSourceUrl.brand_name == brand_name.strip()).first()
+    if obj:
+        return {
+            'brand_name': obj.brand_name,
+            'source_url': obj.source_url
+        }
+    return None
 
-def set_brand_source_url(db, brand_id: str, source_url: str, brand_display_name: str = None) -> Dict[str, Any]:
-    obj = db.query(BrandSourceUrl).filter(BrandSourceUrl.brand_id == brand_id).first()
+def set_brand_source_url(db, brand_name: str, source_url: str) -> Dict[str, Any]:
+    obj = db.query(BrandSourceUrl).filter(BrandSourceUrl.brand_name == brand_name).first()
     if obj:
         obj.source_url = source_url
-        obj.brand_display_name = brand_display_name
     else:
-        obj = BrandSourceUrl(brand_id=brand_id, source_url=source_url, brand_display_name=brand_display_name)
+        obj = BrandSourceUrl(brand_name=brand_name, source_url=source_url)
         db.add(obj)
     db.commit()
     return obj.__dict__
@@ -112,14 +118,28 @@ def get_all_reviews(db) -> List[Dict[str, Any]]:
     return [o.__dict__ for o in objs]
 
 def get_brands(db) -> List[str]:
-    objs = db.query(BrandSourceUrl.brand_id).distinct().order_by(BrandSourceUrl.brand_id).all()
+    objs = db.query(BrandSourceUrl.brand_name).distinct().order_by(BrandSourceUrl.brand_name).all()
     return [o[0] for o in objs]
 
-def delete_brand_and_reviews(brand_id):
+def delete_brand_and_reviews(brand_name):
     with get_db_session() as db:
-        db.query(Review).filter(Review.brand_name.ilike(f'%{brand_id}%')).delete(synchronize_session=False)
-        db.query(BrandSourceUrl).filter(BrandSourceUrl.brand_id.ilike(f'%{brand_id}%')).delete(synchronize_session=False)
+        review_count = db.query(Review).filter(Review.brand_name == brand_name).count()
+        logger.info(f"[DELETE] Found {review_count} reviews for brand: '{brand_name}'")
+        result = db.execute(text("DELETE FROM reviews WHERE brand_name = :brand_name"), {"brand_name": brand_name})
+        logger.info(f"[DELETE] Removed {result.rowcount} reviews for brand: '{brand_name}'")
+        logger.info(f"[DELETE] Deleting brand source url for brand: '{brand_name}'")
+        db.query(BrandSourceUrl).filter(BrandSourceUrl.brand_name == brand_name).delete(synchronize_session=False)
+        logger.info(f"[DELETE] Deleting brand keywords for brand: '{brand_name}'")
+        deleted_keywords = db.query(BrandKeyword).filter(BrandKeyword.brand_id == brand_name).delete(synchronize_session=False)
+        logger.info(f"[DELETE] Deleted {deleted_keywords} brand keywords for brand: '{brand_name}'")
+        try:
+            logger.info(f"[DELETE] Deleting analytics for brand: '{brand_name}'")
+            analytics_result = db.execute(text("DELETE FROM analytics WHERE brand_name = :brand_name"), {"brand_name": brand_name})
+            logger.info(f"[DELETE] Deleted analytics rows: {analytics_result.rowcount}")
+        except Exception as e:
+            logger.info(f"[DELETE] Analytics table not found or error deleting analytics: {e}")
         db.commit()
+        logger.info(f"[DELETE] All data for brand '{brand_name}' deleted.")
 
 def get_brand_keywords(db, brand_id: str) -> dict:
     objs = db.query(BrandKeyword).filter(BrandKeyword.brand_id == brand_id).all()

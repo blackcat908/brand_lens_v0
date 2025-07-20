@@ -62,8 +62,8 @@ def scrape_all_brands():
             
             try:
                 scraper = TrustpilotScraper(headless=True)
-                # PILOT SCRAPE: Only scrape 2 pages (about 40 reviews) per brand for testing
-                scraper.scrape_brand_reviews(brand, max_pages=2)  # <-- PILOT SCRAPE: change to None for full scrape
+                # SCRAPE: Scrape 50 pages per brand for comprehensive data
+                scraper.scrape_brand_reviews(brand, max_pages=50)  # <-- SCRAPE: 50 pages for comprehensive data
                 success_count += 1
                 logger.info(f"Successfully scraped {brand}")
                 

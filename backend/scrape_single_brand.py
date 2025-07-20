@@ -22,7 +22,7 @@ def scrape_single_brand(brand_name: str, dry_run=False):
         # Create scraper instance
         scraper = RobustTrustpilotScraper(headless=True)
         # Scrape only 1 page
-        reviews = scraper.scrape_brand_reviews(brand_name, max_pages=1, dry_run=dry_run)
+        reviews = scraper.scrape_brand_reviews(brand_name, max_pages=50, dry_run=dry_run)
         logger.info(f"Completed scraping for brand: {brand_name}")
         if isinstance(reviews, int):
             print(f"SCRAPED_REVIEWS: {reviews}")

@@ -11,11 +11,17 @@ import json
 import requests
 from PIL import Image
 from io import BytesIO
+from nltk.stem import WordNetLemmatizer
+from nltk.tokenize import word_tokenize
+import nltk
+import logging
+logger = logging.getLogger(__name__)
 
 # Import our new database modules
 from database import get_db_session, init_db, Review
 from sentiment_analyzer import SentimentAnalyzer
-from utils import canonical_brand_id
+from sqlalchemy import text
+# REMOVED: from utils import canonical_brand_id
 
 # Add this helper function at the top-level (after imports, before TrustpilotScraper)
 def parse_date_flexibly(date_str):
@@ -42,6 +48,16 @@ class TrustpilotScraper:
         self.browser: Browser | None = None
         self.page: Page | None = None
         self.sentiment_analyzer = SentimentAnalyzer()
+        # Initialize lemmatizer once for the entire scraper instance
+        try:
+            nltk.data.find('corpora/wordnet')
+        except LookupError:
+            nltk.download('wordnet')
+        try:
+            nltk.data.find('tokenizers/punkt')
+        except LookupError:
+            nltk.download('punkt')
+        self.lemmatizer = WordNetLemmatizer()
         
     def start_browser(self):
         """Initialize the browser"""
@@ -146,38 +162,26 @@ class TrustpilotScraper:
             return []
 
     def get_trustpilot_url(self, brand_name, page_num):
-        # Normalize brand name for mapping
-        normalized = brand_name.lower().replace('_', '').replace(' ', '').replace('www.', '')
-        if 'wanderdoll' in normalized:
-            normalized = 'wander-doll'
-        brand_urls = {
-            'wander-doll': f"https://uk.trustpilot.com/review/www.wander-doll.com?page={page_num}",
-            'oddmuse': f"https://uk.trustpilot.com/review/oddmuse.co.uk?page={page_num}",
-            'because-of-alice': f"https://uk.trustpilot.com/review/www.becauseofalice.com?page={page_num}",
-            'bbxbrand': f"https://uk.trustpilot.com/review/bbxbrand.com?page={page_num}",
-            'murci': f"https://uk.trustpilot.com/review/murci.co.uk?page={page_num}"
-        }
-        if normalized in brand_urls:
-            return [brand_urls[normalized]]
-        # Fallbacks
-        fallback_urls = [
-            f"https://uk.trustpilot.com/review/www.{normalized}.com?page={page_num}",
-            f"https://uk.trustpilot.com/review/{normalized}.co.uk?page={page_num}"
-        ]
-        return fallback_urls
+        # Only use the source URL from the DB, do not guess or canonicalize.
+        from database import get_brand_source_url, get_db_session
+        with get_db_session() as db:
+            brand_source = get_brand_source_url(db, brand_name)
+            if brand_source and 'source_url' in brand_source:
+                return [f"{brand_source['source_url']}?page={page_num}"]
+            else:
+                print(f"[ERROR] No Trustpilot URL found for brand '{brand_name}'. Aborting.")
+                return []
 
     def get_trustpilot_source_url(self, brand_name):
-        brand_urls = {
-            'wander-doll': "https://uk.trustpilot.com/review/www.wander-doll.com",
-            'oddmuse': "https://uk.trustpilot.com/review/oddmuse.co.uk",
-            'because-of-alice': "https://uk.trustpilot.com/review/www.becauseofalice.com",
-            'bbxbrand': "https://uk.trustpilot.com/review/bbxbrand.com",
-            'murci': "https://uk.trustpilot.com/review/murci.co.uk"
-        }
-        if brand_name.lower() in brand_urls:
-            return brand_urls[brand_name.lower()]
-        # Fallbacks
-        return f"https://uk.trustpilot.com/review/www.{brand_name}.com"
+        # Only use the source URL from the DB, do not guess or canonicalize.
+        from database import get_brand_source_url, get_db_session
+        with get_db_session() as db:
+            brand_source = get_brand_source_url(db, brand_name)
+            if brand_source and 'source_url' in brand_source:
+                return brand_source['source_url']
+            else:
+                print(f"[ERROR] No Trustpilot URL found for brand '{brand_name}'. Aborting.")
+                return None
 
     def get_fallback_urls(self, user_url):
         # Generate smart fallback variations based on the user_url
@@ -246,45 +250,78 @@ class TrustpilotScraper:
                 browser.close()
                 return None
 
-    def scrape_brand_reviews(self, brand_name, max_pages=None, start_page=1):
+    def scrape_brand_reviews(self, brand_name, max_pages=50, start_page=1, cancel_event=None):
         """Scrapes reviews for a brand, using ONLY the user-provided Trustpilot URL from the DB. No guessing."""
-        from database import get_brand_source_url, get_db_session
-        canon_id = canonical_brand_id(brand_name)
-        print(f"[DEBUG] brand_name passed to scraper: '{brand_name}', canonical: '{canon_id}'")
+        from database import get_brand_source_url, get_db_session, Review, get_brand_keywords, get_global_keywords
+        import json
+        print(f"[DEBUG] brand_name passed to scraper: '{brand_name}'")
+        # NLTK resources already initialized in __init__
+        
+        # Get database session and fetch initial data
         with get_db_session() as db:
-            brand_source = get_brand_source_url(db, canon_id)
+            brand_source = get_brand_source_url(db, brand_name)
             print(f"[DEBUG] brand_source_url lookup result: {brand_source}")
-            if brand_source and 'source_url' in brand_source:
+            if brand_source and brand_source.get('source_url'):
                 user_url = brand_source['source_url']
             else:
                 print(f"[ERROR] No Trustpilot URL found for brand '{brand_name}'. Aborting.")
                 return 0
-            cursor = db.cursor()
-            cursor.execute("SELECT review_link FROM reviews WHERE brand_name = ?", (canon_id,))
-            existing_links = {row[0] for row in cursor.fetchall() if row[0]}
-        print(f"Found {len(existing_links)} existing review links for '{brand_name}' in the database.")
+            
+            # Fetch all brand and global keywords for category tagging
+            brand_keywords = get_brand_keywords(db, brand_name)
+            global_keywords = get_global_keywords(db)
+            # Parse keywords from JSON strings to lists
+            for category, keywords_json in global_keywords.items():
+                if isinstance(keywords_json, str):
+                    global_keywords[category] = json.loads(keywords_json)
+            for category, keywords_json in brand_keywords.items():
+                if isinstance(keywords_json, str):
+                    brand_keywords[category] = json.loads(keywords_json)
+            
+            # Debug: Check if keywords are loaded
+            print(f"[DEBUG] Global keywords loaded: {len(global_keywords)} categories")
+            for cat, keywords in global_keywords.items():
+                print(f"[DEBUG] Category '{cat}': {len(keywords)} keywords")
+            print(f"[DEBUG] Brand keywords loaded: {len(brand_keywords)} categories")
+            
+
+        
         print("Starting browser...")
         self.start_browser()
         print("Browser started.")
-        all_new_reviews = []
+        
+        # Get initial count of existing reviews
+        with get_db_session() as db:
+            existing_reviews_count = db.query(Review).filter(Review.brand_name == brand_name).count()
+            print(f"Found {existing_reviews_count} existing reviews in database for '{brand_name}'")
+        
+        total_new_reviews = 0
         page_num = start_page
         consecutive_empty_pages = 0
         max_consecutive_empty = 3  # Stop after 3 consecutive empty pages
+        
         try:
             print(f"Starting to scrape {'all pages' if max_pages is None else f'pages {start_page} to {max_pages}'}...")
             consecutive_empty_pages = 0
+            
             while True:
+                if cancel_event is not None and cancel_event.is_set():
+                    print(f"[CANCEL] Scraper stopped by cancel button for brand: {brand_name}")
+                    break
                 if max_pages is not None and page_num > max_pages:
                     print(f"Reached max_pages limit ({max_pages}). Stopping.")
                     break
-                print(f"\n--- Scraping Page {page_num} ---")
+                
+                print(f"\n=== PROCESSING PAGE {page_num} ===")
                 page_url = f"{user_url.split('?')[0]}?page={page_num}"
-                print(f"Trying URL: {page_url}")
+                print(f"Scraping URL: {page_url}")
+                
                 try:
                     page_reviews = self.scrape_page(page_url)
                 except Exception as e:
                     print(f"Error accessing {page_url}: {e}")
                     page_reviews = []
+                
                 if not page_reviews:
                     consecutive_empty_pages += 1
                     print(f"No reviews found on page {page_num}. Consecutive empty pages: {consecutive_empty_pages}")
@@ -294,17 +331,143 @@ class TrustpilotScraper:
                     page_num += 1
                     time.sleep(random.uniform(3, 7))
                     continue
+                
                 consecutive_empty_pages = 0
+                print(f"Found {len(page_reviews)} reviews on page {page_num}")
+                
+                # Get existing review links for this page - use separate session to avoid locks
+                existing_links = set()
+                try:
+                    with get_db_session() as db:
+                        result = db.execute(text("SELECT review_link FROM reviews WHERE brand_name = :brand_name"), {"brand_name": brand_name})
+                        existing_links = {row[0] for row in result.fetchall() if row[0]}
+                except Exception as e:
+                    print(f"Error getting existing links: {e}")
+                    continue
+                
                 newly_found_on_page = [
                     r for r in page_reviews if r['review_link'] not in existing_links
                 ]
+                
+                print(f"Found {len(newly_found_on_page)} new reviews on page {page_num}")
+                
                 if newly_found_on_page:
-                    all_new_reviews.extend(newly_found_on_page)
-                    for review in newly_found_on_page:
-                        existing_links.add(review['review_link'])
-                    print(f"Found {len(newly_found_on_page)} new reviews on page {page_num}")
+                    # Process and insert reviews in smaller batches to avoid long locks
+                    page_new_reviews = 0
+                    batch_size = 5  # Process 5 reviews at a time
+                    
+                    for i in range(0, len(newly_found_on_page), batch_size):
+                        batch = newly_found_on_page[i:i + batch_size]
+                        batch_new_reviews = 0
+                        
+                        try:
+                            with get_db_session() as db:
+                                for review in batch:
+                                    try:
+                                        review_text = review.get('review', '')
+                                        
+                                        # Sentiment analysis
+                                        sentiment = self.sentiment_analyzer.process_review(review_text)
+                                        review['sentiment_score'] = sentiment['sentiment_score']
+                                        review['sentiment_category'] = sentiment['sentiment_category']
+                                        
+                                        matched_categories = set()
+                                        matched_keywords = set()
+                                        
+                                        # Clean and lemmatize review text
+                                        review_text_clean = review_text.lower().strip()
+                                        review_tokens = word_tokenize(review_text_clean)
+                                        review_lemmas = [self.lemmatizer.lemmatize(token) for token in review_tokens]
+                                        review_lemmas_set = set(review_lemmas)
+                                        
+                                        def keyword_in_text(keyword, review_text, review_lemmas_set):
+                                            """
+                                            Check if a keyword is present in the review text.
+                                            Handles both single words and phrases with proper lemmatization.
+                                            """
+                                            keyword_clean = keyword.lower().strip()
+                                            
+                                            # For single words: check if lemmatized form exists in review lemmas
+                                            if ' ' not in keyword_clean:
+                                                keyword_lemma = self.lemmatizer.lemmatize(keyword_clean)
+                                                match = keyword_lemma in review_lemmas_set
+                                                return match
+                                            
+                                            # For phrases: check if all words in phrase exist in review (lemmatized)
+                                            phrase_tokens = word_tokenize(keyword_clean)
+                                            phrase_lemmas = [self.lemmatizer.lemmatize(token) for token in phrase_tokens]
+                                            
+                                            # Check if all lemmatized words in the phrase exist in the review
+                                            all_words_present = all(lemma in review_lemmas_set for lemma in phrase_lemmas)
+                                            
+                                            # Additional check: ensure the phrase appears in the original text (case-insensitive)
+                                            phrase_in_text = keyword_clean in review_text
+                                            
+                                            match = all_words_present and phrase_in_text
+                                            return match
+                                        
+                                        # Brand-specific categories
+                                        for category, keywords in brand_keywords.items():
+                                            for kw in keywords:
+                                                if keyword_in_text(kw, review_text_clean, review_lemmas_set):
+                                                    matched_categories.add(category)
+                                                    matched_keywords.add(kw)
+                                        
+                                        # Global categories
+                                        for category, keywords in global_keywords.items():
+                                            for kw in keywords:
+                                                if keyword_in_text(kw, review_text_clean, review_lemmas_set):
+                                                    matched_categories.add(category)
+                                                    matched_keywords.add(kw)
+                                        
+                                        # Store category names and matched keywords
+                                        review['categories'] = json.dumps(sorted(matched_categories))
+                                        review['matched_keywords'] = json.dumps(sorted(matched_keywords))
+                                        
+                                        # Debug: Log if any keywords were matched
+                                        if matched_categories or matched_keywords:
+                                            print(f"[DEBUG] Matched categories: {matched_categories}, keywords: {matched_keywords}")
+                                        
+
+                                        review['brand_name'] = brand_name
+                                        
+                                        # Create and insert the review immediately
+                                        new_review = Review(
+                                            brand_name=review.get('brand_name'),
+                                            customer_name=review.get('customer_name'),
+                                            review=review.get('review'),
+                                            rating=review.get('rating'),
+                                            date=review.get('date'),
+                                            review_link=review.get('review_link'),
+                                            sentiment_score=review.get('sentiment_score'),
+                                            sentiment_category=review.get('sentiment_category'),
+                                            categories=review.get('categories', ''),
+                                            matched_keywords=review.get('matched_keywords', '')
+                                        )
+                                        db.add(new_review)
+                                        batch_new_reviews += 1
+                                        
+                                    except Exception as e:
+                                        print(f"[ERROR] Failed to process review: {e}")
+                                        continue
+                                
+                                # Commit batch immediately to release lock
+                                db.commit()
+                                print(f"✓ Batch {i//batch_size + 1}: Inserted {batch_new_reviews} reviews")
+                                page_new_reviews += batch_new_reviews
+                                
+                        except Exception as e:
+                            print(f"[ERROR] Failed to process batch: {e}")
+                            continue
+                        
+                        # Small delay between batches to reduce database contention
+                        time.sleep(0.1)
+                    
+                    print(f"✓ Page {page_num}: Inserted {page_new_reviews} new reviews to database")
+                    total_new_reviews += page_new_reviews
                 else:
-                    print(f"No new reviews found on page {page_num}")
+                    print(f"✓ Page {page_num}: No new reviews found")
+                
                 if len(newly_found_on_page) < len(page_reviews):
                     print("Encountered previously saved reviews. Likely reached the end of new content.")
                     if len(newly_found_on_page) == 0:
@@ -312,59 +475,20 @@ class TrustpilotScraper:
                         if consecutive_empty_pages >= 2:
                             print("Stopping: No new reviews found for 2 consecutive pages.")
                     break
-                print(f"Page {page_num} scraped successfully. Continuing...")
+                
+                print(f"✓ Page {page_num} completed. Total new reviews so far: {total_new_reviews}")
                 page_num += 1
                 time.sleep(random.uniform(3, 7))
+            
             print("Finished scraping loop.")
         finally:
             try:
                 self.close_browser()
             except Exception as e:
                 print("Error closing browser:", e)
-        if all_new_reviews:
-            with get_db_session() as db:
-                cursor = db.cursor()
-                for review_data in all_new_reviews:
-                    try:
-                        analysis = self.sentiment_analyzer.process_review(review_data['review'])
-                        if analysis['sentiment_score'] is None:
-                            print(f"[ERROR] Sentiment analysis returned None for review: {review_data['review'][:100]}")
-                            continue
-                        valid_categories = {'positive', 'negative', 'neutral'}
-                        if analysis['sentiment_category'] not in valid_categories:
-                            print(f"[ERROR] Invalid sentiment_category '{analysis['sentiment_category']}' for review: {review_data['review'][:100]}")
-                            continue
-                        date_val = review_data.get('date')
-                        if not date_val or not isinstance(date_val, str) or len(date_val) < 10:
-                            print(f"[ERROR] Invalid or missing date for review: {review_data['review'][:100]}")
-                            continue
-                        import re
-                        if not re.match(r"^\d{4}-\d{2}-\d{2}$", date_val[:10]):
-                            print(f"[ERROR] Date not in YYYY-MM-DD format for review: {review_data['review'][:100]}, date: {date_val}")
-                            continue
-                    except Exception as e:
-                        print(f"[ERROR] Sentiment analysis failed for review: {review_data['review'][:100]} | Error: {e}")
-                        continue
-                    cursor.execute(
-                        "INSERT INTO reviews (brand_name, customer_name, review, rating, date, review_link, sentiment_score, sentiment_category, categories) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                        (
-                            canon_id,
-                            review_data['customer_name'],
-                            review_data['review'],
-                            review_data['rating'],
-                            review_data['date'],
-                            review_data['review_link'],
-                            analysis['sentiment_score'],
-                            analysis['sentiment_category'],
-                            json.dumps(analysis['keywords'])
-                        )
-                    )
-                db.commit()
-            print(f"Successfully saved {len(all_new_reviews)} new reviews for '{brand_name}' to the database.")
-            return len(all_new_reviews)
-        else:
-            print("No new reviews found to save.")
-            return 0
+        
+        print(f"🎉 Scraping complete! Total new reviews saved: {total_new_reviews}")
+        return total_new_reviews
 
 def fetch_trustpilot_logo(trustpilot_url, brand_id, display_name, output_dir="frontend/public/logos"):
     print("[LOGO] fetch_trustpilot_logo CALLED")
@@ -394,14 +518,12 @@ def fetch_trustpilot_logo(trustpilot_url, brand_id, display_name, output_dir="fr
             ext = logo_url.split('.')[-1].split('?')[0].lower()
             print(f"[LOGO] Logo file type: {ext}")
             os.makedirs(output_dir, exist_ok=True)
-            dash_display_name = display_name.lower().replace(' ', '-')
-            out_path_id = os.path.join(output_dir, f"{brand_id}-logo.{ext}")
-            out_path_display = os.path.join(output_dir, f"{dash_display_name}-logo.{ext}")
-            with open(out_path_id, "wb") as f:
+            # Only save to one location, using the true brand name
+            safe_brand_name = display_name.replace('/', '_').replace('\\', '_')
+            out_path = os.path.join(output_dir, f"{safe_brand_name}-logo.{ext}")
+            with open(out_path, "wb") as f:
                 f.write(resp.content)
-            with open(out_path_display, "wb") as f:
-                f.write(resp.content)
-            print(f"[LOGO] Saved logo to {out_path_id} and {out_path_display}")
+            print(f"[LOGO] Saved logo to {out_path}")
             browser.close()
             return True
     except Exception as e:

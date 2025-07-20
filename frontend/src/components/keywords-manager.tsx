@@ -25,14 +25,14 @@ const defaultKeywordCategories: KeywordCategory[] = [
   {
     name: "Sizing & Fit Mentions",
     keywords: [
-      "size", "fit", "true to size", "not true to size", "run small", "run large", "size up", "size down", "too small", "too big", "too tight", "too loose", "too short", "too long", "too narrow", "too wide", "large", "small", "tight", "loose", "short", "long", "narrow", "wide", "comfortable", "comfort", "uncomfortable", "perfect fit", "poor fit", "didn’t fit", "doesn’t fit", "wouldn’t fit", "wouldn’t fit me", "didn’t fit me", "wrong size", "ordered wrong size", "incorrect size", "right size", "correct size", "don’t know my size", "didn’t know which size", "idk which size", "what size", "which size", "what’s the size", "unsure about size", "unsure about fit", "body shape", "body type", "body fit", "body fitting", "snug", "baggy", "oversized", "undersized", "perfect length", "tight on arm", "tight on chest", "tight on waist", "tight on hip", "loose on arm", "loose on chest", "loose on waist", "loose on hip"
+      "size", "fit", "true to size", "not true to size", "run small", "run large", "size up", "size down", "too small", "too big", "too tight", "too loose", "too short", "too long", "too narrow", "too wide", "large", "small", "tight", "loose", "short", "long", "narrow", "wide", "comfortable", "comfort", "uncomfortable", "perfect fit", "poor fit", "didn't fit", "doesn't fit", "wouldn't fit", "wouldn't fit me", "didn't fit me", "wrong size", "ordered wrong size", "incorrect size", "right size", "correct size", "don't know my size", "didn't know which size", "idk which size", "what size", "which size", "what's the size", "unsure about size", "unsure about fit", "body shape", "body type", "body fit", "body fitting", "snug", "baggy", "oversized", "undersized", "perfect length", "tight on arm", "tight on chest", "tight on waist", "tight on hip", "loose on arm", "loose on chest", "loose on waist", "loose on hip"
     ],
     isOpen: false,
   },
   {
     name: "Model Reference",
     keywords: [
-      "model", "what size is the model wearing", "what size model wear", "model size", "model’s size", "model is wearing size", "model wear size", "how tall is the model", "model height", "model’s height", "model is [height]", "model’s measurement", "model measurement", "model’s body type", "model’s fit", "model reference", "as seen on model", "fit like model", "model’s fit", "model’s look"
+      "model", "what size is the model wearing", "what size model wear", "model size", "model's size", "model is wearing size", "model wear size", "how tall is the model", "model height", "model's height", "model is [height]", "model's measurement", "model measurement", "model's body type", "model's fit", "model reference", "as seen on model", "fit like model", "model's fit", "model's look"
     ],
     isOpen: false,
   },
@@ -47,6 +47,13 @@ const defaultKeywordCategories: KeywordCategory[] = [
     name: "Returns & Exchanges",
     keywords: [
       "return", "exchange", "refund", "money back", "store credit", "credit note", "send back", "wrong item", "incorrect item", "wrong order", "incorrect order", "wrong product", "incorrect product", "replacement", "process return", "process exchange", "process refund", "easy return", "easy exchange", "easy refund", "hassle-free return", "hassle-free exchange", "hassle-free refund", "difficult return", "difficult exchange", "difficult refund"
+    ],
+    isOpen: false,
+  },
+  {
+    name: "Customer Service & Shipping",
+    keywords: [
+      "customer service", "support", "help", "assistant", "representative", "agent", "staff", "team", "service", "assistance", "helpful", "unhelpful", "rude", "polite", "friendly", "professional", "knowledgeable", "ignored", "responsive", "slow", "quick", "efficient", "inefficient", "resolved", "unresolved", "satisfied", "unsatisfied", "complaint", "inquiry", "question", "response", "reply", "contact", "call", "email", "chat", "live chat", "phone", "hotline", "helpline", "shipping", "delivery", "delivered", "arrived", "arrival", "shipped", "dispatch", "dispatched", "tracking", "track", "package", "parcel", "postage", "post", "courier", "carrier", "fast", "slow", "quick", "delayed", "late", "on time", "express", "standard", "free shipping", "shipping cost", "postage cost", "delivery fee", "tracking number", "order status", "in transit", "out for delivery", "received", "signature", "left at door", "neighbor", "mailbox", "post office", "collection", "pickup"
     ],
     isOpen: false,
   },

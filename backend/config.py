@@ -2,6 +2,8 @@
 Configuration file for Trustpilot Scraper
 """
 
+import os
+
 # Brand configurations
 BRANDS = [
     'wanderdoll',
@@ -13,7 +15,7 @@ BRANDS = [
 
 # Scraping settings
 SCRAPING_CONFIG = {
-    'max_pages_per_brand': 3,  # Limit pages for production
+    'max_pages_per_brand': 50,  # Limit pages for production
     'delay_between_brands': 10,  # Seconds to wait between brands
     'delay_between_pages': 5,   # Seconds to wait between pages
     'headless': True,           # Run browser in headless mode
@@ -21,10 +23,18 @@ SCRAPING_CONFIG = {
 }
 
 # Database settings
-DATABASE_CONFIG = {
-    'url': 'postgresql://trustpilot_reviews_55fi_user:PpcbpA3oDt2hrFurDSrPGkdzgzg2c2gQ@dpg-d1r5ok8dl3ps73f3oh70-a.oregon-postgres.render.com/trustpilot_reviews_55fi',
-    'echo': False,  # Set to True for SQL debugging
-}
+if os.environ.get('RENDER', '').lower() == 'true':
+    # On Render, use Postgres
+    DATABASE_CONFIG = {
+        'url': 'postgresql://trustpilot_reviews_55fi_user:PpcbpA3oDt2hrFurDSrPGkdzgzg2c2gQ@dpg-d1r5ok8dl3ps73f3oh70-a.oregon-postgres.render.com/trustpilot_reviews_55fi',
+        'echo': False,  # Set to True for SQL debugging
+    }
+else:
+    # Local dev: use SQLite
+    DATABASE_CONFIG = {
+        'url': 'sqlite:///migrations/reviews.db',
+        'echo': False,
+    }
 
 # Logging settings
 LOGGING_CONFIG = {

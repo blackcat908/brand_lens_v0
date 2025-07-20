@@ -1,7 +1,7 @@
 // lib/api-service.ts
 // API service to connect to Flask backend
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + '/api';
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000') + '/api';
 
 export interface Review {
   customer_name: string;
@@ -84,12 +84,18 @@ class ApiService {
       throw new Error(`Failed to fetch brands: ${response.statusText}`);
     }
     const data = await response.json();
-    // For each brand, fetch display_name from backend if available
+    // In getBrands and all other methods, use only 'brand_name' from the backend.
+    // Example:
+    // return data.brands.map((brand: any) => ({
+    //   ...brand,
+    //   brand_name: brand.brand_name,
+    //   logo: brand.logo_url || `/logos/${brand.brand_name}-logo.jpg`,
+    // }));
+    // Remove all mapping, normalization, and fallback logic for display_name, id, slug, canonical, etc.
     return data.brands.map((brand: any) => ({
       ...brand,
-      name: brand.display_name || brand.brand || brand.brand_name || brand.id,
-      id: brand.brand || brand.brand_name || brand.id,
-      logo: brand.logo_url || `/logos/${brand.brand || brand.brand_name || brand.id}-logo.jpg`,
+      brand_name: brand.brand_name,
+      logo: brand.logo_url || `/logos/${brand.brand_name}-logo.jpg`,
     }));
   }
 
@@ -103,6 +109,7 @@ class ApiService {
       sentiment?: string;
       dateFrom?: string;
       dateTo?: string;
+      category?: string;
     }
   ): Promise<ReviewsResponse> {
     const params = new URLSearchParams({
@@ -121,6 +128,9 @@ class ApiService {
     }
     if (filters?.dateTo) {
       params.append('date_to', filters.dateTo);
+    }
+    if (filters?.category) {
+      params.append('category', filters.category);
     }
 
     const response = await fetch(`${this.baseUrl}/brands/${normalizeBrandSlug(brand)}/reviews?${params}`);
@@ -186,6 +196,7 @@ class ApiService {
       sentiment?: string;
       dateFrom?: string;
       dateTo?: string;
+      category?: string;
     }
   ): Promise<ReviewsResponse> {
     const backendBrand = this.mapBrandId(brandId);

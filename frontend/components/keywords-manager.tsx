@@ -25,28 +25,35 @@ const defaultKeywordCategories: KeywordCategory[] = [
   {
     name: "Sizing & Fit Mentions",
     keywords: [
-      "size", "fit", "true to size", "not true to size", "run small", "run large", "size up", "size down", "too small", "too big", "too tight", "too loose", "too short", "too long", "too narrow", "too wide", "large", "small", "tight", "loose", "short", "long", "narrow", "wide", "comfortable", "comfort", "uncomfortable", "perfect fit", "poor fit", "didn’t fit", "doesn’t fit", "wouldn’t fit", "wouldn’t fit me", "didn’t fit me", "wrong size", "ordered wrong size", "incorrect size", "right size", "correct size", "don’t know my size", "didn’t know which size", "idk which size", "what size", "which size", "what’s the size", "unsure about size", "unsure about fit", "body shape", "body type", "body fit", "body fitting", "snug", "baggy", "oversized", "undersized", "perfect length", "tight on arm", "tight on chest", "tight on waist", "tight on hip", "loose on arm", "loose on chest", "loose on waist", "loose on hip"
+      "size", "fit", "true to size", "run small", "run large", "upsize", "downsize", "tight", "loose", "narrow", "wide", "comfortable", "uncomfortable", "snug", "baggy", "oversized", "undersized", "body shape", "wrong size", "perfect fit", "poor fit"
     ],
     isOpen: false,
   },
   {
     name: "Model Reference",
     keywords: [
-      "model", "what size is the model wearing", "what size model wear", "model size", "model’s size", "model is wearing size", "model wear size", "how tall is the model", "model height", "model’s height", "model is [height]", "model’s measurement", "model measurement", "model’s body type", "model’s fit", "model reference", "as seen on model", "fit like model", "model’s fit", "model’s look"
+      "model", "model size", "model wear", "model height", "model measurement", "model reference", "as seen on model"
     ],
     isOpen: false,
   },
   {
     name: "Length & Body Suitability",
     keywords: [
-      "length", "long", "short", "width", "wide", "narrow", "tall", "height", "fit my height", "fit my body", "fit my shape", "fit my frame", "fit my build", "fit my proportion", "suitable for", "suitability", "not suitable for", "not for my body", "not for my shape", "not for my height", "not for my build", "petite", "plus size", "curvy", "slim", "athletic", "athletic build", "athletic fit"
+      "length", "width", "height", "long", "short", "wide", "narrow", "tall", "petite", "plus size", "curvy", "slim", "athletic", "body", "frame", "build", "proportion", "suitability"
     ],
     isOpen: false,
   },
   {
     name: "Returns & Exchanges",
     keywords: [
-      "return", "exchange", "refund", "money back", "store credit", "credit note", "send back", "wrong item", "incorrect item", "wrong order", "incorrect order", "wrong product", "incorrect product", "replacement", "process return", "process exchange", "process refund", "easy return", "easy exchange", "easy refund", "hassle-free return", "hassle-free exchange", "hassle-free refund", "difficult return", "difficult exchange", "difficult refund"
+      "return", "exchange", "refund", "money back", "credit", "send back", "replacement", "process return", "easy return", "hassle-free return", "difficult return"
+    ],
+    isOpen: false,
+  },
+  {
+    name: "Customer Service & Shipping",
+    keywords: [
+      "customer service", "support", "help", "assistant", "representative", "agent", "staff", "team", "service", "assistance", "helpful", "unhelpful", "rude", "polite", "friendly", "professional", "knowledgeable", "ignored", "responsive", "slow", "quick", "efficient", "inefficient", "resolved", "unresolved", "satisfied", "unsatisfied", "complaint", "inquiry", "question", "response", "reply", "contact", "call", "email", "chat", "live chat", "phone", "hotline", "helpline", "shipping", "delivery", "delivered", "arrived", "arrival", "shipped", "dispatch", "dispatched", "tracking", "track", "package", "parcel", "postage", "post", "courier", "carrier", "fast", "slow", "quick", "delayed", "late", "on time", "express", "standard", "free shipping", "shipping cost", "postage cost", "delivery fee", "tracking number", "order status", "in transit", "out for delivery", "received", "signature", "left at door", "neighbor", "mailbox", "post office", "collection", "pickup"
     ],
     isOpen: false,
   },
@@ -178,6 +185,14 @@ export function KeywordsManager({ onKeywordsChange, hideTitle = false, hideDescr
         // Sort keywords in each category
         newCategories.forEach(cat => { cat.keywords = sortKeywords(cat.keywords) })
         setCategories(newCategories)
+        
+        // Save all categories to backend
+        newCategories.forEach(category => {
+          saveKeywords(category.name, category.keywords);
+        });
+        
+        // Refresh from backend to ensure consistency
+        fetchAndUpdateKeywords();
       }
       setIsEditing(false)
     } else {
@@ -190,10 +205,18 @@ export function KeywordsManager({ onKeywordsChange, hideTitle = false, hideDescr
     }
   }
 
-  const resetToDefaults = () => {
+  const resetToDefaults = async () => {
     setCategories(defaultKeywordCategories)
     setBulkKeywords("")
     setIsEditing(false)
+    
+    // Save default keywords to backend
+    defaultKeywordCategories.forEach(category => {
+      saveKeywords(category.name, category.keywords);
+    });
+    
+    // Refresh from backend to ensure consistency
+    await fetchAndUpdateKeywords();
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -381,9 +404,15 @@ Custom Category:
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
+                onClick={async () => {
+                  try {
                   console.log("Re-analyzing reviews with updated keywords...")
-                  alert("Reviews would be re-analyzed with updated keywords")
+                    await apiService.reprocessReviews()
+                    alert("Reviews have been re-analyzed with updated keywords!")
+                  } catch (error) {
+                    console.error("Failed to reprocess reviews:", error)
+                    alert("Failed to re-analyze reviews. Please try again.")
+                  }
                 }}
                 className="text-xs h-7 transition-transform duration-150 transform hover:scale-110 focus:scale-110"
               >

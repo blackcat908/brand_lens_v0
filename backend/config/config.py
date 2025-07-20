@@ -13,7 +13,7 @@ BRANDS = [
 
 # Scraping settings
 SCRAPING_CONFIG = {
-    'max_pages_per_brand': 3,  # Limit pages for production
+    'max_pages_per_brand': 50,  # Limit pages for production
     'delay_between_brands': 10,  # Seconds to wait between brands
     'delay_between_pages': 5,   # Seconds to wait between pages
     'headless': True,           # Run browser in headless mode
