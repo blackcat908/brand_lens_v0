@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "compromise": "^14.14.4",
+    "wink-lemmatizer": "^3.0.4"
+  }
+}
