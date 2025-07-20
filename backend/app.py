@@ -151,7 +151,7 @@ def get_brand_reviews_robust(brand):
     date_from = request.args.get('date_from')
     date_to = request.args.get('date_to')
     category_filter = request.args.get('category')
-
+    
     with get_db_session() as db:
         reviews = get_reviews_by_brand(db, brand)
         print(f"[DEBUG] Total reviews fetched for brand '{brand}': {len(reviews)}")
@@ -221,7 +221,7 @@ def get_brand_reviews_robust(brand):
             }
             for r in page_reviews
         ]
-
+    
     return jsonify({
         'brand': brand,
         'total_reviews': total,
