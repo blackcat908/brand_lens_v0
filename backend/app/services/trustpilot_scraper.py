@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 # Import our new database modules
 from database import get_db_session, init_db, Review
 from sentiment_analyzer import SentimentAnalyzer
-from sqlalchemy import text
 # REMOVED: from utils import canonical_brand_id
 
 # Add this helper function at the top-level (after imports, before TrustpilotScraper)
@@ -48,16 +47,6 @@ class TrustpilotScraper:
         self.browser: Browser | None = None
         self.page: Page | None = None
         self.sentiment_analyzer = SentimentAnalyzer()
-        # Initialize lemmatizer once for the entire scraper instance
-        try:
-            nltk.data.find('corpora/wordnet')
-        except LookupError:
-            nltk.download('wordnet')
-        try:
-            nltk.data.find('tokenizers/punkt')
-        except LookupError:
-            nltk.download('punkt')
-        self.lemmatizer = WordNetLemmatizer()
         
     def start_browser(self):
         """Initialize the browser"""
@@ -255,7 +244,16 @@ class TrustpilotScraper:
         from database import get_brand_source_url, get_db_session, Review, get_brand_keywords, get_global_keywords
         import json
         print(f"[DEBUG] brand_name passed to scraper: '{brand_name}'")
-        # NLTK resources already initialized in __init__
+        # Ensure NLTK resources are available
+        try:
+            nltk.data.find('corpora/wordnet')
+        except LookupError:
+            nltk.download('wordnet')
+        try:
+            nltk.data.find('tokenizers/punkt')
+        except LookupError:
+            nltk.download('punkt')
+        lemmatizer = WordNetLemmatizer()
         
         # Get database session and fetch initial data
         with get_db_session() as db:
@@ -277,14 +275,6 @@ class TrustpilotScraper:
             for category, keywords_json in brand_keywords.items():
                 if isinstance(keywords_json, str):
                     brand_keywords[category] = json.loads(keywords_json)
-            
-            # Debug: Check if keywords are loaded
-            print(f"[DEBUG] Global keywords loaded: {len(global_keywords)} categories")
-            for cat, keywords in global_keywords.items():
-                print(f"[DEBUG] Category '{cat}': {len(keywords)} keywords")
-            print(f"[DEBUG] Brand keywords loaded: {len(brand_keywords)} categories")
-            
-
         
         print("Starting browser...")
         self.start_browser()
@@ -335,15 +325,9 @@ class TrustpilotScraper:
                 consecutive_empty_pages = 0
                 print(f"Found {len(page_reviews)} reviews on page {page_num}")
                 
-                # Get existing review links for this page - use separate session to avoid locks
-                existing_links = set()
-                try:
-                    with get_db_session() as db:
-                        result = db.execute(text("SELECT review_link FROM reviews WHERE brand_name = :brand_name"), {"brand_name": brand_name})
-                        existing_links = {row[0] for row in result.fetchall() if row[0]}
-                except Exception as e:
-                    print(f"Error getting existing links: {e}")
-                    continue
+                # Get existing review links for this page
+                with get_db_session() as db:
+                    existing_links = {r.review_link for r in db.query(Review).filter(Review.brand_name == brand_name).all() if r.review_link is not None}
                 
                 newly_found_on_page = [
                     r for r in page_reviews if r['review_link'] not in existing_links
@@ -352,119 +336,96 @@ class TrustpilotScraper:
                 print(f"Found {len(newly_found_on_page)} new reviews on page {page_num}")
                 
                 if newly_found_on_page:
-                    # Process and insert reviews in smaller batches to avoid long locks
+                    # Process and insert reviews immediately for this page
                     page_new_reviews = 0
-                    batch_size = 5  # Process 5 reviews at a time
-                    
-                    for i in range(0, len(newly_found_on_page), batch_size):
-                        batch = newly_found_on_page[i:i + batch_size]
-                        batch_new_reviews = 0
-                        
-                        try:
-                            with get_db_session() as db:
-                                for review in batch:
-                                    try:
-                                        review_text = review.get('review', '')
-                                        
-                                        # Sentiment analysis
-                                        sentiment = self.sentiment_analyzer.process_review(review_text)
-                                        review['sentiment_score'] = sentiment['sentiment_score']
-                                        review['sentiment_category'] = sentiment['sentiment_category']
-                                        
-                                        matched_categories = set()
-                                        matched_keywords = set()
-                                        
-                                        # Clean and lemmatize review text
-                                        review_text_clean = review_text.lower().strip()
-                                        review_tokens = word_tokenize(review_text_clean)
-                                        review_lemmas = [self.lemmatizer.lemmatize(token) for token in review_tokens]
-                                        review_lemmas_set = set(review_lemmas)
-                                        
-                                        def keyword_in_text(keyword, review_text, review_lemmas_set):
-                                            """
-                                            Check if a keyword is present in the review text.
-                                            Handles both single words and phrases with proper lemmatization.
-                                            """
-                                            keyword_clean = keyword.lower().strip()
-                                            
-                                            # For single words: check if lemmatized form exists in review lemmas
-                                            if ' ' not in keyword_clean:
-                                                keyword_lemma = self.lemmatizer.lemmatize(keyword_clean)
-                                                match = keyword_lemma in review_lemmas_set
-                                                return match
-                                            
-                                            # For phrases: check if all words in phrase exist in review (lemmatized)
-                                            phrase_tokens = word_tokenize(keyword_clean)
-                                            phrase_lemmas = [self.lemmatizer.lemmatize(token) for token in phrase_tokens]
-                                            
-                                            # Check if all lemmatized words in the phrase exist in the review
-                                            all_words_present = all(lemma in review_lemmas_set for lemma in phrase_lemmas)
-                                            
-                                            # Additional check: ensure the phrase appears in the original text (case-insensitive)
-                                            phrase_in_text = keyword_clean in review_text
-                                            
-                                            match = all_words_present and phrase_in_text
-                                            return match
-                                        
-                                        # Brand-specific categories
-                                        for category, keywords in brand_keywords.items():
-                                            for kw in keywords:
-                                                if keyword_in_text(kw, review_text_clean, review_lemmas_set):
-                                                    matched_categories.add(category)
-                                                    matched_keywords.add(kw)
-                                        
-                                        # Global categories
-                                        for category, keywords in global_keywords.items():
-                                            for kw in keywords:
-                                                if keyword_in_text(kw, review_text_clean, review_lemmas_set):
-                                                    matched_categories.add(category)
-                                                    matched_keywords.add(kw)
-                                        
-                                        # Store category names and matched keywords
-                                        review['categories'] = json.dumps(sorted(matched_categories))
-                                        review['matched_keywords'] = json.dumps(sorted(matched_keywords))
-                                        
-                                        # Debug: Log if any keywords were matched
-                                        if matched_categories or matched_keywords:
-                                            print(f"[DEBUG] Matched categories: {matched_categories}, keywords: {matched_keywords}")
-                                        
-
-                                        review['brand_name'] = brand_name
-                                        
-                                        # Create and insert the review immediately
-                                        new_review = Review(
-                                            brand_name=review.get('brand_name'),
-                                            customer_name=review.get('customer_name'),
-                                            review=review.get('review'),
-                                            rating=review.get('rating'),
-                                            date=review.get('date'),
-                                            review_link=review.get('review_link'),
-                                            sentiment_score=review.get('sentiment_score'),
-                                            sentiment_category=review.get('sentiment_category'),
-                                            categories=review.get('categories', ''),
-                                            matched_keywords=review.get('matched_keywords', '')
-                                        )
-                                        db.add(new_review)
-                                        batch_new_reviews += 1
-                                        
-                                    except Exception as e:
-                                        print(f"[ERROR] Failed to process review: {e}")
-                                        continue
+                    with get_db_session() as db:
+                        for review in newly_found_on_page:
+                            try:
+                                review_text = review.get('review', '')
                                 
-                                # Commit batch immediately to release lock
-                                db.commit()
-                                print(f"✓ Batch {i//batch_size + 1}: Inserted {batch_new_reviews} reviews")
-                                page_new_reviews += batch_new_reviews
+                                # Sentiment analysis
+                                sentiment = self.sentiment_analyzer.process_review(review_text)
+                                review['sentiment_score'] = sentiment['sentiment_score']
+                                review['sentiment_category'] = sentiment['sentiment_category']
                                 
-                        except Exception as e:
-                            print(f"[ERROR] Failed to process batch: {e}")
-                            continue
+                                matched_categories = set()
+                                matched_keywords = set()
+                                
+                                # Clean and lemmatize review text
+                                review_text_clean = review_text.lower().strip()
+                                review_tokens = word_tokenize(review_text_clean)
+                                review_lemmas = [lemmatizer.lemmatize(token) for token in review_tokens]
+                                review_lemmas_set = set(review_lemmas)
+                                
+                                def keyword_in_text(keyword, review_text, review_lemmas_set, lemmatizer):
+                                    """
+                                    Check if a keyword is present in the review text.
+                                    Handles both single words and phrases with proper lemmatization.
+                                    """
+                                    keyword_clean = keyword.lower().strip()
+                                    
+                                    # For single words: check if lemmatized form exists in review lemmas
+                                    if ' ' not in keyword_clean:
+                                        keyword_lemma = lemmatizer.lemmatize(keyword_clean)
+                                        match = keyword_lemma in review_lemmas_set
+                                        return match
+                                    
+                                    # For phrases: check if all words in phrase exist in review (lemmatized)
+                                    phrase_tokens = word_tokenize(keyword_clean)
+                                    phrase_lemmas = [lemmatizer.lemmatize(token) for token in phrase_tokens]
+                                    
+                                    # Check if all lemmatized words in the phrase exist in the review
+                                    all_words_present = all(lemma in review_lemmas_set for lemma in phrase_lemmas)
+                                    
+                                    # Additional check: ensure the phrase appears in the original text (case-insensitive)
+                                    phrase_in_text = keyword_clean in review_text
+                                    
+                                    match = all_words_present and phrase_in_text
+                                    return match
+                                
+                                # Brand-specific categories
+                                for category, keywords in brand_keywords.items():
+                                    for kw in keywords:
+                                        if keyword_in_text(kw, review_text_clean, review_lemmas_set, lemmatizer):
+                                            matched_categories.add(category)
+                                            matched_keywords.add(kw)
+                                
+                                # Global categories
+                                for category, keywords in global_keywords.items():
+                                    for kw in keywords:
+                                        if keyword_in_text(kw, review_text_clean, review_lemmas_set, lemmatizer):
+                                            matched_categories.add(category)
+                                            matched_keywords.add(kw)
+                                
+                                # Store category names and matched keywords
+                                review['categories'] = json.dumps(sorted(matched_categories))
+                                review['matched_keywords'] = json.dumps(sorted(matched_keywords))
+                                review['brand_name'] = brand_name
+                                
+                                # Create and insert the review immediately
+                                new_review = Review(
+                                    brand_name=review.get('brand_name'),
+                                    customer_name=review.get('customer_name'),
+                                    review=review.get('review'),
+                                    rating=review.get('rating'),
+                                    date=review.get('date'),
+                                    review_link=review.get('review_link'),
+                                    sentiment_score=review.get('sentiment_score'),
+                                    sentiment_category=review.get('sentiment_category'),
+                                    categories=review.get('categories', ''),
+                                    matched_keywords=review.get('matched_keywords', '')
+                                )
+                                db.add(new_review)
+                                page_new_reviews += 1
+                                
+                            except Exception as e:
+                                print(f"[ERROR] Failed to process review: {e}")
+                                continue
                         
-                        # Small delay between batches to reduce database contention
-                        time.sleep(0.1)
-                    
-                    print(f"✓ Page {page_num}: Inserted {page_new_reviews} new reviews to database")
-                    total_new_reviews += page_new_reviews
+                        # Commit all reviews for this page
+                        db.commit()
+                        print(f"✓ Page {page_num}: Inserted {page_new_reviews} new reviews to database")
+                        total_new_reviews += page_new_reviews
                 else:
                     print(f"✓ Page {page_num}: No new reviews found")
                 

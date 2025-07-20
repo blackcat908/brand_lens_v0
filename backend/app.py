@@ -104,8 +104,46 @@ def create_brand():
     threading.Thread(target=run_scraper, daemon=True).start()
     return jsonify({'success': True, 'brand': extracted_brand_name, 'trustpilot_url': trustpilot_url, 'logo_url': logo_url})
 
+# --- COMMENTED OUT OLD REVIEWS ENDPOINT ---
+# @app.route('/api/brands/<brand>/reviews', methods=['GET'])
+# def get_brand_reviews(brand):
+#     page = int(request.args.get('page', 1))
+#     per_page = int(request.args.get('per_page', 20))
+#     rating_filter = request.args.get('rating')
+#     sentiment_filter = request.args.get('sentiment')
+#     date_from = request.args.get('date_from')
+#     date_to = request.args.get('date_to')
+#     category_filter = request.args.get('category')
+#     rating_filter_int = int(rating_filter) if rating_filter else None
+#     with get_db_session() as db:
+#         result = get_reviews_by_brand_optimized(
+#             db, brand, page, per_page, 
+#             rating_filter_int, sentiment_filter or None, date_from or None, date_to or None, category_filter or None
+#         )
+#         review_list = [
+#             {
+#                 'customer_name': r['customer_name'],
+#                 'review': r['review'],
+#                 'date': r['date'],
+#                 'rating': r['rating'],
+#                 'review_link': r['review_link'],
+#                 'sentiment_score': r['sentiment_score'],
+#                 'sentiment_category': r['sentiment_category'],
+#                 'categories': r['categories']
+#             }
+#             for r in result['reviews']
+#         ]
+#     return jsonify({
+#         'brand': brand,
+#         'total_reviews': result['total'],
+#         'page': result['page'],
+#         'per_page': result['per_page'],
+#         'reviews': review_list
+#     })
+
+# --- NEW ROBUST REVIEWS ENDPOINT (NOW MAIN ENDPOINT) ---
 @app.route('/api/brands/<brand>/reviews', methods=['GET'])
-def get_brand_reviews(brand):
+def get_brand_reviews_robust(brand):
     page = int(request.args.get('page', 1))
     per_page = int(request.args.get('per_page', 20))
     rating_filter = request.args.get('rating')
@@ -113,18 +151,62 @@ def get_brand_reviews(brand):
     date_from = request.args.get('date_from')
     date_to = request.args.get('date_to')
     category_filter = request.args.get('category')
-    
-    # Convert rating filter to int if provided
-    rating_filter_int = int(rating_filter) if rating_filter else None
-    
+
     with get_db_session() as db:
-        # Use optimized function that uses database-level filtering and pagination
-        result = get_reviews_by_brand_optimized(
-            db, brand, page, per_page, 
-            rating_filter_int, sentiment_filter or None, date_from or None, date_to or None, category_filter or None
-        )
-        
-        # Format reviews for response
+        reviews = get_reviews_by_brand(db, brand)
+        print(f"[DEBUG] Total reviews fetched for brand '{brand}': {len(reviews)}")
+
+        # Apply filters
+        filtered_reviews = []
+        for review in reviews:
+            # Rating filter
+            if rating_filter and review['rating'] != int(rating_filter):
+                continue
+            # Sentiment filter
+            if sentiment_filter and review['sentiment_category'] != sentiment_filter:
+                continue
+            # Date filters
+            review_date = review.get('date')
+            if date_from:
+                try:
+                    if not review_date or review_date < date_from:
+                        continue
+                except Exception:
+                    continue
+            if date_to:
+                try:
+                    if not review_date or review_date > date_to:
+                        continue
+                except Exception:
+                    continue
+            # Robust Category filter
+            if category_filter and category_filter != 'all':
+                review_categories = []
+                cats = review.get('categories')
+                if cats:
+                    try:
+                        if isinstance(cats, str):
+                            review_categories = json.loads(cats)
+                        elif isinstance(cats, list):
+                            review_categories = cats
+                    except Exception:
+                        review_categories = []
+                if not review_categories or not any(category_filter.strip().lower() == str(c).strip().lower() for c in review_categories):
+                    continue
+            filtered_reviews.append(review)
+
+        print(f"[DEBUG] Filtered reviews count: {len(filtered_reviews)} (after all filters)")
+        if filtered_reviews:
+            print(f"[DEBUG] First 3 filtered review categories: {[r.get('categories') for r in filtered_reviews[:3]]}")
+
+        # Sort by date descending
+        filtered_reviews.sort(key=lambda x: x['date'] or '', reverse=True)
+
+        total = len(filtered_reviews)
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        page_reviews = filtered_reviews[start_idx:end_idx]
+
         review_list = [
             {
                 'customer_name': r['customer_name'],
@@ -134,18 +216,31 @@ def get_brand_reviews(brand):
                 'review_link': r['review_link'],
                 'sentiment_score': r['sentiment_score'],
                 'sentiment_category': r['sentiment_category'],
-                'categories': r['categories']
+                'categories': (lambda x: json.loads(x) if isinstance(x, str) and x.strip().startswith('[') else (x if isinstance(x, list) else []))(r.get('categories')),
+                'matched_keywords': (lambda x: json.loads(x) if isinstance(x, str) and x.strip().startswith('[') else (x if isinstance(x, list) else []))(r.get('matched_keywords'))
             }
-            for r in result['reviews']
+            for r in page_reviews
         ]
-    
+
     return jsonify({
         'brand': brand,
-        'total_reviews': result['total'],
-        'page': result['page'],
-        'per_page': result['per_page'],
+        'total_reviews': total,
+        'page': page,
+        'per_page': per_page,
         'reviews': review_list
     })
+
+# --- HIGHLIGHT FUNCTION (AS BEFORE) ---
+def highlight_keywords(text, keywords):
+    if not text or not keywords:
+        return text
+    import re
+    def replacer(match):
+        return f'<mark class="bg-yellow-200 text-yellow-900 px-1 rounded font-medium">{match.group(0)}</mark>'
+    for kw in sorted(keywords, key=len, reverse=True):
+        pattern = re.compile(re.escape(kw), re.IGNORECASE)
+        text = pattern.sub(replacer, text)
+    return text
 
 @app.route('/api/brands/<brand>/analytics', methods=['GET'])
 def get_brand_analytics(brand):
@@ -410,6 +505,141 @@ def set_keywords_global():
     with get_db_session() as db:
         set_global_keywords(db, category, keywords)
     return jsonify({'success': True})
+
+# Globals and helpers (only if not already present)
+running_scrapers = {}  # brand_name -> (thread, cancel_event)
+
+# Cancel scraping endpoint (if not present)
+from flask import make_response
+@app.route('/api/brands/<brand_name>/cancel', methods=['POST', 'OPTIONS'])
+def cancel_brand_scraping(brand_name):
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+        response.headers['Access-Control-Allow-Methods'] = 'POST,OPTIONS'
+        return response, 200
+    try:
+        # Signal cancellation if scraper is running
+        if brand_name in running_scrapers:
+            thread, cancel_event = running_scrapers[brand_name]
+            cancel_event.set()
+            print(f"[CANCEL] Cancellation requested for {brand_name}.")
+            thread.join(timeout=10)  # Optionally wait for thread to finish
+            running_scrapers.pop(brand_name, None)
+        # Delete the brand and all its data
+        with get_db_session() as db:
+            delete_brand_and_reviews(brand_name)
+        return jsonify({'success': True, 'message': f'Brand {brand_name} scraping cancelled and removed from database'})
+    except Exception as e:
+        return jsonify({'error': f'Failed to cancel brand scraping: {str(e)}'}), 500
+
+# Reprocess reviews endpoint (if not present)
+@app.route('/api/reprocess-reviews', methods=['POST'])
+def reprocess_reviews():
+    """Reprocess all existing reviews with updated keywords"""
+    try:
+        import subprocess
+        import sys
+        import os
+        # Get the path to the process_existing_reviews.py script
+        script_path = os.path.join(os.path.dirname(__file__), 'services/process_existing_reviews.py')
+        # Run the reprocessing script
+        result = subprocess.run([sys.executable, script_path], 
+                              capture_output=True, text=True, cwd=os.path.dirname(script_path))
+        if result.returncode == 0:
+            return jsonify({
+                'success': True, 
+                'message': 'Reviews reprocessed successfully',
+                'output': result.stdout
+            })
+        else:
+            return jsonify({
+                'success': False, 
+                'error': 'Failed to reprocess reviews',
+                'output': result.stderr
+            }), 500
+    except Exception as e:
+        return jsonify({
+            'success': False, 
+            'error': f'Error reprocessing reviews: {str(e)}'
+        }), 500
+
+# --- COMMENTED OUT /reviews-robust ENDPOINT (now redundant) ---
+# @app.route('/api/brands/<brand>/reviews-robust', methods=['GET'])
+# def get_brand_reviews_robust(brand):
+#     page = int(request.args.get('page', 1))
+#     per_page = int(request.args.get('per_page', 20))
+#     rating_filter = request.args.get('rating')
+#     sentiment_filter = request.args.get('sentiment')
+#     date_from = request.args.get('date_from')
+#     date_to = request.args.get('date_to')
+#     category_filter = request.args.get('category')
+#     with get_db_session() as db:
+#         reviews = get_reviews_by_brand(db, brand)
+#         print(f"[DEBUG] Total reviews fetched for brand '{brand}': {len(reviews)}")
+#         filtered_reviews = []
+#         for review in reviews:
+#             if rating_filter and review['rating'] != int(rating_filter):
+#                 continue
+#             if sentiment_filter and review['sentiment_category'] != sentiment_filter:
+#                 continue
+#             review_date = review.get('date')
+#             if date_from:
+#                 try:
+#                     if not review_date or review_date < date_from:
+#                         continue
+#                 except Exception:
+#                     continue
+#             if date_to:
+#                 try:
+#                     if not review_date or review_date > date_to:
+#                         continue
+#                 except Exception:
+#                     continue
+#             if category_filter and category_filter != 'all':
+#                 review_categories = []
+#                 cats = review.get('categories')
+#                 if cats:
+#                     try:
+#                         if isinstance(cats, str):
+#                             review_categories = json.loads(cats)
+#                         elif isinstance(cats, list):
+#                             review_categories = cats
+#                     except Exception:
+#                         review_categories = []
+#                 if not review_categories or not any(category_filter.strip().lower() == str(c).strip().lower() for c in review_categories):
+#                     continue
+#             filtered_reviews.append(review)
+#         print(f"[DEBUG] Filtered reviews count: {len(filtered_reviews)} (after all filters)")
+#         if filtered_reviews:
+#             print(f"[DEBUG] First 3 filtered review categories: {[r.get('categories') for r in filtered_reviews[:3]]}")
+#         filtered_reviews.sort(key=lambda x: x['date'] or '', reverse=True)
+#         total = len(filtered_reviews)
+#         start_idx = (page - 1) * per_page
+#         end_idx = start_idx + per_page
+#         page_reviews = filtered_reviews[start_idx:end_idx]
+#         review_list = [
+#             {
+#                 'customer_name': r['customer_name'],
+#                 'review': r['review'],
+#                 'date': r['date'],
+#                 'rating': r['rating'],
+#                 'review_link': r['review_link'],
+#                 'sentiment_score': r['sentiment_score'],
+#                 'sentiment_category': r['sentiment_category'],
+#                 'categories': (lambda x: json.loads(x) if isinstance(x, str) and x.strip().startswith('[') else (x if isinstance(x, list) else []))(r.get('categories')),
+#                 'matched_keywords': (lambda x: json.loads(x) if isinstance(x, str) and x.strip().startswith('[') else (x if isinstance(x, list) else []))(r.get('matched_keywords'))
+#             }
+#             for r in page_reviews
+#         ]
+#     return jsonify({
+#         'brand': brand,
+#         'total_reviews': total,
+#         'page': page,
+#         'per_page': per_page,
+#         'reviews': review_list
+#     })
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000) 
