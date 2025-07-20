@@ -1,0 +1,82 @@
+2025-07-03 08:45:08,582 - INFO - Starting scrape for brand: wanderdoll (dry_run=True)
+2025-07-03 08:45:28,371 - INFO - Browser started.
+2025-07-03 08:45:28,372 - INFO - Starting to scrape up to 1 pages for wanderdoll...
+2025-07-03 08:45:28,373 - INFO - --- Scraping Page 1 ---
+2025-07-03 08:45:28,374 - INFO - Trying URL: https://uk.trustpilot.com/review/www.wanderdoll.com?page=1
+2025-07-03 08:45:34,678 - ERROR - No reviews found on https://uk.trustpilot.com/review/www.wanderdoll.com?page=1 after loading page.
+2025-07-03 08:45:34,678 - INFO - No reviews found at: https://uk.trustpilot.com/review/www.wanderdoll.com?page=1
+2025-07-03 08:45:34,679 - INFO - Trying URL: https://uk.trustpilot.com/review/wanderdoll.co.uk?page=1
+2025-07-03 08:45:36,796 - ERROR - No reviews found on https://uk.trustpilot.com/review/wanderdoll.co.uk?page=1 after loading page.
+2025-07-03 08:45:36,797 - INFO - No reviews found at: https://uk.trustpilot.com/review/wanderdoll.co.uk?page=1
+2025-07-03 08:45:36,798 - INFO - No reviews found on page 1. Stopping.
+2025-07-03 08:45:36,798 - INFO - Finished scraping loop.
+2025-07-03 08:45:36,799 - INFO - Closing browser...
+2025-07-03 08:45:37,042 - INFO - Browser closed.
+2025-07-03 08:45:37,043 - INFO - Completed scraping for brand: wanderdoll
+2025-07-03 08:45:37,044 - INFO - Starting scrape for brand: murci (dry_run=True)
+2025-07-03 08:45:38,175 - INFO - Browser started.
+2025-07-03 08:45:38,176 - INFO - Starting to scrape up to 1 pages for murci...
+2025-07-03 08:45:38,176 - INFO - --- Scraping Page 1 ---
+2025-07-03 08:45:38,176 - INFO - Trying URL: https://uk.trustpilot.com/review/murci.co.uk?page=1
+2025-07-03 08:45:48,672 - INFO - Success! Using URL: https://uk.trustpilot.com/review/murci.co.uk?page=1
+2025-07-03 08:45:48,673 - INFO - Processing 20 reviews on page 1.
+2025-07-03 08:45:48,701 - INFO - Found 20 new reviews on page 1.
+2025-07-03 08:45:48,702 - INFO - All 20 reviews on page 1 are new. Continuing to next page...
+2025-07-03 08:45:49,555 - INFO - Reached max_pages limit (1) for murci. Stopping.
+2025-07-03 08:45:49,557 - INFO - Finished scraping loop.
+2025-07-03 08:45:49,559 - INFO - Closing browser...
+2025-07-03 08:45:49,749 - INFO - Browser closed.
+2025-07-03 08:45:49,749 - INFO - Completed scraping for brand: murci
+2025-07-03 08:45:49,758 - INFO - Starting scrape for brand: bbxbrand (dry_run=True)
+2025-07-03 08:45:51,076 - INFO - Browser started.
+2025-07-03 08:45:51,077 - INFO - Starting to scrape up to 1 pages for bbxbrand...
+2025-07-03 08:45:51,077 - INFO - --- Scraping Page 1 ---
+2025-07-03 08:45:51,078 - INFO - Trying URL: https://uk.trustpilot.com/review/bbxbrand.com?page=1
+2025-07-03 08:45:59,027 - INFO - Success! Using URL: https://uk.trustpilot.com/review/bbxbrand.com?page=1
+2025-07-03 08:45:59,028 - INFO - Processing 19 reviews on page 1.
+2025-07-03 08:45:59,051 - INFO - Found 0 new reviews on page 1.
+2025-07-03 08:45:59,052 - INFO - Not all reviews on page 1 are new. Stopping scrape.
+2025-07-03 08:45:59,053 - INFO - Finished scraping loop.
+2025-07-03 08:45:59,054 - INFO - Closing browser...
+2025-07-03 08:45:59,229 - INFO - Browser closed.
+2025-07-03 08:45:59,229 - INFO - Completed scraping for brand: bbxbrand
+2025-07-03 08:45:59,232 - INFO - Starting scrape for brand: becauseofalice (dry_run=True)
+2025-07-03 08:46:00,455 - INFO - Browser started.
+2025-07-03 08:46:00,456 - INFO - Starting to scrape up to 1 pages for becauseofalice...
+2025-07-03 08:46:00,456 - INFO - --- Scraping Page 1 ---
+2025-07-03 08:46:00,457 - INFO - Trying URL: https://uk.trustpilot.com/review/www.becauseofalice.com?page=1
+2025-07-03 08:46:08,382 - INFO - Success! Using URL: https://uk.trustpilot.com/review/www.becauseofalice.com?page=1
+2025-07-03 08:46:08,384 - INFO - Processing 20 reviews on page 1.
+2025-07-03 08:46:08,413 - INFO - Found 1 new reviews on page 1.
+2025-07-03 08:46:08,414 - INFO - Not all reviews on page 1 are new. Stopping scrape.
+2025-07-03 08:46:08,414 - INFO - Finished scraping loop.
+2025-07-03 08:46:08,415 - INFO - Closing browser...
+2025-07-03 08:46:08,546 - INFO - Browser closed.
+2025-07-03 08:46:08,547 - INFO - Completed scraping for brand: becauseofalice
+2025-07-03 08:46:08,549 - INFO - Starting scrape for brand: oddmuse (dry_run=True)
+2025-07-03 08:46:09,672 - INFO - Browser started.
+2025-07-03 08:46:09,672 - INFO - Starting to scrape up to 1 pages for oddmuse...
+2025-07-03 08:46:09,673 - INFO - --- Scraping Page 1 ---
+2025-07-03 08:46:09,673 - INFO - Trying URL: https://uk.trustpilot.com/review/oddmuse.co.uk?page=1
+2025-07-03 08:46:22,593 - INFO - Success! Using URL: https://uk.trustpilot.com/review/oddmuse.co.uk?page=1
+2025-07-03 08:46:22,596 - INFO - Processing 20 reviews on page 1.
+2025-07-03 08:46:22,601 - INFO - Found 3 new reviews on page 1.
+2025-07-03 08:46:22,602 - INFO - Not all reviews on page 1 are new. Stopping scrape.
+2025-07-03 08:46:22,602 - INFO - Finished scraping loop.
+2025-07-03 08:46:22,602 - INFO - Closing browser...
+2025-07-03 08:46:22,758 - INFO - Browser closed.
+2025-07-03 08:46:22,759 - INFO - Completed scraping for brand: oddmuse
+2025-07-03 08:48:36,090 - INFO - Starting scrape for brand: wander-doll (dry_run=True)
+2025-07-03 08:48:37,271 - INFO - Browser started.
+2025-07-03 08:48:37,272 - INFO - Starting to scrape up to 1 pages for wander-doll...
+2025-07-03 08:48:37,272 - INFO - --- Scraping Page 1 ---
+2025-07-03 08:48:37,272 - INFO - Trying URL: https://uk.trustpilot.com/review/www.wander-doll.com?page=1
+2025-07-03 08:48:49,012 - INFO - Success! Using URL: https://uk.trustpilot.com/review/www.wander-doll.com?page=1
+2025-07-03 08:48:49,013 - INFO - Processing 20 reviews on page 1.
+2025-07-03 08:48:49,022 - INFO - Found 20 new reviews on page 1.
+2025-07-03 08:48:49,023 - INFO - All 20 reviews on page 1 are new. Continuing to next page...
+2025-07-03 08:48:49,642 - INFO - Reached max_pages limit (1) for wander-doll. Stopping.
+2025-07-03 08:48:49,644 - INFO - Finished scraping loop.
+2025-07-03 08:48:49,645 - INFO - Closing browser...
+2025-07-03 08:48:49,809 - INFO - Browser closed.
+2025-07-03 08:48:49,810 - INFO - Completed scraping for brand: wander-doll
