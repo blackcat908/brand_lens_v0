@@ -23,7 +23,12 @@ SCRAPING_CONFIG = {
 }
 
 # Database settings
-if os.environ.get('RENDER', '').lower() == 'true':
+if os.environ.get('DATABASE_URL'):
+    DATABASE_CONFIG = {
+        'url': os.environ['DATABASE_URL'],
+        'echo': False,
+    }
+elif os.environ.get('RENDER', '').lower() == 'true':
     # On Render, use Postgres
     DATABASE_CONFIG = {
         'url': 'postgresql://trustpilot_reviews_55fi_user:PpcbpA3oDt2hrFurDSrPGkdzgzg2c2gQ@dpg-d1r5ok8dl3ps73f3oh70-a.oregon-postgres.render.com/trustpilot_reviews_55fi',
