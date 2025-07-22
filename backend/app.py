@@ -48,7 +48,9 @@ sentiment_analyzer = SentimentAnalyzer()
 @app.route('/', methods=['GET'])
 def home():
     return jsonify({
-        "message": "Welcome to the Trustpilot Scraper API. See /api/brands or /api/health for available endpoints."
+        "message": "Welcome to the Trustpilot Scraper API. See /api/brands or /api/health for available endpoints.",
+        "status": "running",
+        "timestamp": datetime.now().isoformat()
     })
 
 @app.route('/api/brands', methods=['GET'])
