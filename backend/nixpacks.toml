@@ -1,28 +1,26 @@
 [phases.setup]
 nixPkgs = [
-  "at-spi2-core",
-  "cups",
-  "dbus",
-  "expat",
-  "gdk-pixbuf",
-  "glib",
-  "gtk3",
-  "libdrm",
-  "libnspr",
-  "libnss",
-  "libxcomposite",
-  "libxdamage",
-  "libxkbcommon",
-  "libxrandr",
-  "mesa",
-  "pango",
-  "xorg.libX11",
-  "xorg.libXcomposite",
-  "xorg.libXdamage",
-  "xorg.libXext",
-  "xorg.libXfixes",
-  "xorg.libXi",
-  "xorg.libXrandr",
-  "xorg.libXrender",
-  "xorg.libXtst"
+  "expat",            # libexpat.so.1
+  "libxcb",           # libxcb.so.1
+  "libxkbcommon",     # libxkbcommon.so.0
+  "glib",             # libglib-2.0.so.0, libgobject-2.0.so.0
+  "atk",              # libatk-1.0.so.0
+  "at-spi2-core",     # libatspi.so.0
+  "at-spi2-atk",      # libatk-bridge-2.0.so.0
+  "cups",             # libcups.so.2
+  "nss",              # libnss3.so, libnssutil3.so, libsmime3.so
+  "nspr",             # libnspr4.so
+  "dbus",             # libdbus-1.so.3
+  "gtk3",             # libgio-2.0.so.0
+  "libdrm",           # libdrm.so.2
+  "libX11",           # libX11.so.6
+  "libXcomposite",    # libXcomposite.so.1
+  "libXdamage",       # libXdamage.so.1
+  "libXext",          # libXext.so.6
+  "libXfixes",        # libXfixes.so.3
+  "libXrandr",        # libXrandr.so.2
+  "libgbm",           # libgbm.so.1
+  "pango",            # libpango-1.0.so.0
+  "cairo",            # libcairo.so.2
+  "alsa-lib"          # libasound.so.2
 ]
