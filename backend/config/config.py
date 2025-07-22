@@ -2,6 +2,8 @@
 Configuration file for Trustpilot Scraper
 """
 
+import os
+
 # Brand configurations
 BRANDS = [
     'wanderdoll',
@@ -20,9 +22,19 @@ SCRAPING_CONFIG = {
     'timeout': 60000,           # Page load timeout in milliseconds
 }
 
-# Database settings
+# Database settings - Build from environment variables
+def get_database_url():
+    """Build database URL from individual environment variables"""
+    pguser = os.environ.get('PGUSER', 'postgres')
+    pgpassword = os.environ.get('PGPASSWORD', '')
+    pghost = os.environ.get('PGHOST', 'localhost')
+    pgport = os.environ.get('PGPORT', '5432')
+    pgdatabase = os.environ.get('PGDATABASE', 'railway')
+    
+    return f"postgresql://{pguser}:{pgpassword}@{pghost}:{pgport}/{pgdatabase}"
+
 DATABASE_CONFIG = {
-    'url': 'postgresql://trustpilot_reviews_55fi_user:PpcbpA3oDt2hrFurDSrPGkdzgzg2c2gQ@dpg-d1r5ok8dl3ps73f3oh70-a.oregon-postgres.render.com/trustpilot_reviews_55fi',
+    'url': get_database_url(),
     'echo': False,  # Set to True for SQL debugging
 }
 
