@@ -1,0 +1,28 @@
+[phases.setup]
+nixPkgs = [
+  "at-spi2-core",
+  "cups",
+  "dbus",
+  "expat",
+  "gdk-pixbuf",
+  "glib",
+  "gtk3",
+  "libdrm",
+  "libnspr",
+  "libnss",
+  "libxcomposite",
+  "libxdamage",
+  "libxkbcommon",
+  "libxrandr",
+  "mesa",
+  "pango",
+  "xorg.libX11",
+  "xorg.libXcomposite",
+  "xorg.libXdamage",
+  "xorg.libXext",
+  "xorg.libXfixes",
+  "xorg.libXi",
+  "xorg.libXrandr",
+  "xorg.libXrender",
+  "xorg.libXtst"
+]
