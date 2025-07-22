@@ -40,6 +40,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Install Playwright browsers
 RUN python -m playwright install chromium
 
+# Install NLTK data
+RUN python -m nltk.downloader wordnet stopwords punkt
+
 # Copy the rest of your code
 COPY . .
 
