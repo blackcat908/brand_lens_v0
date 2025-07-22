@@ -22,9 +22,9 @@ SCRAPING_CONFIG = {
     'timeout': 60000,           # Page load timeout in milliseconds
 }
 
-# Database settings
+# Database settings - use Railway's reference variable
 DATABASE_CONFIG = {
-    'url': 'postgresql://postgres:gyRafIdjWaKHngpJqYJfbGDcYNzaaIyn@switchyard.proxy.rlwy.net:17267/railway',
+    'url': os.environ.get('DATABASE_URL', 'postgresql://postgres:gyRafIdjWaKHngpJqYJfbGDcYNzaaIyn@switchyard.proxy.rlwy.net:17267/railway'),
     'echo': False,  # Set to True for SQL debugging
 }
 
