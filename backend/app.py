@@ -19,14 +19,24 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Ensure DB tables exist at startup
-from database import init_db
-init_db()
-
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 # Update CORS to allow only Vercel frontend
 CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "*", "methods": ["GET", "POST", "DELETE", "OPTIONS"]}})
+
+# Initialize database when app starts
+def initialize_database():
+    from database import init_db
+    try:
+        init_db()
+        logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}")
+        # Don't raise here, let the app start and handle DB errors gracefully
+
+# Register the initialization function to run when the app starts
+with app.app_context():
+    initialize_database()
 # Serve favicon.ico for browser compatibility
 @app.route('/favicon.ico')
 def favicon():
