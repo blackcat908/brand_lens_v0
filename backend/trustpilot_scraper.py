@@ -102,16 +102,43 @@ class TrustpilotScraper:
                 title_elem = card.query_selector('h2')
                 body_elem = card.query_selector('p')
                 
-                # Extract review link - find individual review links in review titles
+                # Extract review link - find individual review links
                 review_link = None
                 
-                # Look for review links in the review content area
+                # Method 1: Look for review links in the review content area (based on Browserflow selector)
                 review_content = card.query_selector('.styles_reviewContent__tuXiN')
                 if review_content:
-                    # Find links within the review content
-                    link_elem = review_content.query_selector('.link_internal__Eam_b')
-                    if link_elem:
-                        href = link_elem.get_attribute('href')
+                    # Look for the link that wraps the review title (h2)
+                    title_link = review_content.query_selector('a[href*="/reviews/"]')
+                    if title_link:
+                        href = title_link.get_attribute('href')
+                        if href:
+                            if href.startswith('/'):
+                                review_link = f"https://uk.trustpilot.com{href}"
+                            elif href.startswith('http'):
+                                review_link = href
+                            else:
+                                review_link = f"https://uk.trustpilot.com/{href}"
+                
+                # Method 2: Look for any link with /reviews/ pattern in the entire card
+                if not review_link:
+                    all_links = card.query_selector_all('a[href*="/reviews/"]')
+                    for link in all_links:
+                        href = link.get_attribute('href')
+                        if href and '/reviews/' in href:
+                            if href.startswith('/'):
+                                review_link = f"https://uk.trustpilot.com{href}"
+                            elif href.startswith('http'):
+                                review_link = href
+                            else:
+                                review_link = f"https://uk.trustpilot.com/{href}"
+                            break
+                
+                # Method 3: Look for h2 wrapped in an anchor tag (fallback)
+                if not review_link:
+                    h2_link = card.query_selector('h2 a, h3 a')
+                    if h2_link:
+                        href = h2_link.get_attribute('href')
                         if href:
                             if href.startswith('/'):
                                 review_link = f"https://uk.trustpilot.com{href}"
@@ -407,22 +434,45 @@ class TrustpilotScraper:
                                 categories_json = json.dumps(sorted(matched_categories))
                                 matched_keywords_json = json.dumps(sorted(matched_keywords))
                                 
-                                # Insert the review immediately
-                                db.execute(
-                                    text("INSERT INTO reviews (id, brand_name, customer_name, review, rating, date, review_link, sentiment_score, sentiment_category, categories, matched_keywords) VALUES (DEFAULT, :brand_name, :customer_name, :review, :rating, :date, :review_link, :sentiment_score, :sentiment_category, :categories, :matched_keywords)"),
-                                    {
-                                        "brand_name": brand_name,
-                                        "customer_name": review_data['customer_name'],
-                                        "review": review_data['review'],
-                                        "rating": review_data['rating'],
-                                        "date": review_data['date'],
-                                        "review_link": review_data['review_link'],
-                                        "sentiment_score": analysis['sentiment_score'],
-                                        "sentiment_category": analysis['sentiment_category'],
-                                        "categories": categories_json,
-                                        "matched_keywords": matched_keywords_json
-                                    }
-                                )
+                                # Insert the review immediately - handle both SQLite and PostgreSQL
+                                import sqlite3
+                                try:
+                                    # Try PostgreSQL-style INSERT with DEFAULT
+                                    db.execute(
+                                        text("INSERT INTO reviews (id, brand_name, customer_name, review, rating, date, review_link, sentiment_score, sentiment_category, categories, matched_keywords) VALUES (DEFAULT, :brand_name, :customer_name, :review, :rating, :date, :review_link, :sentiment_score, :sentiment_category, :categories, :matched_keywords)"),
+                                        {
+                                            "brand_name": brand_name,
+                                            "customer_name": review_data['customer_name'],
+                                            "review": review_data['review'],
+                                            "rating": review_data['rating'],
+                                            "date": review_data['date'],
+                                            "review_link": review_data['review_link'],
+                                            "sentiment_score": analysis['sentiment_score'],
+                                            "sentiment_category": analysis['sentiment_category'],
+                                            "categories": categories_json,
+                                            "matched_keywords": matched_keywords_json
+                                        }
+                                    )
+                                except Exception as e:
+                                    if "DEFAULT" in str(e) or "syntax error" in str(e):
+                                        # Fallback to SQLite-style INSERT without id column
+                                        db.execute(
+                                            text("INSERT INTO reviews (brand_name, customer_name, review, rating, date, review_link, sentiment_score, sentiment_category, categories, matched_keywords) VALUES (:brand_name, :customer_name, :review, :rating, :date, :review_link, :sentiment_score, :sentiment_category, :categories, :matched_keywords)"),
+                                            {
+                                                "brand_name": brand_name,
+                                                "customer_name": review_data['customer_name'],
+                                                "review": review_data['review'],
+                                                "rating": review_data['rating'],
+                                                "date": review_data['date'],
+                                                "review_link": review_data['review_link'],
+                                                "sentiment_score": analysis['sentiment_score'],
+                                                "sentiment_category": analysis['sentiment_category'],
+                                                "categories": categories_json,
+                                                "matched_keywords": matched_keywords_json
+                                            }
+                                        )
+                                    else:
+                                        raise e
                                 page_new_reviews += 1
                                 
                             except Exception as e:
