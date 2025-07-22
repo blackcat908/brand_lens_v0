@@ -31,7 +31,7 @@ if os.environ.get('DATABASE_URL'):
 elif os.environ.get('RENDER', '').lower() == 'true':
     # On Render, use Postgres
     DATABASE_CONFIG = {
-        'url': 'postgresql://trustpilot_reviews_55fi_user:PpcbpA3oDt2hrFurDSrPGkdzgzg2c2gQ@dpg-d1r5ok8dl3ps73f3oh70-a.oregon-postgres.render.com/trustpilot_reviews_55fi',
+        'url': 'postgresql://postgres:gyRafIdjWaKHngpJqYJfbGDcYNzaaIyn@postgres.railway.internal:5432/railway',
         'echo': False,  # Set to True for SQL debugging
     }
 else:
