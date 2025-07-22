@@ -23,8 +23,15 @@ SCRAPING_CONFIG = {
 }
 
 # Database settings - use Railway's reference variable
+database_url = os.environ.get('DATABASE_URL')
+if not database_url:
+    print("ERROR: DATABASE_URL environment variable is not set!")
+    print("Please set DATABASE_URL in Railway variables to: ${{ Postgres.DATABASE_URL }}")
+    # Use fallback for local development
+    database_url = 'postgresql://postgres:gyRafIdjWaKHngpJqYJfbGDcYNzaaIyn@switchyard.proxy.rlwy.net:17267/railway'
+
 DATABASE_CONFIG = {
-    'url': os.environ.get('DATABASE_URL', 'postgresql://postgres:gyRafIdjWaKHngpJqYJfbGDcYNzaaIyn@switchyard.proxy.rlwy.net:17267/railway'),
+    'url': database_url,
     'echo': False,  # Set to True for SQL debugging
 }
 
