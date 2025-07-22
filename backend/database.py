@@ -2,11 +2,12 @@ import os
 from sqlalchemy import create_engine, Column, Integer, String, Float, Text, UniqueConstraint, JSON, func, desc, asc
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from contextlib import contextmanager
 from typing import Optional, List, Dict, Any
 import json
 from config import DATABASE_CONFIG
+import time
 print(f"Connecting to database: {DATABASE_CONFIG['url']}")
 
 Base = declarative_base()
@@ -65,7 +66,10 @@ def get_db_session():
         session.close()
 
 def init_db():
+    """Initialize database"""
+    print(f"Connecting to database: {DATABASE_CONFIG['url']}")
     Base.metadata.create_all(bind=engine)
+    print("Database connection successful!")
 
 def get_brand_source_url(db, brand_name: str) -> Optional[Dict[str, Any]]:
     obj = db.query(BrandSourceUrl).filter(BrandSourceUrl.brand_name == brand_name.strip()).first()
