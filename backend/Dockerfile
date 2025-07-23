@@ -51,4 +51,4 @@ EXPOSE 5000
 
 # Run the app with Gunicorn (recommended for production)
 # Increased timeout to handle long-running scraping operations
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:5000", "--timeout", "300", "--workers", "1"] 
+CMD ["gunicorn", "main:app", "--bind", "0.0.0.0:5000", "--timeout", "300", "--workers", "1"] 
