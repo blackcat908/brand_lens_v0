@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
@@ -11,13 +11,14 @@ import { Textarea } from "./ui/textarea"
 import { Badge } from "./ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Separator } from "./ui/separator"
-import { Building2, Globe, Tags, Plus, X, CheckCircle, AlertCircle, RotateCcw } from "lucide-react"
+import { Building2, Globe, Tags, Plus, X, CheckCircle, AlertCircle, RotateCcw, Upload, Image } from "lucide-react"
 import { apiService } from "@/lib/api-service"
 
 interface CreateBrandModalProps {
   isOpen: boolean
   onClose: () => void
   onCreateBrand: (brand: any) => void
+  onRefreshLogos?: () => void
 }
 
 const defaultKeywords = [
@@ -44,7 +45,7 @@ const defaultKeywords = [
   "size down",
 ]
 
-export function CreateBrandModal({ isOpen, onClose, onCreateBrand }: CreateBrandModalProps) {
+export function CreateBrandModal({ isOpen, onClose, onCreateBrand, onRefreshLogos }: CreateBrandModalProps) {
   const [formData, setFormData] = useState({
     trustpilotUrl: "",
   })
@@ -56,6 +57,12 @@ export function CreateBrandModal({ isOpen, onClose, onCreateBrand }: CreateBrand
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
+  
+  // Logo upload state
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [logoUploading, setLogoUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const validateUrl = (url: string) => {
     if (!url.trim()) return true
@@ -148,10 +155,24 @@ export function CreateBrandModal({ isOpen, onClose, onCreateBrand }: CreateBrand
     try {
       // Call backend and get the full response (including logo_url and display_name)
       const res = await apiService.createBrand({ trustpilot_url: formData.trustpilotUrl })
+      
+      // Upload logo if selected
+      let logoUrl = res.logo_url || "/placeholder-logo.png"
+      if (logoFile && res.brand) {
+        try {
+          await uploadLogo(res.brand)
+          // Use the uploaded logo data
+          logoUrl = logoPreview || "/placeholder-logo.png"
+        } catch (logoError) {
+          console.error('Logo upload failed:', logoError)
+          // Continue without logo upload error
+        }
+      }
+      
       // Use backend's display_name, canon_id, logo_url
       const newBrand = {
         brand: res.brand || '', // Use backend's 'brand' field
-        logo: res.logo_url || "/placeholder-logo.png",
+        logo: logoUrl,
         reviewCount: 0,
         sizingFitReviews: 0,
         avgRating: 0,
@@ -159,6 +180,16 @@ export function CreateBrandModal({ isOpen, onClose, onCreateBrand }: CreateBrand
         lastUpdated: new Date().toISOString().split("T")[0],
       };
       onCreateBrand(newBrand)
+      
+      // Refresh logos cache to include the new brand's logo
+      if (onRefreshLogos) {
+        console.log('[CreateBrandModal] Refreshing logos cache after brand creation')
+        // Add a small delay to give the scraper time to save the logo
+        setTimeout(() => {
+          onRefreshLogos()
+        }, 2000) // 2 second delay
+      }
+      
       handleClose()
     } catch (e: any) {
       setApiError(e.message || 'Failed to create brand')
@@ -175,6 +206,13 @@ export function CreateBrandModal({ isOpen, onClose, onCreateBrand }: CreateBrand
     setIsBulkMode(false)
     setErrors({})
     setIsValidUrl(true)
+    // Reset logo state
+    setLogoFile(null)
+    setLogoPreview(null)
+    setLogoUploading(false)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
     onClose()
   }
 
@@ -182,6 +220,85 @@ export function CreateBrandModal({ isOpen, onClose, onCreateBrand }: CreateBrand
     if (e.key === "Enter") {
       e.preventDefault()
       addKeyword()
+    }
+  }
+
+  // Logo upload functions
+  const handleLogoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setErrors(prev => ({ ...prev, logo: 'Please select an image file' }))
+        return
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, logo: 'File size must be less than 5MB' }))
+        return
+      }
+      
+      setLogoFile(file)
+      setErrors(prev => ({ ...prev, logo: '' }))
+      
+      // Create preview
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setLogoPreview(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const removeLogo = () => {
+    setLogoFile(null)
+    setLogoPreview(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const uploadLogo = async (brandName: string): Promise<string | null> => {
+    if (!logoFile) return null
+    
+    try {
+      setLogoUploading(true)
+      
+      // Convert file to base64
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          const result = reader.result as string
+          resolve(result)
+        }
+        reader.readAsDataURL(logoFile)
+      })
+      
+      // Upload to backend
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/upload_logo`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          brand_name: brandName,
+          logo_data: base64,
+          logo_filename: logoFile.name,
+          logo_mime_type: logoFile.type
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to upload logo')
+      }
+      
+      return base64
+    } catch (error) {
+      console.error('Logo upload error:', error)
+      throw new Error('Failed to upload logo')
+    } finally {
+      setLogoUploading(false)
     }
   }
 
@@ -232,6 +349,82 @@ export function CreateBrandModal({ isOpen, onClose, onCreateBrand }: CreateBrand
                   </p>
                 )}
                 <p className="text-xs text-gray-500 mt-1">Example: https://www.trustpilot.com/review/nike.com</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Logo Upload */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2 text-lg">
+                <Image className="w-5 h-5" />
+                <span>Brand Logo (Optional)</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div>
+                <Label htmlFor="logo-upload">Upload Logo</Label>
+                <div className="mt-2 space-y-4">
+                  {/* Logo Preview */}
+                  {logoPreview && (
+                    <div className="relative inline-block">
+                      <img
+                        src={logoPreview}
+                        alt="Logo preview"
+                        className="w-20 h-20 object-contain border border-gray-300 rounded-lg"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute -top-2 -right-2 w-6 h-6 p-0"
+                        onClick={removeLogo}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Upload Button */}
+                  <div className="flex items-center space-x-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      id="logo-upload"
+                      accept="image/*"
+                      onChange={handleLogoSelect}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={logoUploading}
+                      className="flex items-center space-x-2"
+                    >
+                      <Upload className="w-4 h-4" />
+                      <span>{logoFile ? 'Change Logo' : 'Choose Logo'}</span>
+                    </Button>
+                    {logoUploading && (
+                      <div className="flex items-center space-x-2 text-sm text-gray-500">
+                        <RotateCcw className="w-4 h-4 animate-spin" />
+                        <span>Uploading...</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Error Message */}
+                  {errors.logo && (
+                    <p className="text-sm text-red-600 flex items-center space-x-1">
+                      <AlertCircle className="w-4 h-4" />
+                      <span>{errors.logo}</span>
+                    </p>
+                  )}
+                  
+                  <p className="text-xs text-gray-500">
+                    Supported formats: JPG, PNG, GIF. Max size: 5MB.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>

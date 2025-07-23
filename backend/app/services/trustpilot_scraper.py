@@ -104,27 +104,52 @@ class TrustpilotScraper:
                 title_elem = card.query_selector('h2')
                 body_elem = card.query_selector('p')
                 
-                # Extract review link - find individual review links in review titles
+                # Extract review link - find individual review links
                 review_link = None
                 
-                # Look for review links in the review content area
-                review_content = card.query_selector('.styles_reviewContent__tuXiN')
-                if review_content:
-                    # Find links within the review content
-                    link_elem = review_content.query_selector('.link_internal__Eam_b')
-                    if link_elem:
-                        href = link_elem.get_attribute('href')
-                        if href:
+                # Method 1: Look for review title links
+                title_link = card.query_selector('h2 a[href*="/review/"]')
+                if title_link:
+                    href = title_link.get_attribute('href')
+                    if href:
+                        if href.startswith('/'):
+                            review_link = f"https://uk.trustpilot.com{href}"
+                        elif href.startswith('http'):
+                            review_link = href
+                        else:
+                            review_link = f"https://uk.trustpilot.com/{href}"
+                
+                # Method 2: Look for any link with review ID pattern
+                if not review_link:
+                    all_links = card.query_selector_all('a[href*="/review/"]')
+                    for link in all_links:
+                        href = link.get_attribute('href')
+                        if href and '/review/' in href:
                             if href.startswith('/'):
                                 review_link = f"https://uk.trustpilot.com{href}"
                             elif href.startswith('http'):
                                 review_link = href
                             else:
                                 review_link = f"https://uk.trustpilot.com/{href}"
+                            break
                 
-                # Fallback: if no individual link found, use the page URL
+                # Method 3: Look for data attributes that might contain review IDs
                 if not review_link:
-                    review_link = url
+                    review_id_attr = card.get_attribute('data-review-id') or card.get_attribute('data-testid')
+                    if review_id_attr:
+                        # Construct review URL from review ID
+                        review_link = f"https://uk.trustpilot.com/review/{review_id_attr}"
+                
+                # Extract customer name first (needed for fallback review link)
+                customer_name = ''
+                if name_elem and name_elem.text_content():
+                    name_raw = name_elem.text_content()
+                    customer_name = name_raw.strip() if name_raw is not None else ''
+                
+                # NO FALLBACK URL - if no unique link found, set to None
+                # The enhanced duplicate detection will handle duplicates based on content, customer, and date
+                if not review_link:
+                    review_link = None
                 
                 title_text = ''
                 if title_elem and title_elem.text_content():
@@ -134,10 +159,6 @@ class TrustpilotScraper:
                 if body_elem and body_elem.text_content():
                     body_raw = body_elem.text_content()
                     body_text = body_raw.strip() if body_raw is not None else ''
-                customer_name = ''
-                if name_elem and name_elem.text_content():
-                    name_raw = name_elem.text_content()
-                    customer_name = name_raw.strip() if name_raw is not None else ''
                 page_reviews.append({
                     'customer_name': customer_name,
                     'review': body_text,
@@ -258,7 +279,16 @@ class TrustpilotScraper:
         # Get database session and fetch initial data
         with get_db_session() as db:
             brand_source = get_brand_source_url(db, brand_name)
-            print(f"[DEBUG] brand_source_url lookup result: {brand_source}")
+            
+            # Log brand source without the massive logo data
+            if brand_source and 'logo_data' in brand_source:
+                log_brand_source = brand_source.copy()
+                log_brand_source['logo_data'] = f"[BASE64_DATA_{len(brand_source['logo_data'])}_chars]"
+                print(f"[DEBUG] brand_source_url lookup result: {log_brand_source}")
+            else:
+                print(f"[DEBUG] brand_source_url lookup result: {brand_source}")
+            
+            # Check if we have a valid source URL
             if brand_source and brand_source.get('source_url'):
                 user_url = brand_source['source_url']
             else:
@@ -325,13 +355,46 @@ class TrustpilotScraper:
                 consecutive_empty_pages = 0
                 print(f"Found {len(page_reviews)} reviews on page {page_num}")
                 
-                # Get existing review links for this page
+                # Enhanced duplicate detection: check multiple fields
                 with get_db_session() as db:
-                    existing_links = {r.review_link for r in db.query(Review).filter(Review.brand_name == brand_name).all() if r.review_link is not None}
+                    existing_reviews = db.query(Review).filter(Review.brand_name == brand_name).all()
+                    
+                    # Create sets for different duplicate detection methods
+                    existing_links = {r.review_link for r in existing_reviews if r.review_link is not None}
+                    existing_customer_date_pairs = {(r.customer_name, r.date) for r in existing_reviews if r.customer_name and r.date}
+                    
+                    # Create a set of review content hashes for exact content matching
+                    existing_content_hashes = set()
+                    for r in existing_reviews:
+                        if r.review and r.customer_name and r.date:
+                            # Create a hash based on review content, customer name, and date
+                            content_hash = f"{r.review[:200]}_{r.customer_name}_{r.date}"
+                            existing_content_hashes.add(content_hash)
                 
-                newly_found_on_page = [
-                    r for r in page_reviews if r['review_link'] not in existing_links
-                ]
+                newly_found_on_page = []
+                for review in page_reviews:
+                    is_duplicate = False
+                    
+                    # PRIORITY 1: If we have a review link, check that first
+                    if review['review_link']:
+                        if review['review_link'] in existing_links:
+                            is_duplicate = True
+                    
+                    # PRIORITY 2: Only check other fields if no review link OR review link is None
+                    if not is_duplicate and not review['review_link']:
+                        # Method 2: Check customer_name + date combination
+                        customer_date_pair = (review['customer_name'], review['date'])
+                        if customer_date_pair in existing_customer_date_pairs:
+                            is_duplicate = True
+                        
+                        # Method 3: Check review content hash (most reliable)
+                        if review['review'] and review['customer_name'] and review['date']:
+                            content_hash = f"{review['review'][:200]}_{review['customer_name']}_{review['date']}"
+                            if content_hash in existing_content_hashes:
+                                is_duplicate = True
+                    
+                    if not is_duplicate:
+                        newly_found_on_page.append(review)
                 
                 print(f"Found {len(newly_found_on_page)} new reviews on page {page_num}")
                 
