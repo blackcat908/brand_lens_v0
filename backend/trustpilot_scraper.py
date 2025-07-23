@@ -11,6 +11,9 @@ import json
 import requests
 from PIL import Image
 from io import BytesIO
+from nltk.stem import WordNetLemmatizer
+from nltk.tokenize import word_tokenize
+import nltk
 import logging
 logger = logging.getLogger(__name__)
 
@@ -176,38 +179,26 @@ class TrustpilotScraper:
             return []
 
     def get_trustpilot_url(self, brand_name, page_num):
-        # Normalize brand name for mapping
-        normalized = brand_name.lower().replace('_', '').replace(' ', '').replace('www.', '')
-        if 'wanderdoll' in normalized:
-            normalized = 'wander-doll'
-        brand_urls = {
-            'wander-doll': f"https://uk.trustpilot.com/review/www.wander-doll.com?page={page_num}",
-            'oddmuse': f"https://uk.trustpilot.com/review/oddmuse.co.uk?page={page_num}",
-            'because-of-alice': f"https://uk.trustpilot.com/review/www.becauseofalice.com?page={page_num}",
-            'bbxbrand': f"https://uk.trustpilot.com/review/bbxbrand.com?page={page_num}",
-            'murci': f"https://uk.trustpilot.com/review/murci.co.uk?page={page_num}"
-        }
-        if normalized in brand_urls:
-            return [brand_urls[normalized]]
-        # Fallbacks
-        fallback_urls = [
-            f"https://uk.trustpilot.com/review/www.{normalized}.com?page={page_num}",
-            f"https://uk.trustpilot.com/review/{normalized}.co.uk?page={page_num}"
-        ]
-        return fallback_urls
+        # Only use the source URL from the DB, do not guess or canonicalize.
+        from database import get_brand_source_url, get_db_session
+        with get_db_session() as db:
+            brand_source = get_brand_source_url(db, brand_name)
+            if brand_source and 'source_url' in brand_source:
+                return [f"{brand_source['source_url']}?page={page_num}"]
+            else:
+                logger.error(f"[ERROR] No Trustpilot URL found for brand '{brand_name}'. Aborting.")
+                return []
 
     def get_trustpilot_source_url(self, brand_name):
-        brand_urls = {
-            'wander-doll': "https://uk.trustpilot.com/review/www.wander-doll.com",
-            'oddmuse': "https://uk.trustpilot.com/review/oddmuse.co.uk",
-            'because-of-alice': "https://uk.trustpilot.com/review/www.becauseofalice.com",
-            'bbxbrand': "https://uk.trustpilot.com/review/bbxbrand.com",
-            'murci': "https://uk.trustpilot.com/review/murci.co.uk"
-        }
-        if brand_name.lower() in brand_urls:
-            return brand_urls[brand_name.lower()]
-        # Fallbacks
-        return f"https://uk.trustpilot.com/review/www.{brand_name}.com"
+        # Only use the source URL from the DB, do not guess or canonicalize.
+        from database import get_brand_source_url, get_db_session
+        with get_db_session() as db:
+            brand_source = get_brand_source_url(db, brand_name)
+            if brand_source and 'source_url' in brand_source:
+                return brand_source['source_url']
+            else:
+                logger.error(f"[ERROR] No Trustpilot URL found for brand '{brand_name}'. Aborting.")
+                return None
 
     def get_fallback_urls(self, user_url):
         # Generate smart fallback variations based on the user_url
@@ -278,6 +269,18 @@ class TrustpilotScraper:
 
     def scrape_brand_reviews(self, brand_name, max_pages=50, start_page=1):
         """Scrapes reviews for a brand, using ONLY the user-provided Trustpilot URL from the DB. No guessing."""
+        logger.info(f"[DEBUG] brand_name passed to scraper: '{brand_name}'")
+        # Ensure NLTK resources are available
+        try:
+            nltk.data.find('corpora/wordnet')
+        except LookupError:
+            nltk.download('wordnet')
+        try:
+            nltk.data.find('tokenizers/punkt')
+        except LookupError:
+            nltk.download('punkt')
+        lemmatizer = WordNetLemmatizer()
+        
         with get_db_session() as db:
             brand_source = get_brand_source_url(db, brand_name)
             logger.debug(f"[DEBUG] brand_source_url lookup result: {brand_source}")
@@ -350,14 +353,46 @@ class TrustpilotScraper:
                 consecutive_empty_pages = 0
                 logger.info(f"Found {len(page_reviews)} reviews on page {page_num}")
                 
-                # Get existing review links for this page
+                # Enhanced duplicate detection: check multiple fields
                 with get_db_session() as db:
-                    result = db.execute(text("SELECT review_link FROM reviews WHERE brand_name = :brand_name"), {"brand_name": brand_name})
-                    existing_links = {row[0] for row in result.fetchall() if row[0]}
+                    existing_reviews = db.query(Review).filter(Review.brand_name == brand_name).all()
+                    
+                    # Create sets for different duplicate detection methods
+                    existing_links = {r.review_link for r in existing_reviews if r.review_link is not None}
+                    existing_customer_date_pairs = {(r.customer_name, r.date) for r in existing_reviews if r.customer_name and r.date}
+                    
+                    # Create a set of review content hashes for exact content matching
+                    existing_content_hashes = set()
+                    for r in existing_reviews:
+                        if r.review and r.customer_name and r.date:
+                            # Create a hash based on review content, customer name, and date
+                            content_hash = f"{r.review[:200]}_{r.customer_name}_{r.date}"
+                            existing_content_hashes.add(content_hash)
                 
-                newly_found_on_page = [
-                    r for r in page_reviews if r['review_link'] not in existing_links
-                ]
+                newly_found_on_page = []
+                for review in page_reviews:
+                    is_duplicate = False
+                    
+                    # PRIORITY 1: If we have a review link, check that first
+                    if review['review_link']:
+                        if review['review_link'] in existing_links:
+                            is_duplicate = True
+                    
+                    # PRIORITY 2: Only check other fields if no review link OR review link is None
+                    if not is_duplicate and not review['review_link']:
+                        # Method 2: Check customer_name + date combination
+                        customer_date_pair = (review['customer_name'], review['date'])
+                        if customer_date_pair in existing_customer_date_pairs:
+                            is_duplicate = True
+                        
+                        # Method 3: Check review content hash (most reliable)
+                        if review['review'] and review['customer_name'] and review['date']:
+                            content_hash = f"{review['review'][:200]}_{review['customer_name']}_{review['date']}"
+                            if content_hash in existing_content_hashes:
+                                is_duplicate = True
+                    
+                    if not is_duplicate:
+                        newly_found_on_page.append(review)
                 
                 logger.info(f"Found {len(newly_found_on_page)} new reviews on page {page_num}")
                 
@@ -389,10 +424,6 @@ class TrustpilotScraper:
                                     continue
                                 
                                 # --- Keyword/Category Tagging and Sentiment Analysis with Lemmatization ---
-                                from nltk.stem import WordNetLemmatizer
-                                from nltk.tokenize import word_tokenize
-                                import nltk
-                                lemmatizer = WordNetLemmatizer()
                                 
                                 # Clean and lemmatize review text
                                 review_text_clean = review_text.lower().strip()
@@ -484,7 +515,7 @@ class TrustpilotScraper:
                                                     "categories": categories_json,
                                                     "matched_keywords": matched_keywords_json
                                                 }
-                                )
+                                            )
                                         except Exception as fallback_error:
                                             logger.error(f"[ERROR] Fallback INSERT also failed: {fallback_error}")
                                             continue
@@ -545,8 +576,8 @@ def fetch_trustpilot_logo(trustpilot_url, brand_name):
                 logo_elem = page.query_selector('img[alt*="logo"], img[alt*="Logo"], img[alt*="brand"]')
                 if not logo_elem:
                     logger.warning("[LOGO] No logo found with any selector.")
-                    browser.close()
-                    return False
+                browser.close()
+                return False
             
             logo_url = logo_elem.get_attribute("src")
             if not logo_url:
@@ -571,7 +602,7 @@ def fetch_trustpilot_logo(trustpilot_url, brand_name):
             # Generate filename for database storage
             filename = f"{brand_name}-logo.{ext}"
             
-            # Save to database only
+                        # Save to database only
             try:
                 from database import update_brand_logo, get_db_session
                 
