@@ -342,39 +342,49 @@ def health_check():
 
 @app.route('/api/scrape', methods=['POST'])
 def scrape_api():
-    logger.info('--- /api/scrape called ---')
+    logger.info('=== /api/scrape called ===')
     try:
         data = request.get_json()
-        logger.info('Request data:', data)
+        logger.info(f'[SCRAPE] Request data: {data}')
         source_url = data.get('source_url')
         if not source_url:
-            logger.error('Missing source_url in request')
+            logger.error('[SCRAPE] Missing source_url in request')
             return jsonify({'error': 'Missing source_url'}), 400
+        
         # Extract brand from URL
         brand_match = re.search(r'www\.trustpilot\.com/review/([^.]+)', source_url)
         if not brand_match:
-            logger.error('Invalid Trustpilot URL')
+            logger.error('[SCRAPE] Invalid Trustpilot URL format')
             return jsonify({'error': 'Invalid Trustpilot URL'}), 400
+        
         brand = brand_match.group(1)
-        logger.info(f'Extracted brand: {brand}')
+        logger.info(f'[SCRAPE] Extracted brand: {brand}')
+        
         from database import init_db, get_db_session, Review
-        logger.info('Initializing DB...')
+        logger.info('[SCRAPE] Initializing DB...')
         init_db()
-        logger.info('Starting scraper...')
+        
+        logger.info('[SCRAPE] Starting scraper...')
         scraper = TrustpilotScraper(headless=True)
         new_reviews_count = scraper.scrape_brand_reviews(brand, max_pages=3)
-        logger.info('Scraper finished. new_reviews_count:', new_reviews_count)
+        logger.info(f'[SCRAPE] Scraper finished. new_reviews_count: {new_reviews_count}')
+        
         if new_reviews_count is None:
             new_reviews_count = 0
-        logger.info('Browser closed.')
+            logger.warning('[SCRAPE] new_reviews_count was None, setting to 0')
+        
+        logger.info('[SCRAPE] Browser closed.')
+        
         with get_db_session() as db:
-            logger.info('Getting total_reviews...')
+            logger.info('[SCRAPE] Getting total_reviews...')
             row = db.execute(
                 text('SELECT COUNT(*) FROM reviews WHERE brand_name = :brand_name'),
                 {'brand_name': brand}
             ).fetchone()
             total_reviews = row[0] if row is not None else 0
-        logger.info(f"Returning: success=True, brand={brand}, new_reviews={new_reviews_count}, total_reviews={total_reviews}")
+            logger.info(f'[SCRAPE] Total reviews for {brand}: {total_reviews}')
+        
+        logger.info(f"[SCRAPE] Returning: success=True, brand={brand}, new_reviews={new_reviews_count}, total_reviews={total_reviews}")
         return jsonify({
             'success': True,
             'brand': brand,
@@ -383,9 +393,9 @@ def scrape_api():
         })
     except Exception as e:
         import traceback
-        logger.error('Exception in /api/scrape:')
-        traceback.print_exc()
-        logger.error(f"Error in /api/scrape: {e}")
+        logger.error('[SCRAPE] Exception in /api/scrape:')
+        logger.error(f'[SCRAPE] Traceback: {traceback.format_exc()}')
+        logger.error(f"[SCRAPE] Error in /api/scrape: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/brand-source-url', methods=['GET'])
@@ -417,32 +427,40 @@ def set_brand_source_url_api():
 
 @app.route('/api/scrape_brand', methods=['POST'])
 def scrape_brand_api():
-    logger.info('--- /api/scrape_brand called ---')
+    logger.info('=== /api/scrape_brand called ===')
     try:
         data = request.get_json()
-        logger.info('Request data:', data)
+        logger.info(f'[SCRAPE_BRAND] Request data: {data}')
         brand = data.get('brand')
         if not brand:
-            logger.error('Missing brand in request')
+            logger.error('[SCRAPE_BRAND] Missing brand in request')
             return jsonify({'error': 'Missing brand'}), 400
+        
         from database import init_db, get_db_session, Review
-        logger.info('Initializing DB...')
+        logger.info('[SCRAPE_BRAND] Initializing DB...')
         init_db()
-        logger.info('Starting scraper...')
+        
+        logger.info('[SCRAPE_BRAND] Starting scraper...')
         scraper = TrustpilotScraper(headless=True)
         new_reviews_count = scraper.scrape_brand_reviews(brand, max_pages=3)
-        logger.info(f'Scraper finished. new_reviews_count: {new_reviews_count}')
+        logger.info(f'[SCRAPE_BRAND] Scraper finished. new_reviews_count: {new_reviews_count}')
+        
         if new_reviews_count is None:
             new_reviews_count = 0
-        logger.info('Browser closed.')
+            logger.warning('[SCRAPE_BRAND] new_reviews_count was None, setting to 0')
+        
+        logger.info('[SCRAPE_BRAND] Browser closed.')
+        
         with get_db_session() as db:
-            logger.info('Getting total_reviews...')
+            logger.info('[SCRAPE_BRAND] Getting total_reviews...')
             row = db.execute(
                 text('SELECT COUNT(*) FROM reviews WHERE brand_name = :brand_name'),
                 {'brand_name': brand}
             ).fetchone()
             total_reviews = row[0] if row is not None else 0
-        logger.info(f"Returning: success=True, brand={brand}, new_reviews={new_reviews_count}, total_reviews={total_reviews}")
+            logger.info(f'[SCRAPE_BRAND] Total reviews for {brand}: {total_reviews}')
+        
+        logger.info(f"[SCRAPE_BRAND] Returning: success=True, brand={brand}, new_reviews={new_reviews_count}, total_reviews={total_reviews}")
         return jsonify({
             'success': True,
             'brand': brand,
@@ -451,9 +469,9 @@ def scrape_brand_api():
         })
     except Exception as e:
         import traceback
-        logger.error('Exception in /api/scrape_brand:')
-        traceback.print_exc()
-        logger.error(f"Error in /api/scrape_brand: {e}")
+        logger.error('[SCRAPE_BRAND] Exception in /api/scrape_brand:')
+        logger.error(f'[SCRAPE_BRAND] Traceback: {traceback.format_exc()}')
+        logger.error(f"[SCRAPE_BRAND] Error in /api/scrape_brand: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/brands/<brand_id>', methods=['DELETE'])
@@ -464,7 +482,7 @@ def delete_brand(brand_id):
         
         # Delete logo from database first
         try:
-        with get_db_session() as db:
+            with get_db_session() as db:
                 delete_brand_logo(db, brand_id)
                 logger.info(f"[DELETE] Logo deleted from database for {brand_id}")
         except Exception as logo_error:
