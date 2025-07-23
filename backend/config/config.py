@@ -25,7 +25,7 @@ SCRAPING_CONFIG = {
 
 # Database settings
 DATABASE_CONFIG = {
-    'url': 'postgresql://postgres:gyRafIdjWaKHngpJqYJfbGDcYNzaaIyn@postgres.railway.internal:5432/railway',
+    'url': 'postgresql://postgres:gyRafIdjWaKHngpJqYJfbGDcYNzaaIyn@switchyard.proxy.rlwy.net:17267/railway',
     'echo': False,  # Set to True for SQL debugging
 }
 
