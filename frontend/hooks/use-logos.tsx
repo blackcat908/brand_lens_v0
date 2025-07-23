@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface LogoData {
   logo_data: string;
@@ -21,7 +21,7 @@ export const useLogos = () => {
   const [loading, setLoading] = useState(isLoading);
   const [error, setError] = useState(hasError);
 
-  const fetchLogos = async () => {
+  const fetchLogos = useCallback(async () => {
     // If already cached, return immediately
     if (logosCache) {
       setLogos(logosCache);
@@ -58,32 +58,48 @@ export const useLogos = () => {
       isLoading = false;
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchLogos();
-  }, []);
+  }, [fetchLogos]);
 
-  const getLogo = (brandName: string): string | null => {
+  const getLogo = useCallback((brandName: string): string | null => {
     console.log(`[useLogos] getLogo called for: "${brandName}"`);
     console.log(`[useLogos] logos available:`, logos ? Object.keys(logos) : 'null');
     if (!logos || !brandName) {
       console.log(`[useLogos] No logos or brandName, returning null`);
       return null;
     }
-    const logoData = logos[brandName]?.logo_data || null;
-    console.log(`[useLogos] Logo data for "${brandName}":`, logoData ? 'Found' : 'Not found');
-    return logoData;
-  };
+    const logoData = logos[brandName];
+    if (logoData?.logo_data) {
+      console.log(`[useLogos] Logo data found for "${brandName}"`);
+      
+      // Check if logo_data is already a data URL
+      if (logoData.logo_data.startsWith('data:')) {
+        // Already a data URL, use as is
+        return logoData.logo_data;
+      } else if (logoData.logo_mime_type) {
+        // Convert base64 to proper data URL with MIME type
+        const dataUrl = `data:${logoData.logo_mime_type};base64,${logoData.logo_data}`;
+        return dataUrl;
+      } else {
+        console.log(`[useLogos] Invalid logo data format for "${brandName}"`);
+        return null;
+      }
+    }
+    console.log(`[useLogos] Logo data for "${brandName}": Not found`);
+    return null;
+  }, [logos]);
 
-  const clearCache = () => {
+  const clearCache = useCallback(() => {
     logosCache = null;
     isLoading = false;
     hasError = false;
     setLogos(null);
     setLoading(false);
     setError(false);
-  };
+  }, []);
 
   return {
     logos,
