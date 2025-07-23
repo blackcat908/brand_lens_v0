@@ -654,6 +654,7 @@ export default function BrandDetailPage() {
   }
 
   const handleUpdate = async () => {
+    console.log('[UPDATE] Starting update for brand:', id);
     setIsUpdating(true);
     setUpdateStep('initiated');
     setUpdateStatus("idle");
@@ -664,18 +665,31 @@ export default function BrandDetailPage() {
     setUpdateStep('started');
     await new Promise(res => setTimeout(res, 600));
     try {
+      const apiUrl = `${getApiBaseUrl()}/scrape_brand`;
+      const requestBody = { brand: id };
+      console.log('[UPDATE] Calling API:', apiUrl);
+      console.log('[UPDATE] Request body:', requestBody);
+      
       // Instead of calling the Next.js /api/scrape endpoint, call the Flask backend /api/scrape_brand endpoint
-      const res = await fetch(`${getApiBaseUrl()}/scrape_brand`, {
+      const res = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brand: id })
+        body: JSON.stringify(requestBody)
       });
+      
+      console.log('[UPDATE] Response status:', res.status);
+      console.log('[UPDATE] Response ok:', res.ok);
       setUpdateStep('done');
       await new Promise(res => setTimeout(res, 400));
       setUpdateStep('updating');
-      if (!res.ok) throw new Error("Failed to fetch");
+      if (!res.ok) {
+        console.error('[UPDATE] Response not ok:', res.status, res.statusText);
+        throw new Error("Failed to fetch");
+      }
       const data = await res.json();
+      console.log('[UPDATE] Response data:', data);
       const newReviews = data.newReviews ?? data.new_reviews ?? data.newReviewsCount ?? data.added_count ?? 0;
+      console.log('[UPDATE] New reviews count:', newReviews);
       
       // Fetch reviews with current pagination settings instead of all reviews
       const apiFilters: any = {};
