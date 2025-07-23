@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, Column, Integer, String, Float, Text, UniqueConstraint, JSON, func, desc, asc
+from sqlalchemy import create_engine, Column, Integer, String, Float, Text, UniqueConstraint, JSON, func, desc, asc, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.exc import IntegrityError, OperationalError
@@ -8,7 +8,8 @@ from typing import Optional, List, Dict, Any
 import json
 from config import DATABASE_CONFIG
 import time
-print(f"Connecting to database: {DATABASE_CONFIG['url']}")
+import logging
+logger = logging.getLogger(__name__)
 
 Base = declarative_base()
 engine = create_engine(DATABASE_CONFIG['url'], echo=DATABASE_CONFIG.get('echo', False))
@@ -70,9 +71,9 @@ def get_db_session():
 
 def init_db():
     """Initialize database"""
-    print(f"Connecting to database: {DATABASE_CONFIG['url']}")
+    logger.info(f"Connecting to database: {DATABASE_CONFIG['url']}")
     Base.metadata.create_all(bind=engine)
-    print("Database connection successful!")
+    logger.info("Database connection successful!")
 
 def get_brand_source_url(db, brand_name: str) -> Optional[Dict[str, Any]]:
     obj = db.query(BrandSourceUrl).filter(BrandSourceUrl.brand_name == brand_name.strip()).first()
@@ -276,6 +277,27 @@ def get_brands_with_counts_optimized(db) -> List[Dict[str, Any]]:
     
     return result
 
+# Enhanced delete function with better logging and analytics cleanup
+def delete_brand_and_reviews(brand_name):
+    with get_db_session() as db:
+        review_count = db.query(Review).filter(Review.brand_name == brand_name).count()
+        logger.info(f"[DELETE] Found {review_count} reviews for brand: '{brand_name}'")
+        result = db.execute(text("DELETE FROM reviews WHERE brand_name = :brand_name"), {"brand_name": brand_name})
+        logger.info(f"[DELETE] Removed {result.rowcount} reviews for brand: '{brand_name}'")
+        logger.info(f"[DELETE] Deleting brand source url for brand: '{brand_name}'")
+        db.query(BrandSourceUrl).filter(BrandSourceUrl.brand_name == brand_name).delete(synchronize_session=False)
+        logger.info(f"[DELETE] Deleting brand keywords for brand: '{brand_name}'")
+        deleted_keywords = db.query(BrandKeyword).filter(BrandKeyword.brand_id == brand_name).delete(synchronize_session=False)
+        logger.info(f"[DELETE] Deleted {deleted_keywords} brand keywords for brand: '{brand_name}'")
+        try:
+            logger.info(f"[DELETE] Deleting analytics for brand: '{brand_name}'")
+            analytics_result = db.execute(text("DELETE FROM analytics WHERE brand_name = :brand_name"), {"brand_name": brand_name})
+            logger.info(f"[DELETE] Deleted analytics rows: {analytics_result.rowcount}")
+        except Exception as e:
+            logger.info(f"[DELETE] Analytics table not found or error deleting analytics: {e}")
+        db.commit()
+        logger.info(f"[DELETE] All data for brand '{brand_name}' deleted.")
+
 # Legacy functions for backward compatibility
 def get_reviews_by_brand(db, brand_name: str) -> List[Dict[str, Any]]:
     objs = db.query(Review).filter(Review.brand_name == brand_name).order_by(Review.id.desc()).all()
@@ -288,12 +310,6 @@ def get_all_reviews(db) -> List[Dict[str, Any]]:
 def get_brands(db) -> List[str]:
     objs = db.query(BrandSourceUrl.brand_name).distinct().order_by(BrandSourceUrl.brand_name).all()
     return [o[0] for o in objs]
-
-def delete_brand_and_reviews(brand_id):
-    with get_db_session() as db:
-        db.query(Review).filter(Review.brand_name.ilike(f'%{brand_id}%')).delete(synchronize_session=False)
-        db.query(BrandSourceUrl).filter(BrandSourceUrl.brand_name.ilike(f'%{brand_id}%')).delete(synchronize_session=False)
-        db.commit()
 
 def get_brand_keywords(db, brand_id: str) -> dict:
     objs = db.query(BrandKeyword).filter(BrandKeyword.brand_id == brand_id).all()

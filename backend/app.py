@@ -5,7 +5,7 @@ from sentiment_analyzer import SentimentAnalyzer
 from datetime import datetime, timedelta
 import json
 from collections import defaultdict, Counter
-from app.services.trustpilot_scraper import TrustpilotScraper, fetch_trustpilot_logo
+from trustpilot_scraper import TrustpilotScraper, fetch_trustpilot_logo
 import re, requests
 import threading
 import os

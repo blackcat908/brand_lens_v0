@@ -17,9 +17,11 @@ BRANDS = [
 SCRAPING_CONFIG = {
     'max_pages_per_brand': 50,  # Limit pages for production
     'delay_between_brands': 10,  # Seconds to wait between brands
-    'delay_between_pages': 5,   # Seconds to wait between pages
+    'delay_between_pages': (0, 1),  # min, max seconds (random range for speed)
     'headless': True,           # Run browser in headless mode
     'timeout': 60000,           # Page load timeout in milliseconds
+    'max_retries': 3,           # retry attempts per page
+    'max_consecutive_empty': 3, # stop after N empty pages
 }
 
 # Database settings - use Railway's reference variable
@@ -28,7 +30,7 @@ if not database_url:
     print("ERROR: DATABASE_URL environment variable is not set!")
     print("Please set DATABASE_URL in Railway variables to: ${{ Postgres.DATABASE_URL }}")
     # Use fallback for local development
-    database_url = 'postgresql://postgres:gyRafIdjWaKHngpJqYJfbGDcYNzaaIyn@switchyard.proxy.rlwy.net:17267/railway'
+    database_url = 'sqlite:///reviews.db'  # Fallback to SQLite for local development
 
 DATABASE_CONFIG = {
     'url': database_url,
@@ -41,6 +43,8 @@ LOGGING_CONFIG = {
     'format': '%(asctime)s - %(levelname)s - %(message)s',
     'log_dir': 'logs',
     'max_log_files': 30,  # Keep last 30 days of logs
+    'log_to_console': True,  # Log to console
+    'log_to_file': True,     # Log to file
 }
 
 # Production settings
