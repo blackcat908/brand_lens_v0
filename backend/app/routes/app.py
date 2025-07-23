@@ -81,8 +81,9 @@ def create_brand():
     with get_db_session() as db:
         set_brand_source_url(db, extracted_brand_name, trustpilot_url)
     # Fetch logo synchronously and get logo URL
-    logo_success = fetch_trustpilot_logo(trustpilot_url, extracted_brand_name, extracted_brand_name, output_dir="../frontend/public/logos")
-    logo_url = f"/logos/{extracted_brand_name}-logo.jpg" if logo_success else "/placeholder-logo.png"
+    logo_success = fetch_trustpilot_logo(trustpilot_url, extracted_brand_name)
+    # Logo is now stored in database, so we don't need a file path
+    logo_url = "/placeholder-logo.png"  # Frontend will fetch from database
     # Start review scraping for pages 1-5 in the background (single browser session)
     cancel_event = threading.Event()
     def run_scraper():
@@ -181,13 +182,13 @@ def get_brand_reviews(brand_name):
                 review_categories = []
                 cats = review.get('categories')
                 if cats:
-                try:
+                    try:
                         if isinstance(cats, str):
                             review_categories = json.loads(cats)
                         elif isinstance(cats, list):
                             review_categories = cats
-                except Exception:
-                    review_categories = []
+                    except Exception:
+                        review_categories = []
                 # Normalize for whitespace/case
                 if not review_categories or not any(category_filter.strip().lower() == str(c).strip().lower() for c in review_categories):
                     continue
