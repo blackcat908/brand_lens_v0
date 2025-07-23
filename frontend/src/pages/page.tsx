@@ -218,6 +218,7 @@ export default function BrandsPage() {
                           alt={`${brand.name} logo`}
                             maxWidth={40}
                             maxHeight={40}
+                            brandName={brand.name}
                           />
                           {isSyncing && (
                             <span className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-md">

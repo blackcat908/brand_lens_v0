@@ -35,6 +35,9 @@ class BrandSourceUrl(Base):
     __tablename__ = 'brand_source_urls'
     brand_name = Column(String(255), primary_key=True)  # Use raw brand name as PK
     source_url = Column(String(500), nullable=False)
+    logo_data = Column(Text)  # Store logo as base64 string (easier than BLOB for SQLite)
+    logo_filename = Column(String(255))  # Store original filename
+    logo_mime_type = Column(String(100))  # Store MIME type (image/jpeg, image/png, etc.)
     # No brand_display_name
 
 class BrandKeyword(Base):
@@ -76,21 +79,40 @@ def get_brand_source_url(db, brand_name: str) -> Optional[Dict[str, Any]]:
     if obj:
         return {
             'brand_name': obj.brand_name,
-            'source_url': obj.source_url
+            'source_url': obj.source_url,
+            'logo_data': obj.logo_data,
+            'logo_filename': obj.logo_filename,
+            'logo_mime_type': obj.logo_mime_type
         }
     return None
 
-def set_brand_source_url(db, brand_name: str, source_url: str) -> Dict[str, Any]:
+def set_brand_source_url(db, brand_name: str, source_url: str, logo_data: str = None, 
+                        logo_filename: str = None, logo_mime_type: str = None) -> Dict[str, Any]:
     obj = db.query(BrandSourceUrl).filter(BrandSourceUrl.brand_name == brand_name).first()
     if obj:
         obj.source_url = source_url
+        if logo_data is not None:
+            obj.logo_data = logo_data
+        if logo_filename is not None:
+            obj.logo_filename = logo_filename
+        if logo_mime_type is not None:
+            obj.logo_mime_type = logo_mime_type
     else:
-        obj = BrandSourceUrl(brand_name=brand_name, source_url=source_url)
+        obj = BrandSourceUrl(
+            brand_name=brand_name, 
+            source_url=source_url,
+            logo_data=logo_data,
+            logo_filename=logo_filename,
+            logo_mime_type=logo_mime_type
+        )
         db.add(obj)
     db.commit()
     return {
         'brand_name': obj.brand_name,
-        'source_url': obj.source_url
+        'source_url': obj.source_url,
+        'logo_data': obj.logo_data,
+        'logo_filename': obj.logo_filename,
+        'logo_mime_type': obj.logo_mime_type
     }
 
 def add_review(db, brand_name: str, customer_name: str, review: str, 
@@ -310,3 +332,36 @@ def set_global_keywords(db, category: str, keywords: list[str]) -> None:
         obj = GlobalKeyword(category=category, keywords=json.dumps(keywords))
         db.add(obj)
     db.commit() 
+
+def update_brand_logo(db, brand_name: str, logo_data: str, logo_filename: str, logo_mime_type: str) -> bool:
+    """Update or add logo for a brand."""
+    obj = db.query(BrandSourceUrl).filter(BrandSourceUrl.brand_name == brand_name).first()
+    if obj:
+        obj.logo_data = logo_data
+        obj.logo_filename = logo_filename
+        obj.logo_mime_type = logo_mime_type
+        db.commit()
+        return True
+    return False
+
+def delete_brand_logo(db, brand_name: str) -> bool:
+    """Delete logo for a brand."""
+    obj = db.query(BrandSourceUrl).filter(BrandSourceUrl.brand_name == brand_name).first()
+    if obj:
+        obj.logo_data = None
+        obj.logo_filename = None
+        obj.logo_mime_type = None
+        db.commit()
+        return True
+    return False
+
+def get_brand_logo(db, brand_name: str) -> Optional[Dict[str, Any]]:
+    """Get logo data for a brand."""
+    obj = db.query(BrandSourceUrl).filter(BrandSourceUrl.brand_name == brand_name).first()
+    if obj and obj.logo_data:
+        return {
+            'logo_data': obj.logo_data,
+            'logo_filename': obj.logo_filename,
+            'logo_mime_type': obj.logo_mime_type
+        }
+    return None 

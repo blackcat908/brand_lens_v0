@@ -295,6 +295,19 @@ class TrustpilotScraper:
         self.start_browser()
         logger.info("Browser started.")
         
+        # Fetch logo for the brand (if not already in database)
+        try:
+            with get_db_session() as db:
+                from database import get_brand_logo
+                existing_logo = get_brand_logo(db, brand_name)
+                if not existing_logo:
+                    logger.info(f"[LOGO] No logo found in database for {brand_name}, fetching from Trustpilot...")
+                    fetch_trustpilot_logo(user_url, brand_name)
+                else:
+                    logger.info(f"[LOGO] Logo already exists in database for {brand_name}")
+        except Exception as e:
+            logger.error(f"[LOGO] Error fetching logo: {e}")
+        
         # Get initial count of existing reviews
         with get_db_session() as db:
             existing_reviews_count = db.query(Review).filter(Review.brand_name == brand_name).count()
@@ -456,21 +469,25 @@ class TrustpilotScraper:
                                 except Exception as e:
                                     if "DEFAULT" in str(e) or "syntax error" in str(e):
                                         # Fallback to SQLite-style INSERT without id column
-                                        db.execute(
-                                            text("INSERT INTO reviews (brand_name, customer_name, review, rating, date, review_link, sentiment_score, sentiment_category, categories, matched_keywords) VALUES (:brand_name, :customer_name, :review, :rating, :date, :review_link, :sentiment_score, :sentiment_category, :categories, :matched_keywords)"),
-                                            {
-                                                "brand_name": brand_name,
-                                                "customer_name": review_data['customer_name'],
-                                                "review": review_data['review'],
-                                                "rating": review_data['rating'],
-                                                "date": review_data['date'],
-                                                "review_link": review_data['review_link'],
-                                                "sentiment_score": analysis['sentiment_score'],
-                                                "sentiment_category": analysis['sentiment_category'],
-                                                "categories": categories_json,
-                                                "matched_keywords": matched_keywords_json
-                                            }
-                                        )
+                                        try:
+                                            db.execute(
+                                                text("INSERT INTO reviews (brand_name, customer_name, review, rating, date, review_link, sentiment_score, sentiment_category, categories, matched_keywords) VALUES (:brand_name, :customer_name, :review, :rating, :date, :review_link, :sentiment_score, :sentiment_category, :categories, :matched_keywords)"),
+                                                {
+                                                    "brand_name": brand_name,
+                                                    "customer_name": review_data['customer_name'],
+                                                    "review": review_data['review'],
+                                                    "rating": review_data['rating'],
+                                                    "date": review_data['date'],
+                                                    "review_link": review_data['review_link'],
+                                                    "sentiment_score": analysis['sentiment_score'],
+                                                    "sentiment_category": analysis['sentiment_category'],
+                                                    "categories": categories_json,
+                                                    "matched_keywords": matched_keywords_json
+                                                }
+                                )
+                                        except Exception as fallback_error:
+                                            logger.error(f"[ERROR] Fallback INSERT also failed: {fallback_error}")
+                                            continue
                                     else:
                                         raise e
                                 page_new_reviews += 1
@@ -508,44 +525,71 @@ class TrustpilotScraper:
         logger.info(f"🎉 Scraping complete! Total new reviews saved: {total_new_reviews}")
         return total_new_reviews
 
-def fetch_trustpilot_logo(trustpilot_url, brand_id, display_name, output_dir="frontend/public/logos"):
-    logger.info("[LOGO] fetch_trustpilot_logo CALLED")
+def fetch_trustpilot_logo(trustpilot_url, brand_name):
+    """Fetch logo from Trustpilot and save to database only."""
+    logger.info(f"[LOGO] Fetching logo for brand: {brand_name} from {trustpilot_url}")
     try:
         from playwright.sync_api import sync_playwright
-        import os
-        logger.info(f"[LOGO] Fetching logo for brand: {display_name} (ID: {brand_id}) from {trustpilot_url}")
+        import base64
+        
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             page = browser.new_page()
             page.goto(trustpilot_url, wait_until="networkidle", timeout=60000)
+            
             # Use the specific selector for Trustpilot business profile logo
             logo_elem = page.query_selector('img.business-profile-image_image__V14jr')
             if not logo_elem:
-                logger.warning("[LOGO] Specific selector failed. Printing all image URLs for debugging:")
-                for img in page.query_selector_all('img'):
-                    logger.warning(f"[LOGO] Found image src: {img.get_attribute('src')}")
-                browser.close()
-                return False
+                logger.warning("[LOGO] Specific selector failed. Trying alternative selectors...")
+                # Try alternative selectors
+                logo_elem = page.query_selector('img[alt*="logo"], img[alt*="Logo"], img[alt*="brand"]')
+                if not logo_elem:
+                    logger.warning("[LOGO] No logo found with any selector.")
+                    browser.close()
+                    return False
+            
             logo_url = logo_elem.get_attribute("src")
             if not logo_url:
                 logger.warning("[LOGO] Logo src not found.")
                 browser.close()
                 return False
+            
             logger.info(f"[LOGO] Found logo URL: {logo_url}")
             resp = requests.get(logo_url)
+            resp.raise_for_status()  # Raise exception for bad status codes
+            
+            # Determine file extension and MIME type
             ext = logo_url.split('.')[-1].split('?')[0].lower()
-            logger.info(f"[LOGO] Logo file type: {ext}")
-            os.makedirs(output_dir, exist_ok=True)
-            dash_display_name = display_name.lower().replace(' ', '-')
-            out_path_id = os.path.join(output_dir, f"{brand_id}-logo.{ext}")
-            out_path_display = os.path.join(output_dir, f"{dash_display_name}-logo.{ext}")
-            with open(out_path_id, "wb") as f:
-                f.write(resp.content)
-            with open(out_path_display, "wb") as f:
-                f.write(resp.content)
-            logger.info(f"[LOGO] Saved logo to {out_path_id} and {out_path_display}")
-            browser.close()
-            return True
+            if ext not in ['jpg', 'jpeg', 'png', 'gif']:
+                ext = 'jpg'  # Default to jpg
+            
+            mime_type = f"image/{ext}" if ext != 'jpeg' else "image/jpeg"
+            
+            # Convert to base64 for database storage
+            logo_base64 = f"data:{mime_type};base64,{base64.b64encode(resp.content).decode('utf-8')}"
+            
+            # Generate filename for database storage
+            filename = f"{brand_name}-logo.{ext}"
+            
+            # Save to database only
+            try:
+                from database import update_brand_logo, get_db_session
+                
+                with get_db_session() as db:
+                    success = update_brand_logo(db, brand_name, logo_base64, filename, mime_type)
+                    if success:
+                        logger.info(f"[LOGO] Successfully saved logo to database for {brand_name}")
+                        browser.close()
+                        return True
+                    else:
+                        logger.warning(f"[LOGO] Failed to save logo to database for {brand_name}")
+                        browser.close()
+                        return False
+            except Exception as db_error:
+                logger.error(f"[LOGO] Database error: {db_error}")
+                browser.close()
+                return False
+            
     except Exception as e:
         logger.error(f"[LOGO] ERROR: {e}")
         return False

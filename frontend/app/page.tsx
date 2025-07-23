@@ -12,6 +12,7 @@ import { apiService } from "@/lib/api-service"
 import mockBrands from '@/lib/mock-brands.json';
 import { BrandLogo } from "@/components/brand-logo";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { useLogos } from "@/hooks/use-logos";
 import React from "react";
 
 // Import the Sizing & Fit keywords from the detail page or redefine them here
@@ -75,6 +76,27 @@ export default function BrandsPage() {
   });
   const [polling, setPolling] = useState(false);
   const pollingBrandRef = useRef("");
+  
+  // Initialize logos hook
+  const { logos, loading: logosLoading, error: logosError, refetch: refetchLogos } = useLogos();
+  
+  // Debug logos loading
+  React.useEffect(() => {
+    console.log('[BrandsPage] Logos state:', { logos, logosLoading, logosError });
+    if (logos) {
+      console.log('[BrandsPage] Available logos:', Object.keys(logos));
+    }
+  }, [logos, logosLoading, logosError]);
+  
+  // Poll for logo updates every 30 seconds
+  React.useEffect(() => {
+    const logoPollingInterval = setInterval(() => {
+      console.log('[BrandsPage] Polling for logo updates...');
+      refetchLogos();
+    }, 30000); // 30 seconds
+    
+    return () => clearInterval(logoPollingInterval);
+  }, [refetchLogos]);
 
   // Fetch only summary brand data from backend API
   const fetchBrandsSummary = async () => {
@@ -261,6 +283,7 @@ export default function BrandsPage() {
                             alt={`${brand.brand} logo`}
                             maxWidth={80}
                             maxHeight={80}
+                            brandName={brand.brand}
                           />
                           {isSyncing && (
                             <span className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-md">
@@ -367,6 +390,7 @@ export default function BrandsPage() {
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
           onCreateBrand={handleCreateBrand}
+          onRefreshLogos={refetchLogos}
         />
       </div>
 

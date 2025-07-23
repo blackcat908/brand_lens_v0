@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
-import { ArrowLeft, Star, ThumbsUp, ThumbsDown, Download, FileText, Filter, X, BarChart3, PieChart, Settings, Globe, SlidersHorizontal, ChevronDown, Loader2, RotateCw, Meh } from "lucide-react"
+import { ArrowLeft, Star, ThumbsUp, ThumbsDown, Download, FileText, Filter, X, BarChart3, PieChart, Settings, Globe, SlidersHorizontal, ChevronDown, Loader2, RotateCw, Meh, Image, Upload, Trash2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -53,20 +53,35 @@ function matchesAnyKeywordNLP(text: string, keywords: string[]) {
   const keywordLemmas = keywords.map(k => winkLemmatizer.noun(k.toLowerCase()) || winkLemmatizer.verb(k.toLowerCase()) || winkLemmatizer.adjective(k.toLowerCase()) || k.toLowerCase());
   return keywordLemmas.some(kw => lemmas.includes(kw));
 }
-// Replace the highlightKeywords function with a robust version:
-function robustHighlightKeywords(text: string, keywords: string[]) {
+// Replace the highlightKeywords function with a robust version that handles both keywords and search terms:
+function robustHighlightKeywords(text: string, keywords: string[], searchTerm?: string) {
   if (!keywords || keywords.length === 0) return text;
-  // Escape regex special chars and sort by length (longest first)
-  const escaped = keywords
+  
+  let result = text;
+  
+  // First, highlight keywords in yellow
+  const escapedKeywords = keywords
     .filter(Boolean)
     .map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
     .sort((a, b) => b.length - a.length);
-  if (escaped.length === 0) return text;
-  // Build regex: match whole words or phrases, case-insensitive
-  const regex = new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi');
-  return text.replace(regex, match =>
+    
+  if (escapedKeywords.length > 0) {
+    const keywordRegex = new RegExp(`\\b(${escapedKeywords.join('|')})\\b`, 'gi');
+    result = result.replace(keywordRegex, match =>
     `<mark class="bg-yellow-200 text-yellow-900 px-1 rounded font-medium">${match}</mark>`
       );
+  }
+  
+  // Then, highlight search terms in blue (if search term exists)
+  if (searchTerm && searchTerm.trim()) {
+    const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const searchRegex = new RegExp(`\\b(${escapedSearchTerm})\\b`, 'gi');
+    result = result.replace(searchRegex, match =>
+      `<mark class="bg-blue-200 text-blue-900 px-1 rounded font-medium border border-blue-300">${match}</mark>`
+    );
+  }
+  
+  return result;
 }
 
 function SentimentSpark({ data }: { data: number[] }) {
@@ -207,6 +222,13 @@ export default function BrandDetailPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalReviews, setTotalReviews] = useState(0);
 
+  // Logo management state
+  const [showLogoDialog, setShowLogoDialog] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
+
   // 1. Declare all state first
   const now = new Date();
   let startDate: Date | null = null;
@@ -239,8 +261,30 @@ export default function BrandDetailPage() {
           if (filters.dateFilter === 'custom' && filters.customStartDate && filters.customEndDate) {
             apiFilters.dateFrom = filters.customStartDate;
             apiFilters.dateTo = filters.customEndDate;
-          } else if (startDate) {
+          } else {
+            // Calculate date range based on filter selection
+            const now = new Date();
+            let startDate = new Date();
+            
+            switch (filters.dateFilter) {
+              case '7d':
+                startDate = subDays(now, 7);
+                break;
+              case '30d':
+                startDate = subDays(now, 30);
+                break;
+              case '3m':
+                startDate = subMonths(now, 3);
+                break;
+              case '6m':
+                startDate = subMonths(now, 6);
+                break;
+              default:
+                startDate = now;
+            }
+            
             apiFilters.dateFrom = startDate.toISOString().slice(0, 10);
+            apiFilters.dateTo = now.toISOString().slice(0, 10);
           }
         }
         console.log('Sending apiFilters to reviews API:', apiFilters);
@@ -603,9 +647,10 @@ export default function BrandDetailPage() {
 
   // Helper to get a unique key for a review
   function getReviewKey(review: any, idx: number) {
+    // Use review_link or id as primary key, avoid using index
     return review.review_link
       ?? review.id
-      ?? `${review.customer}-${review.date}-${review.review?.slice(0, 20) ?? ''}-${idx}`;
+      ?? `${review.customer_name || review.customer}-${review.date}-${review.review?.slice(0, 20) ?? ''}`;
   }
 
   const handleUpdate = async () => {
@@ -613,6 +658,7 @@ export default function BrandDetailPage() {
     setUpdateStep('initiated');
     setUpdateStatus("idle");
     setUpdateMessage("");
+    const updateStartTime = Date.now();
     const prevKeys = new Set(reviews.map((r, idx) => getReviewKey(r, idx)));
     await new Promise(res => setTimeout(res, 400));
     setUpdateStep('started');
@@ -630,14 +676,60 @@ export default function BrandDetailPage() {
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
       const newReviews = data.newReviews ?? data.new_reviews ?? data.newReviewsCount ?? data.added_count ?? 0;
-      const reviewsResp = await apiService.getBrandReviewsByFrontendId(id, 1, 10000);
+      
+      // Fetch reviews with current pagination settings instead of all reviews
+      const apiFilters: any = {};
+      if (filters.category && filters.category !== "all") {
+        apiFilters.category = filters.category;
+      }
+      if (filters.rating && filters.rating !== "all") {
+        apiFilters.rating = Number(filters.rating);
+      }
+      if (filters.dateFilter && filters.dateFilter !== 'all') {
+        if (filters.dateFilter === 'custom' && filters.customStartDate && filters.customEndDate) {
+          apiFilters.dateFrom = filters.customStartDate;
+          apiFilters.dateTo = filters.customEndDate;
+        } else {
+          // Calculate date range based on filter selection
+          const now = new Date();
+          let startDate = new Date();
+          
+          switch (filters.dateFilter) {
+            case '7d':
+              startDate = subDays(now, 7);
+              break;
+            case '30d':
+              startDate = subDays(now, 30);
+              break;
+            case '3m':
+              startDate = subMonths(now, 3);
+              break;
+            case '6m':
+              startDate = subMonths(now, 6);
+              break;
+            default:
+              startDate = now;
+          }
+          
+          apiFilters.dateFrom = startDate.toISOString().slice(0, 10);
+          apiFilters.dateTo = now.toISOString().slice(0, 10);
+        }
+      }
+      const reviewsResp = await apiService.getBrandReviewsByFrontendId(id, currentPage, pageSize, apiFilters);
       const mappedReviews = reviewsResp.reviews.map(r => ({
         ...r,
         customer: (r as any).customer_name || (r as any).customer || '',
       }));
       setReviews(mappedReviews);
-      const newKeys = new Set(reviewsResp.reviews.map((r, idx) => getReviewKey(r, idx)).filter(k => !prevKeys.has(k)));
+      setTotalReviews(reviewsResp.total_reviews || 0);
+      
+      // Only mark reviews as new if they were actually added in this update
+      if (newReviews > 0) {
+        // Get the current page reviews to compare
+        const currentPageKeys = new Set(mappedReviews.map((r, idx) => getReviewKey(r, idx)));
+        const newKeys = new Set([...currentPageKeys].filter(k => !prevKeys.has(k)));
       setNewlyAddedReviewIds(newKeys);
+        
       if (newKeys.size > 0) {
         toast({
           title: `Added ${newKeys.size} new review${newKeys.size > 1 ? 's' : ''}`,
@@ -645,6 +737,10 @@ export default function BrandDetailPage() {
           duration: 60000,
         });
         setTimeout(() => setNewlyAddedReviewIds(new Set()), 60000);
+        }
+      } else {
+        // Clear any existing new badges if no new reviews
+        setNewlyAddedReviewIds(new Set());
       }
       setUpdateStep('complete');
       if (newReviews > 0) {
@@ -675,6 +771,130 @@ export default function BrandDetailPage() {
       return () => clearTimeout(timer);
     }
   }, [updateMessage]);
+
+  // Logo management functions
+  const handleLogoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setLogoError('Please select an image file');
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setLogoError('File size must be less than 5MB');
+        return;
+      }
+      
+      setLogoFile(file);
+      setLogoError(null);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setLogoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeLogo = () => {
+    setLogoFile(null);
+    setLogoPreview(null);
+    setLogoError(null);
+  };
+
+  const uploadLogo = async () => {
+    if (!logoFile || !id) return;
+    
+    try {
+      setLogoUploading(true);
+      setLogoError(null);
+      
+      // Convert file to base64
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result);
+        }
+        reader.readAsDataURL(logoFile);
+      });
+      
+      // Upload to backend
+      const apiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000') + '/api';
+      const response = await fetch(`${apiUrl}/upload_logo`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          brand_name: id,
+          logo_data: base64,
+          logo_filename: logoFile.name,
+          logo_mime_type: logoFile.type
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to upload logo');
+      }
+      
+      const result = await response.json();
+      toast({
+        title: "Logo uploaded successfully!",
+        description: `Logo for ${id} has been updated.`,
+      });
+      
+      setShowLogoDialog(false);
+      removeLogo();
+      
+      // Refresh the page to show the new logo
+      window.location.reload();
+      
+    } catch (error) {
+      console.error('Logo upload error:', error);
+      setLogoError('Failed to upload logo. Please try again.');
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
+  const deleteLogo = async () => {
+    if (!id) return;
+    
+    try {
+      setLogoUploading(true);
+      setLogoError(null);
+      
+      const apiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000') + '/api';
+      const response = await fetch(`${apiUrl}/logos/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete logo');
+      }
+      
+      toast({
+        title: "Logo deleted successfully!",
+        description: `Logo for ${id} has been removed.`,
+      });
+      
+      setShowLogoDialog(false);
+      
+      // Refresh the page to show the placeholder
+      window.location.reload();
+      
+    } catch (error) {
+      console.error('Logo deletion error:', error);
+      setLogoError('Failed to delete logo. Please try again.');
+    } finally {
+      setLogoUploading(false);
+    }
+  };
 
   // Show loading spinner or error if needed
   if (loading || reviews.length === 0) {
@@ -716,7 +936,7 @@ export default function BrandDetailPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <BrandLogo src={meta.logo} alt={`${meta.name} logo`} maxWidth={80} maxHeight={80} />
+            <BrandLogo src={meta.logo} alt={`${meta.name} logo`} maxWidth={80} maxHeight={80} brandName={meta.name} />
             <div>
               <h1 className="text-3xl font-bold text-foreground">{meta.name}</h1>
               <p className="text-gray-600">Last updated: {analytics?.last_updated || 'Never'}</p>
@@ -769,6 +989,120 @@ export default function BrandDetailPage() {
               <Settings className="w-4 h-4 mr-1" />
               Keyword Settings
             </Button>
+            <Dialog open={showLogoDialog} onOpenChange={setShowLogoDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Image className="w-4 h-4 mr-1" />
+                  Logo
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogTitle>Manage Brand Logo</DialogTitle>
+                <div className="space-y-4">
+                  {/* Current Logo Preview */}
+                  <div>
+                    <Label className="text-sm font-medium">Current Logo</Label>
+                    <div className="mt-2 flex items-center space-x-4">
+                      <div className="w-16 h-16 border border-gray-300 rounded-md flex items-center justify-center overflow-hidden">
+                        <BrandLogo 
+                          src={meta.logo} 
+                          alt={`${meta.name} logo`} 
+                          maxWidth={64} 
+                          maxHeight={64} 
+                          brandName={meta.name}
+                        />
+                      </div>
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        onClick={deleteLogo}
+                        disabled={logoUploading}
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <Separator />
+                  
+                  {/* Upload New Logo */}
+                  <div>
+                    <Label className="text-sm font-medium">Upload New Logo</Label>
+                    <div className="mt-2 space-y-3">
+                      {/* Logo Preview */}
+                      {logoPreview && (
+                        <div className="relative inline-block">
+                          <img
+                            src={logoPreview}
+                            alt="Logo preview"
+                            className="w-20 h-20 object-contain border border-gray-300 rounded-lg"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="absolute -top-2 -right-2 w-6 h-6 p-0"
+                            onClick={removeLogo}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
+                      
+                      {/* Upload Button */}
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoSelect}
+                          className="hidden"
+                          id="logo-upload-input"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('logo-upload-input')?.click()}
+                          disabled={logoUploading}
+                          className="flex items-center space-x-2"
+                        >
+                          <Upload className="w-4 h-4" />
+                          <span>{logoFile ? 'Change Logo' : 'Choose Logo'}</span>
+                        </Button>
+                      </div>
+                      
+                      {/* Error Message */}
+                      {logoError && (
+                        <p className="text-sm text-red-600">{logoError}</p>
+                      )}
+                      
+                      <p className="text-xs text-gray-500">
+                        Supported formats: JPG, PNG, GIF. Max size: 5MB.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowLogoDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={uploadLogo} 
+                    disabled={!logoFile || logoUploading}
+                  >
+                    {logoUploading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      'Upload Logo'
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
         {updateMessage && (
@@ -950,6 +1284,14 @@ export default function BrandDetailPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2 justify-end mb-4">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder="Search in reviews..."
+                      value={reviewFilters.keyword}
+                      onChange={e => handleFilterChange('keyword', e.target.value)}
+                      className="h-10 w-64 text-sm"
+                    />
+                  </div>
                   <Dialog open={filterDialogOpen} onOpenChange={setFilterDialogOpen}>
                     <DialogTrigger asChild>
                       <Button variant="outline" className="h-10 px-6 text-base hover:scale-105 transition-transform duration-200">Filter</Button>
@@ -1012,17 +1354,7 @@ export default function BrandDetailPage() {
                           </div>
                         )}
                       </div>
-                      {/* Keyword filter */}
-                      <div className="mb-4">
-                        <Label htmlFor="filter-keyword">Search by Keyword</Label>
-                        <Input
-                          id="filter-keyword"
-                          placeholder="Search in reviews..."
-                          value={reviewFilters.keyword}
-                          onChange={e => handleFilterChange('keyword', e.target.value)}
-                          className="h-8 text-xs px-2"
-                        />
-                      </div>
+
                       <DialogFooter>
                         <Button onClick={() => setFilterDialogOpen(false)} variant="outline">Cancel</Button>
                         <Button
@@ -1134,7 +1466,7 @@ export default function BrandDetailPage() {
                           : getCategoryKeywords(filters.category);
                       console.log('Selected category:', filters.category);
                       console.log('Highlighting with keywords:', highlightKeywordsArray);
-                      const highlightedHTML = robustHighlightKeywords(review.review, highlightKeywordsArray);
+                      const highlightedHTML = robustHighlightKeywords(review.review, highlightKeywordsArray, reviewFilters.keyword);
                       console.log('Highlighted HTML:', highlightedHTML);
                       return (
                         <TableRow key={reviewKey} className={`${isNew ? "bg-green-100 animate-fade-highlight" : ""} bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-700 min-h-[56px]`}>
@@ -1145,9 +1477,6 @@ export default function BrandDetailPage() {
                           </TableCell>}
                           <TableCell className="text-nowrap bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">
                             {review.date}
-                            {isNew && (
-                              <span className="ml-2 inline-block px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800 border border-green-300 align-middle">New</span>
-                            )}
                           </TableCell>
                           <TableCell className="text-black bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">
                             <span>{review.rating}</span>
@@ -1158,6 +1487,9 @@ export default function BrandDetailPage() {
                                 __html: highlightedHTML
                                 }}
                               />
+                            {isNew && (
+                              <span className="ml-2 inline-block px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800 border border-green-300 align-middle">New</span>
+                            )}
                           </TableCell>
                           {showLinkColumn && (
                             <TableCell className="truncate max-w-xs bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">

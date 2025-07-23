@@ -10,7 +10,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 from sqlalchemy import func
-from trustpilot_scraper import TrustpilotScraper
+from .trustpilot_scraper import TrustpilotScraper
 from database import init_db, get_db_session, Review
 
 # Configure logging

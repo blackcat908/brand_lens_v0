@@ -1,11 +1,11 @@
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-from database import get_db_session, Review, get_brand_source_url, set_brand_source_url, get_reviews_by_brand, get_all_reviews, get_brands, add_review, delete_brand_and_reviews, get_brand_keywords, set_brand_keywords, get_global_keywords, set_global_keywords, get_reviews_by_brand_optimized, get_brand_analytics_optimized, get_brands_with_counts_optimized
+from database import get_db_session, Review, get_brand_source_url, set_brand_source_url, get_reviews_by_brand, get_all_reviews, get_brands, add_review, delete_brand_and_reviews, get_brand_keywords, set_brand_keywords, get_global_keywords, set_global_keywords, get_reviews_by_brand_optimized, get_brand_analytics_optimized, get_brands_with_counts_optimized, update_brand_logo, get_brand_logo, delete_brand_logo
 from sentiment_analyzer import SentimentAnalyzer
 from datetime import datetime, timedelta
 import json
 from collections import defaultdict, Counter
-from trustpilot_scraper import TrustpilotScraper, fetch_trustpilot_logo
+from app.services.trustpilot_scraper import TrustpilotScraper, fetch_trustpilot_logo
 import re, requests
 import threading
 import os
@@ -55,6 +55,7 @@ def home():
 
 @app.route('/api/brands', methods=['GET'])
 def get_brands_api():
+    logger.info("[BRANDS] GET request for brands summary")
     with get_db_session() as db:
         brand_counts = get_brands_with_counts_optimized(db)
         summary = []
@@ -71,10 +72,8 @@ def get_brands_api():
                 'neutral'
             )
             last_updated = analytics.get('last_updated', None)
-            logo_url = f"/logos/{brand}-logo.jpg"
-            brand_source = get_brand_source_url(db, brand)
-            if brand_source is not None and 'logo_url' in brand_source and brand_source['logo_url']:
-                logo_url = brand_source['logo_url']
+            # Use placeholder logo URL - frontend will fetch from database
+            logo_url = "/placeholder-logo.png"
             summary.append({
                 'brand': brand,
                 'logo': logo_url,
@@ -83,6 +82,7 @@ def get_brands_api():
                 'sentiment': sentiment,
                 'lastUpdated': last_updated
             })
+        logger.info(f"[BRANDS] Returning {len(summary)} brands")
     return jsonify({'brands': summary})
 
 @app.route('/api/brands', methods=['POST'])
@@ -106,8 +106,9 @@ def create_brand():
         return jsonify({'error': 'Could not extract brand name from Trustpilot page.'}), 400
     with get_db_session() as db:
         set_brand_source_url(db, extracted_brand_name, trustpilot_url)
-    logo_success = fetch_trustpilot_logo(trustpilot_url, extracted_brand_name, extracted_brand_name, output_dir="../frontend/public/logos")
-    logo_url = f"/logos/{extracted_brand_name}-logo.jpg" if logo_success else "/placeholder-logo.png"
+    logo_success = fetch_trustpilot_logo(trustpilot_url, extracted_brand_name)
+    # Logo is now stored in database, so we don't need a file path
+    logo_url = "/placeholder-logo.png"  # Frontend will fetch from database
     def run_scraper():
         try:
             scraper.scrape_brand_reviews(extracted_brand_name, max_pages=50, start_page=1)
@@ -208,8 +209,6 @@ def get_brand_reviews_robust(brand):
             filtered_reviews.append(review)
 
         print(f"[DEBUG] Filtered reviews count: {len(filtered_reviews)} (after all filters)")
-        if filtered_reviews:
-            print(f"[DEBUG] First 3 filtered review categories: {[r.get('categories') for r in filtered_reviews[:3]]}")
 
         # Sort by date descending
         filtered_reviews.sort(key=lambda x: x['date'] or '', reverse=True)
@@ -419,7 +418,11 @@ def scrape_brand_api():
     logger.info('--- /api/scrape_brand called ---')
     try:
         data = request.get_json()
-        logger.info('Request data:', data)
+        # Log request data without logo_data to avoid massive log output
+        log_data = {k: v for k, v in data.items() if k != 'logo_data'}
+        if 'logo_data' in data:
+            log_data['logo_data'] = f"[BASE64_DATA_{len(data['logo_data'])}_chars]"
+        logger.info('Request data: %s', log_data)
         brand = data.get('brand')
         if not brand:
             logger.error('Missing brand in request')
@@ -457,29 +460,23 @@ def scrape_brand_api():
 
 @app.route('/api/brands/<brand_id>', methods=['DELETE'])
 def delete_brand(brand_id):
-    from database import delete_brand_and_reviews, get_db_session, get_brands
+    from database import delete_brand_and_reviews, get_db_session, get_brands, delete_brand_logo
     try:
         logger.info(f"[DELETE] Received delete request for brand_id: {brand_id}")
-        with get_db_session() as db:
-            all_brands = get_brands(db)
-            logger.info(f"[DELETE] All brand IDs in DB: {all_brands}")
-        # Delete from DB using canonical ID
+        
+        # Delete logo from database first
+        try:
+            with get_db_session() as db:
+                delete_brand_logo(db, brand_id)
+                logger.info(f"[DELETE] Logo deleted from database for {brand_id}")
+        except Exception as logo_error:
+            logger.warning(f"[DELETE] Could not delete logo for {brand_id}: {logo_error}")
+        
+        # Delete brand and all reviews from database
         delete_brand_and_reviews(brand_id)
-        # Remove logo files from public/logos
-        logo_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../frontend/public/logos')
-        removed_files = []
-        all_files = os.listdir(logo_dir)
-        logger.info(f"[DELETE] Logo files in directory: {all_files}")
-        for fname in all_files:
-            fname_noext = fname.split('.')[0]
-            if brand_id in fname_noext:
-                try:
-                    os.remove(os.path.join(logo_dir, fname))
-                    removed_files.append(fname)
-                except Exception as e:
-                    logger.error(f"[DELETE] Failed to remove logo file {fname}: {e}")
-        logger.info(f"[DELETE] Removed files: {removed_files}")
-        return {'success': True, 'removed_files': removed_files}
+        logger.info(f"[DELETE] Brand {brand_id} and all associated data deleted from database")
+        
+        return {'success': True, 'message': f'Brand {brand_id} and all associated data deleted from database'}
     except Exception as e:
         logger.error(f"[DELETE] Error deleting brand {brand_id}: {e}")
         return {'success': False, 'error': str(e)}, 500
@@ -539,8 +536,16 @@ def cancel_brand_scraping(brand_name):
             print(f"[CANCEL] Cancellation requested for {brand_name}.")
             thread.join(timeout=10)  # Optionally wait for thread to finish
             running_scrapers.pop(brand_name, None)
-        # Delete the brand and all its data
+        # Delete the brand and all its data from database
         with get_db_session() as db:
+            # Delete logo first
+            try:
+                delete_brand_logo(db, brand_name)
+                logger.info(f"[CANCEL] Logo deleted from database for {brand_name}")
+            except Exception as logo_error:
+                logger.warning(f"[CANCEL] Could not delete logo for {brand_name}: {logo_error}")
+            
+            # Delete brand and reviews
             delete_brand_and_reviews(brand_name)
         return jsonify({'success': True, 'message': f'Brand {brand_name} scraping cancelled and removed from database'})
     except Exception as e:
@@ -652,6 +657,120 @@ def reprocess_reviews():
 #         'per_page': per_page,
 #         'reviews': review_list
 #     })
+
+# Logo endpoints
+@app.route('/api/upload_logo', methods=['POST'])
+def upload_logo():
+    """Upload logo for a brand."""
+    try:
+        data = request.get_json()
+        brand_name = data.get('brand_name')
+        logo_data = data.get('logo_data')  # base64 encoded image
+        logo_filename = data.get('logo_filename')
+        logo_mime_type = data.get('logo_mime_type')
+        
+        logger.info(f"Upload logo request for brand: {brand_name}")
+        logger.info(f"Data received: {list(data.keys())}")
+        
+        if not all([brand_name, logo_data, logo_filename, logo_mime_type]):
+            missing = []
+            if not brand_name: missing.append('brand_name')
+            if not logo_data: missing.append('logo_data')
+            if not logo_filename: missing.append('logo_filename')
+            if not logo_mime_type: missing.append('logo_mime_type')
+            return jsonify({'error': f'Missing required fields: {", ".join(missing)}'}), 400
+        
+        with get_db_session() as db:
+            # Check if brand exists first
+            brand_check = get_brand_source_url(db, brand_name)
+            if not brand_check:
+                logger.error(f"Brand not found: {brand_name}")
+                return jsonify({'error': f'Brand not found: {brand_name}'}), 404
+            
+            logger.info(f"Brand found: {brand_name}, updating logo...")
+            success = update_brand_logo(db, brand_name, logo_data, logo_filename, logo_mime_type)
+            if success:
+                logger.info(f"Logo uploaded successfully for {brand_name}")
+                return jsonify({'message': 'Logo uploaded successfully', 'brand_name': brand_name}), 200
+            else:
+                logger.error(f"Failed to update logo for {brand_name}")
+                return jsonify({'error': 'Failed to update logo'}), 500
+                
+    except Exception as e:
+        logger.error(f"Error uploading logo: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
+@app.route('/api/logos/<brand_name>', methods=['GET'])
+def get_logo(brand_name):
+    """Get logo for a brand."""
+    logger.info(f"[LOGO] GET request for brand: {brand_name}")
+    try:
+        with get_db_session() as db:
+            logo_data = get_brand_logo(db, brand_name)
+            if logo_data:
+                logger.info(f"[LOGO] Found logo for {brand_name}: {logo_data.get('logo_filename', 'N/A')}")
+                return jsonify({
+                    'logo_data': logo_data['logo_data'],
+                    'logo_filename': logo_data['logo_filename'],
+                    'logo_mime_type': logo_data['logo_mime_type']
+                }), 200
+            else:
+                logger.warning(f"[LOGO] No logo found for brand: {brand_name}")
+                return jsonify({'error': 'Logo not found'}), 404
+
+    except Exception as e:
+        logger.error(f"[LOGO] Error getting logo for {brand_name}: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/logos', methods=['GET'])
+def get_all_logos():
+    """Get all logos for all brands in a single request."""
+    logger.info("[LOGO] GET request for all logos")
+    try:
+        with get_db_session() as db:
+            # Get all brands with their logos
+            result = db.execute(text("""
+                SELECT brand_name, logo_data, logo_filename, logo_mime_type 
+                FROM brand_source_urls 
+                WHERE logo_data IS NOT NULL
+            """))
+            
+            logos = {}
+            for row in result.fetchall():
+                brand_name, logo_data, logo_filename, logo_mime_type = row
+                if logo_data:  # Only include brands that have logos
+                    logos[brand_name] = {
+                        'logo_data': logo_data,
+                        'logo_filename': logo_filename,
+                        'logo_mime_type': logo_mime_type
+                    }
+            
+            logger.info(f"[LOGO] Returning {len(logos)} logos: {list(logos.keys())}")
+            return jsonify({
+                'logos': logos,
+                'total_brands': len(logos)
+            }), 200
+
+    except Exception as e:
+        logger.error(f"[LOGO] Error getting all logos: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/logos/<brand_name>', methods=['DELETE'])
+def delete_logo(brand_name):
+    """Delete logo for a brand."""
+    try:
+        with get_db_session() as db:
+            success = delete_brand_logo(db, brand_name)
+            if success:
+                return jsonify({'message': 'Logo deleted successfully', 'brand_name': brand_name}), 200
+            else:
+                return jsonify({'error': 'Brand not found'}), 404
+                
+    except Exception as e:
+        logger.error(f"Error deleting logo: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000) 
