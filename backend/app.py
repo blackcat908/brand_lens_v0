@@ -464,7 +464,7 @@ def delete_brand(brand_id):
         
         # Delete logo from database first
         try:
-            with get_db_session() as db:
+        with get_db_session() as db:
                 delete_brand_logo(db, brand_id)
                 logger.info(f"[DELETE] Logo deleted from database for {brand_id}")
         except Exception as logo_error:
