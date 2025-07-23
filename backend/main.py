@@ -106,7 +106,7 @@ def create_brand():
         return jsonify({'error': 'Could not extract brand name from Trustpilot page.'}), 400
     with get_db_session() as db:
         set_brand_source_url(db, extracted_brand_name, trustpilot_url)
-    logo_success = fetch_trustpilot_logo(trustpilot_url, extracted_brand_name)
+    logo_success = fetch_trustpilot_logo(trustpilot_url, extracted_brand_name, extracted_brand_name)
     # Logo is now stored in database, so we don't need a file path
     logo_url = "/placeholder-logo.png"  # Frontend will fetch from database
     def run_scraper():
