@@ -28,7 +28,7 @@ if not database_url:
     print("ERROR: DATABASE_URL environment variable is not set!")
     print("Please set DATABASE_URL in Railway variables to: ${{ Postgres.DATABASE_URL }}")
     # Use fallback for local development
-    database_url = 'sqlite:///reviews.db'
+    database_url = 'postgresql://postgres:gyRafIdjWaKHngpJqYJfbGDcYNzaaIyn@switchyard.proxy.rlwy.net:17267/railway'
 
 DATABASE_CONFIG = {
     'url': database_url,
