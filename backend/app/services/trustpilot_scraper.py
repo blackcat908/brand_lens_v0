@@ -111,7 +111,7 @@ class TrustpilotScraper:
                 title_link = card.query_selector('h2 a[href*="/review/"]')
                 if title_link:
                     href = title_link.get_attribute('href')
-                        if href:
+                    if href:
                         if href.startswith('/'):
                             review_link = f"https://uk.trustpilot.com{href}"
                         elif href.startswith('http'):
