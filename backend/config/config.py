@@ -25,7 +25,7 @@ SCRAPING_CONFIG = {
 
 # Database settings
 DATABASE_CONFIG = {
-    'url': 'sqlite:///reviews.db',
+    'url': 'postgresql://postgres:gyRafIdjWaKHngpJqYJfbGDcYNzaaIyn@postgres.railway.internal:5432/railway',
     'echo': False,  # Set to True for SQL debugging
 }
 
