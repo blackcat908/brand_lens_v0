@@ -286,7 +286,7 @@ class TrustpilotScraper:
                 log_brand_source['logo_data'] = f"[BASE64_DATA_{len(brand_source['logo_data'])}_chars]"
                 print(f"[DEBUG] brand_source_url lookup result: {log_brand_source}")
             else:
-            print(f"[DEBUG] brand_source_url lookup result: {brand_source}")
+                print(f"[DEBUG] brand_source_url lookup result: {brand_source}")
             
             # Check if we have a valid source URL
             if brand_source and brand_source.get('source_url'):
