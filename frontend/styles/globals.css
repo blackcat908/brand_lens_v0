@@ -96,8 +96,3 @@ body {
 body.dark, .dark body {
   background: #2d2d2d !important;
 }
-
-/* Clockwise spin override for create brand modal button */
-.clockwise-spin {
-  animation-direction: normal !important;
-}

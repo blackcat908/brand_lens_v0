@@ -1,7 +1,14 @@
 import logging
 import os
 from datetime import datetime
-from robust_config import LOGGING_CONFIG
+
+# Local logging configuration instead of importing from robust_config
+LOGGING_CONFIG = {
+    'log_dir': 'logs',
+    'log_level': 'INFO',
+    'log_to_file': True,
+    'log_to_console': True
+}
 
 def setup_logger(name='scraper'):
     log_dir = LOGGING_CONFIG['log_dir']

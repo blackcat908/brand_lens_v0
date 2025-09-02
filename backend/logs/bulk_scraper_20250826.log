@@ -1,0 +1,1465 @@
+2025-08-26 14:45:59,800 - INFO - Brands to scrape (excluding Wander Doll): ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-26 14:45:59,800 - INFO - Total brands to scrape: 26
+2025-08-26 14:45:59,817 - INFO - Connecting to database: sqlite:///reviews.db
+2025-08-26 14:45:59,820 - INFO - Database connection successful!
+2025-08-26 14:45:59,821 - INFO - [START] Starting scrape for brand: house-of-cb
+2025-08-26 14:45:59,823 - INFO - [START] Starting scrape for brand: tala
+2025-08-26 14:45:59,829 - ERROR - [ERROR] tala: Scraping failed - 'WordListCorpusReader' object has no attribute '_LazyCorpusLoader__reader_cls'
+2025-08-26 14:45:59,829 - INFO - [START] Starting scrape for brand: oddmuse-london
+2025-08-26 14:45:59,850 - INFO - Starting browser...
+2025-08-26 14:45:59,858 - INFO - Starting browser...
+2025-08-26 14:46:01,300 - INFO - Navigating to: https://uk.trustpilot.com/review/oddmuse.co.uk?languages=all
+2025-08-26 14:46:01,301 - INFO - Navigating to: https://uk.trustpilot.com/review/houseofcb.com?languages=all
+2025-08-26 14:46:04,081 - INFO - Found total reviews: 3195
+2025-08-26 14:46:04,104 - INFO - [SEQUENTIAL] Starting sequential scraping from page 1
+2025-08-26 14:46:04,105 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 14:46:04,427 - INFO - Found total reviews: 1768
+2025-08-26 14:46:04,438 - INFO - [SEQUENTIAL] Starting sequential scraping from page 1
+2025-08-26 14:46:04,439 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 14:46:11,433 - INFO - Found 20 reviews on page 1
+2025-08-26 14:46:11,631 - INFO - Page 1: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:46:12,101 - INFO - Found 20 reviews on page 1
+2025-08-26 14:46:12,153 - INFO - Page 1: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:46:12,535 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 14:46:13,059 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 14:46:19,590 - INFO - Found 20 reviews on page 2
+2025-08-26 14:46:19,671 - INFO - Page 2: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:46:20,541 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 14:46:20,965 - INFO - Found 20 reviews on page 2
+2025-08-26 14:46:20,993 - INFO - Page 2: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:46:21,863 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 14:46:25,953 - INFO - Found 20 reviews on page 3
+2025-08-26 14:46:26,029 - INFO - Page 3: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:46:26,897 - INFO - 
+=== PROCESSING PAGE 4 ===
+2025-08-26 14:46:27,884 - INFO - Found 20 reviews on page 3
+2025-08-26 14:46:27,938 - INFO - Page 3: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:46:28,807 - INFO - 
+=== PROCESSING PAGE 4 ===
+2025-08-26 14:46:32,386 - INFO - Found 20 reviews on page 4
+2025-08-26 14:46:32,452 - INFO - Page 4: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:46:33,313 - INFO - 
+=== PROCESSING PAGE 5 ===
+2025-08-26 14:46:35,305 - INFO - Found 20 reviews on page 4
+2025-08-26 14:46:35,375 - INFO - Page 4: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:46:36,271 - INFO - 
+=== PROCESSING PAGE 5 ===
+2025-08-26 14:46:39,297 - INFO - Found 20 reviews on page 5
+2025-08-26 14:46:39,378 - INFO - Page 5: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:46:40,242 - INFO - 
+=== PROCESSING PAGE 6 ===
+2025-08-26 14:46:42,669 - INFO - Found 20 reviews on page 5
+2025-08-26 14:46:42,729 - INFO - Page 5: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:46:43,597 - INFO - 
+=== PROCESSING PAGE 6 ===
+2025-08-26 14:46:46,139 - INFO - Found 20 reviews on page 6
+2025-08-26 14:46:46,224 - INFO - Page 6: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:46:47,094 - INFO - 
+=== PROCESSING PAGE 7 ===
+2025-08-26 14:46:49,338 - INFO - Found 20 reviews on page 6
+2025-08-26 14:46:49,381 - INFO - Page 6: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:46:50,243 - INFO - 
+=== PROCESSING PAGE 7 ===
+2025-08-26 14:46:52,350 - INFO - Found 20 reviews on page 7
+2025-08-26 14:46:52,450 - INFO - Page 7: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:46:53,313 - INFO - 
+=== PROCESSING PAGE 8 ===
+2025-08-26 14:46:56,596 - INFO - Found 20 reviews on page 7
+2025-08-26 14:46:56,647 - INFO - Page 7: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:46:57,515 - INFO - 
+=== PROCESSING PAGE 8 ===
+2025-08-26 14:46:58,890 - INFO - Found 20 reviews on page 8
+2025-08-26 14:46:59,109 - INFO - Page 8: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:46:59,969 - INFO - 
+=== PROCESSING PAGE 9 ===
+2025-08-26 14:47:03,589 - INFO - Found 20 reviews on page 8
+2025-08-26 14:47:03,644 - INFO - Page 8: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:47:04,513 - INFO - 
+=== PROCESSING PAGE 9 ===
+2025-08-26 14:47:05,577 - INFO - Found 20 reviews on page 9
+2025-08-26 14:47:05,644 - INFO - Page 9: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:47:06,506 - INFO - 
+=== PROCESSING PAGE 10 ===
+2025-08-26 14:47:10,943 - INFO - Found 20 reviews on page 9
+2025-08-26 14:47:11,005 - INFO - Page 9: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:47:11,878 - INFO - 
+=== PROCESSING PAGE 10 ===
+2025-08-26 14:47:12,885 - INFO - Found 20 reviews on page 10
+2025-08-26 14:47:12,964 - INFO - Page 10: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:47:13,838 - INFO - 
+=== PROCESSING PAGE 11 ===
+2025-08-26 14:47:18,245 - INFO - Found 20 reviews on page 10
+2025-08-26 14:47:18,456 - INFO - Page 10: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:47:19,324 - INFO - 
+=== PROCESSING PAGE 11 ===
+2025-08-26 14:47:19,747 - INFO - Found 20 reviews on page 11
+2025-08-26 14:47:19,807 - INFO - Page 11: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:47:20,662 - INFO - 
+=== PROCESSING PAGE 12 ===
+2025-08-26 14:47:25,654 - INFO - Found 20 reviews on page 11
+2025-08-26 14:47:25,703 - INFO - Page 11: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:47:26,597 - INFO - 
+=== PROCESSING PAGE 12 ===
+2025-08-26 14:47:26,769 - INFO - Found 20 reviews on page 12
+2025-08-26 14:47:26,859 - INFO - Page 12: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:47:27,727 - INFO - 
+=== PROCESSING PAGE 13 ===
+2025-08-26 14:47:33,361 - INFO - Found 20 reviews on page 12
+2025-08-26 14:47:33,416 - INFO - Page 12: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:47:34,285 - INFO - 
+=== PROCESSING PAGE 13 ===
+2025-08-26 14:47:34,387 - INFO - Found 20 reviews on page 13
+2025-08-26 14:47:34,453 - INFO - Page 13: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:47:35,320 - INFO - 
+=== PROCESSING PAGE 14 ===
+2025-08-26 14:47:38,172 - ERROR - Error scraping page: ElementHandle.text_content: Target page, context or browser has been closed
+Call log:
+  - waiting for locator(":scope")
+
+2025-08-26 14:47:38,173 - WARNING - No reviews found on page 14. Consecutive empty pages: 1
+2025-08-26 14:47:39,342 - INFO - 
+=== PROCESSING PAGE 15 ===
+2025-08-26 14:47:39,348 - ERROR - Error scraping page: Page.wait_for_timeout: Target page, context or browser has been closed
+2025-08-26 14:47:39,349 - WARNING - No reviews found on page 15. Consecutive empty pages: 2
+2025-08-26 14:47:40,354 - INFO - Found 20 reviews on page 13
+2025-08-26 14:47:40,386 - INFO - Page 13: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:47:41,246 - INFO - 
+=== PROCESSING PAGE 14 ===
+2025-08-26 14:47:41,762 - INFO - 
+=== PROCESSING PAGE 16 ===
+2025-08-26 14:47:41,786 - ERROR - Error scraping page: Page.wait_for_timeout: Target page, context or browser has been closed
+2025-08-26 14:47:41,786 - WARNING - No reviews found on page 16. Consecutive empty pages: 3
+2025-08-26 14:47:41,787 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 14:47:41,787 - INFO - Sequential scraping completed.
+2025-08-26 14:47:42,123 - INFO - [SUCCESS] oddmuse-london: Scraping completed - 0 new reviews
+2025-08-26 14:47:42,124 - INFO - [START] Starting scrape for brand: because-of-alice
+2025-08-26 14:47:42,142 - INFO - Starting browser...
+2025-08-26 14:47:43,726 - INFO - Navigating to: https://uk.trustpilot.com/review/www.becauseofalice.com?languages=all
+2025-08-26 14:47:44,156 - ERROR - Error scraping page: ElementHandle.text_content: Target page, context or browser has been closed
+Call log:
+  - waiting for locator(":scope")
+
+2025-08-26 14:47:44,158 - WARNING - No reviews found on page 14. Consecutive empty pages: 1
+2025-08-26 14:47:45,773 - ERROR - Error in main scraping logic: Page.goto: net::ERR_ABORTED; maybe frame was detached?
+Call log:
+  - navigating to "https://uk.trustpilot.com/review/www.becauseofalice.com?languages=all", waiting until "domcontentloaded"
+
+2025-08-26 14:47:46,048 - INFO - [SUCCESS] because-of-alice: Scraping completed - 0 new reviews
+2025-08-26 14:47:46,049 - INFO - [START] Starting scrape for brand: bbx-brand
+2025-08-26 14:47:46,066 - INFO - Starting browser...
+2025-08-26 14:47:46,226 - INFO - 
+=== PROCESSING PAGE 15 ===
+2025-08-26 14:47:46,232 - ERROR - Error scraping page: Page.wait_for_timeout: Target page, context or browser has been closed
+2025-08-26 14:47:46,233 - WARNING - No reviews found on page 15. Consecutive empty pages: 2
+2025-08-26 14:47:47,553 - INFO - Navigating to: https://uk.trustpilot.com/review/bbxbrand.com?languages=all
+2025-08-26 14:47:48,947 - INFO - 
+=== PROCESSING PAGE 16 ===
+2025-08-26 14:47:48,956 - ERROR - Error scraping page: Page.wait_for_timeout: Target page, context or browser has been closed
+2025-08-26 14:47:48,956 - WARNING - No reviews found on page 16. Consecutive empty pages: 3
+2025-08-26 14:47:48,958 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 14:47:48,959 - INFO - Sequential scraping completed.
+2025-08-26 14:47:49,352 - INFO - [SUCCESS] house-of-cb: Scraping completed - 0 new reviews
+2025-08-26 14:47:49,353 - INFO - [START] Starting scrape for brand: murci
+2025-08-26 14:47:49,373 - INFO - Starting browser...
+2025-08-26 14:47:50,828 - INFO - Found total reviews: 45
+2025-08-26 14:47:50,842 - INFO - [SEQUENTIAL] Starting sequential scraping from page 1
+2025-08-26 14:47:50,842 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 14:47:51,306 - INFO - Navigating to: https://uk.trustpilot.com/review/murci.co.uk?languages=all
+2025-08-26 14:47:55,831 - INFO - Found total reviews: 3415
+2025-08-26 14:47:55,840 - INFO - [SEQUENTIAL] Starting sequential scraping from page 1
+2025-08-26 14:47:55,840 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 14:47:59,471 - INFO - Found 19 reviews on page 1
+2025-08-26 14:48:01,894 - INFO - Page reviews processed and inserted.
+2025-08-26 14:48:01,895 - INFO - Page 1: Inserted 1 new reviews to database (skipped 18 duplicates)
+2025-08-26 14:48:03,151 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 14:48:07,844 - INFO - Found 20 reviews on page 1
+2025-08-26 14:48:07,953 - INFO - Page reviews processed and inserted.
+2025-08-26 14:48:07,955 - INFO - Page 1: Inserted 2 new reviews to database (skipped 18 duplicates)
+2025-08-26 14:48:08,848 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 14:48:13,062 - INFO - Found 20 reviews on page 2
+2025-08-26 14:48:13,065 - INFO - Page 2: Inserted 0 new reviews to database (skipped 20 duplicates)
+2025-08-26 14:48:13,963 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 14:48:16,153 - INFO - Found 4 reviews on page 3
+2025-08-26 14:48:16,158 - INFO - Page 3: Inserted 0 new reviews to database (skipped 4 duplicates)
+2025-08-26 14:48:16,178 - INFO - Next button is disabled - reached end of pages
+2025-08-26 14:48:16,178 - INFO - Fallback navigation: Current URL: https://uk.trustpilot.com/review/bbxbrand.com?languages=all&page=3
+2025-08-26 14:48:16,179 - INFO - Fallback navigation: Next URL: https://uk.trustpilot.com/review/bbxbrand.com?languages=all&page=4
+2025-08-26 14:48:16,186 - INFO - Found 18 reviews on page 2
+2025-08-26 14:48:16,207 - INFO - Page 2: Inserted 0 new reviews to database (skipped 18 duplicates)
+2025-08-26 14:48:16,269 - ERROR - Fallback navigation failed: Page.goto: net::ERR_ABORTED; maybe frame was detached?
+Call log:
+  - navigating to "https://uk.trustpilot.com/review/bbxbrand.com?languages=all&page=4", waiting until "domcontentloaded"
+
+2025-08-26 14:48:16,287 - INFO - Sequential scraping completed.
+2025-08-26 14:48:16,337 - ERROR - Error clicking next button: ElementHandle.get_attribute: Target page, context or browser has been closed
+Call log:
+  - waiting for locator(":scope")
+
+2025-08-26 14:48:16,337 - INFO - Fallback navigation: Current URL: https://uk.trustpilot.com/review/murci.co.uk?languages=all&page=2
+2025-08-26 14:48:16,338 - INFO - Fallback navigation: Next URL: https://uk.trustpilot.com/review/murci.co.uk?languages=all&page=3
+2025-08-26 14:48:16,347 - ERROR - Fallback navigation failed: Page.goto: Target page, context or browser has been closed
+2025-08-26 14:48:16,361 - INFO - Sequential scraping completed.
+2025-08-26 14:48:16,755 - ERROR - Error closing browser: Browser.close: Connection closed while reading from the driver
+2025-08-26 14:48:16,755 - INFO - [SUCCESS] bbx-brand: Scraping completed - 1 new reviews
+2025-08-26 14:48:16,756 - INFO - [START] Starting scrape for brand: couture-club
+2025-08-26 14:48:16,769 - INFO - Starting browser...
+2025-08-26 14:48:16,769 - ERROR - [ERROR] couture-club: Scraping failed - It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-26 14:48:16,770 - INFO - [START] Starting scrape for brand: club-l-london
+2025-08-26 14:48:16,774 - ERROR - Error closing browser: Browser.close: Connection closed while reading from the driver
+2025-08-26 14:48:16,775 - INFO - [SUCCESS] murci: Scraping completed - 2 new reviews
+2025-08-26 14:48:16,775 - INFO - [START] Starting scrape for brand: jaki
+2025-08-26 14:48:16,782 - INFO - Starting browser...
+2025-08-26 14:48:16,783 - ERROR - [ERROR] club-l-london: Scraping failed - It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-26 14:48:16,784 - INFO - [START] Starting scrape for brand: maniere-de-voir
+2025-08-26 14:48:16,791 - INFO - Starting browser...
+2025-08-26 14:48:16,792 - ERROR - [ERROR] jaki: Scraping failed - It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-26 14:48:16,792 - INFO - [START] Starting scrape for brand: glory
+2025-08-26 14:48:16,798 - INFO - Starting browser...
+2025-08-26 14:48:16,799 - ERROR - [ERROR] maniere-de-voir: Scraping failed - It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-26 14:48:16,799 - INFO - [START] Starting scrape for brand: khanums
+2025-08-26 14:48:16,805 - INFO - Starting browser...
+2025-08-26 14:48:16,806 - ERROR - [ERROR] glory: Scraping failed - It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-26 14:48:16,807 - INFO - [START] Starting scrape for brand: dfyne
+2025-08-26 14:48:16,813 - INFO - Starting browser...
+2025-08-26 14:48:16,814 - ERROR - [ERROR] khanums: Scraping failed - It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-26 14:48:16,814 - INFO - [START] Starting scrape for brand: cernucci
+2025-08-26 14:48:16,819 - INFO - Starting browser...
+2025-08-26 14:48:16,819 - ERROR - [ERROR] dfyne: Scraping failed - It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-26 14:48:16,820 - INFO - [START] Starting scrape for brand: motel-rocks
+2025-08-26 14:48:16,826 - INFO - Starting browser...
+2025-08-26 14:48:16,827 - ERROR - [ERROR] cernucci: Scraping failed - It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-26 14:48:16,827 - INFO - [START] Starting scrape for brand: nadine-merabi
+2025-08-26 14:48:16,832 - INFO - Starting browser...
+2025-08-26 14:48:16,833 - ERROR - [ERROR] motel-rocks: Scraping failed - It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-26 14:48:16,834 - INFO - [START] Starting scrape for brand: poster-girl
+2025-08-26 14:48:16,840 - INFO - Starting browser...
+2025-08-26 14:48:16,840 - ERROR - [ERROR] nadine-merabi: Scraping failed - It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-26 14:48:16,840 - INFO - [START] Starting scrape for brand: represent
+2025-08-26 14:48:16,846 - INFO - Starting browser...
+2025-08-26 14:48:16,846 - ERROR - [ERROR] poster-girl: Scraping failed - It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-26 14:48:16,847 - INFO - [START] Starting scrape for brand: represent-clo
+2025-08-26 14:48:16,852 - INFO - Starting browser...
+2025-08-26 14:48:16,852 - ERROR - [ERROR] represent: Scraping failed - It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-26 14:48:16,852 - INFO - [START] Starting scrape for brand: rat-and-boa
+2025-08-26 14:48:16,857 - INFO - Starting browser...
+2025-08-26 14:48:16,858 - ERROR - [ERROR] represent-clo: Scraping failed - It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-26 14:48:16,859 - INFO - [START] Starting scrape for brand: oh-polly
+2025-08-26 14:48:16,864 - INFO - Starting browser...
+2025-08-26 14:48:16,865 - ERROR - [ERROR] rat-and-boa: Scraping failed - It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-26 14:48:16,865 - INFO - [START] Starting scrape for brand: hera-clothing
+2025-08-26 14:48:16,871 - INFO - Starting browser...
+2025-08-26 14:48:16,872 - ERROR - [ERROR] oh-polly: Scraping failed - It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-26 14:48:16,872 - INFO - [START] Starting scrape for brand: jaded-london
+2025-08-26 14:48:16,876 - INFO - Starting browser...
+2025-08-26 14:48:16,877 - ERROR - [ERROR] hera-clothing: Scraping failed - It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-26 14:48:16,877 - INFO - [START] Starting scrape for brand: meshki
+2025-08-26 14:48:16,883 - INFO - Starting browser...
+2025-08-26 14:48:16,884 - ERROR - [ERROR] jaded-london: Scraping failed - It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-26 14:48:16,884 - INFO - [START] Starting scrape for brand: nobodys-child
+2025-08-26 14:48:16,890 - INFO - Starting browser...
+2025-08-26 14:48:16,891 - ERROR - [ERROR] meshki: Scraping failed - It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-26 14:48:16,891 - INFO - [START] Starting scrape for brand: charli-london
+2025-08-26 14:48:16,896 - INFO - Starting browser...
+2025-08-26 14:48:16,897 - ERROR - [ERROR] nobodys-child: Scraping failed - It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-26 14:48:16,901 - INFO - Starting browser...
+2025-08-26 14:48:16,901 - ERROR - [ERROR] charli-london: Scraping failed - It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-26 14:54:08,529 - INFO - Brands to scrape (excluding Wander Doll): ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-26 14:54:08,530 - INFO - Total brands to scrape: 26
+2025-08-26 14:54:08,543 - INFO - Connecting to database: sqlite:///reviews.db
+2025-08-26 14:54:08,545 - INFO - Database connection successful!
+2025-08-26 14:54:08,546 - INFO - [START] Starting scrape for brand: house-of-cb
+2025-08-26 14:54:08,546 - INFO - [START] Starting scrape for brand: tala
+2025-08-26 14:54:08,547 - INFO - [START] Starting scrape for brand: oddmuse-london
+2025-08-26 14:54:08,549 - ERROR - [ERROR] oddmuse-london: Scraping failed - 'WordListCorpusReader' object has no attribute '_LazyCorpusLoader__args'
+2025-08-26 14:54:08,550 - INFO - [START] Starting scrape for brand: because-of-alice
+2025-08-26 14:54:08,550 - ERROR - [ERROR] tala: Scraping failed - 'WordListCorpusReader' object has no attribute '_LazyCorpusLoader__args'
+2025-08-26 14:54:08,550 - INFO - [START] Starting scrape for brand: bbx-brand
+2025-08-26 14:54:08,553 - INFO - [START] Starting scrape for brand: murci
+2025-08-26 14:54:08,559 - INFO - [START] Starting scrape for brand: couture-club
+2025-08-26 14:54:08,567 - INFO - Starting browser...
+2025-08-26 14:54:08,570 - INFO - Starting browser...
+2025-08-26 14:54:08,575 - INFO - Starting browser...
+2025-08-26 14:54:08,583 - INFO - Starting browser...
+2025-08-26 14:54:08,597 - INFO - Starting browser...
+2025-08-26 14:54:10,300 - INFO - Browser started.
+2025-08-26 14:54:10,305 - INFO - [LOGO] Logo already exists in database for because-of-alice
+2025-08-26 14:54:10,317 - INFO - Found 0 existing reviews in database for 'because-of-alice'
+2025-08-26 14:54:10,319 - INFO - Starting to scrape all pages...
+2025-08-26 14:54:10,321 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 14:54:10,322 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.becauseofalice.com?page=1
+2025-08-26 14:54:10,534 - INFO - Browser started.
+2025-08-26 14:54:10,539 - INFO - [LOGO] Logo already exists in database for couture-club
+2025-08-26 14:54:10,543 - INFO - Found 0 existing reviews in database for 'couture-club'
+2025-08-26 14:54:10,550 - INFO - Browser started.
+2025-08-26 14:54:10,551 - INFO - Starting to scrape all pages...
+2025-08-26 14:54:10,558 - INFO - [LOGO] Logo already exists in database for murci
+2025-08-26 14:54:10,558 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 14:54:10,560 - INFO - Found 0 existing reviews in database for 'murci'
+2025-08-26 14:54:10,561 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.thecoutureclub.com?page=1
+2025-08-26 14:54:10,562 - INFO - Starting to scrape all pages...
+2025-08-26 14:54:10,563 - INFO - Browser started.
+2025-08-26 14:54:10,564 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 14:54:10,566 - INFO - Scraping URL: https://uk.trustpilot.com/review/murci.co.uk?page=1
+2025-08-26 14:54:10,567 - INFO - [LOGO] Logo already exists in database for house-of-cb
+2025-08-26 14:54:10,570 - INFO - Found 0 existing reviews in database for 'house-of-cb'
+2025-08-26 14:54:10,571 - INFO - Starting to scrape all pages...
+2025-08-26 14:54:10,572 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 14:54:10,572 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=1
+2025-08-26 14:54:10,756 - INFO - Browser started.
+2025-08-26 14:54:10,759 - INFO - [LOGO] Logo already exists in database for bbx-brand
+2025-08-26 14:54:10,761 - INFO - Found 0 existing reviews in database for 'bbx-brand'
+2025-08-26 14:54:10,761 - INFO - Starting to scrape all pages...
+2025-08-26 14:54:10,762 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 14:54:10,762 - INFO - Scraping URL: https://uk.trustpilot.com/review/bbxbrand.com?page=1
+2025-08-26 14:54:20,507 - ERROR - Error scraping page https://uk.trustpilot.com/review/houseofcb.com?page=1: Page.goto: net::ERR_ABORTED; maybe frame was detached?
+Call log:
+  - navigating to "https://uk.trustpilot.com/review/houseofcb.com?page=1", waiting until "networkidle"
+
+2025-08-26 14:54:20,509 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 14:54:21,278 - ERROR - Error scraping page https://uk.trustpilot.com/review/murci.co.uk?page=1: Page.goto: net::ERR_ABORTED; maybe frame was detached?
+Call log:
+  - navigating to "https://uk.trustpilot.com/review/murci.co.uk?page=1", waiting until "networkidle"
+
+2025-08-26 14:54:21,279 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 14:54:21,996 - ERROR - Error scraping page https://uk.trustpilot.com/review/bbxbrand.com?page=1: Page.goto: net::ERR_ABORTED; maybe frame was detached?
+Call log:
+  - navigating to "https://uk.trustpilot.com/review/bbxbrand.com?page=1", waiting until "networkidle"
+
+2025-08-26 14:54:21,997 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 14:54:22,636 - ERROR - Error scraping page https://uk.trustpilot.com/review/www.thecoutureclub.com?page=1: Page.goto: net::ERR_ABORTED; maybe frame was detached?
+Call log:
+  - navigating to "https://uk.trustpilot.com/review/www.thecoutureclub.com?page=1", waiting until "networkidle"
+
+2025-08-26 14:54:22,639 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 14:54:23,263 - ERROR - Error scraping page https://uk.trustpilot.com/review/www.becauseofalice.com?page=1: Page.goto: net::ERR_ABORTED; maybe frame was detached?
+Call log:
+  - navigating to "https://uk.trustpilot.com/review/www.becauseofalice.com?page=1", waiting until "networkidle"
+
+2025-08-26 14:54:23,296 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 14:54:26,467 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 14:54:26,476 - INFO - Scraping URL: https://uk.trustpilot.com/review/murci.co.uk?page=2
+2025-08-26 14:54:26,513 - ERROR - Error scraping page https://uk.trustpilot.com/review/murci.co.uk?page=2: Page.goto: Target page, context or browser has been closed
+2025-08-26 14:54:26,516 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 14:54:26,558 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 14:54:26,559 - INFO - Scraping URL: https://uk.trustpilot.com/review/bbxbrand.com?page=2
+2025-08-26 14:54:26,568 - ERROR - Error scraping page https://uk.trustpilot.com/review/bbxbrand.com?page=2: Page.goto: Target page, context or browser has been closed
+2025-08-26 14:54:26,568 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 14:54:27,017 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 14:54:27,017 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.becauseofalice.com?page=2
+2025-08-26 14:54:27,020 - ERROR - Error scraping page https://uk.trustpilot.com/review/www.becauseofalice.com?page=2: Page.goto: Connection closed while reading from the driver
+2025-08-26 14:54:27,021 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 14:54:27,292 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 14:54:27,294 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=2
+2025-08-26 14:54:27,297 - ERROR - Error scraping page https://uk.trustpilot.com/review/houseofcb.com?page=2: Page.goto: Connection closed while reading from the driver
+2025-08-26 14:54:27,298 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 14:54:28,328 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 14:54:28,329 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.thecoutureclub.com?page=2
+2025-08-26 14:54:28,337 - ERROR - Error scraping page https://uk.trustpilot.com/review/www.thecoutureclub.com?page=2: Page.goto: Connection closed while reading from the driver
+2025-08-26 14:54:28,338 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 14:54:30,282 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 14:54:30,283 - INFO - Scraping URL: https://uk.trustpilot.com/review/bbxbrand.com?page=3
+2025-08-26 14:54:30,288 - ERROR - Error scraping page https://uk.trustpilot.com/review/bbxbrand.com?page=3: Page.goto: Connection closed while reading from the driver
+2025-08-26 14:54:30,289 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 14:54:30,290 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 14:54:30,290 - INFO - Finished scraping loop.
+2025-08-26 14:54:31,618 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 14:54:31,648 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.becauseofalice.com?page=3
+2025-08-26 14:54:31,679 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 14:54:31,696 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 14:54:31,711 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.thecoutureclub.com?page=3
+2025-08-26 14:54:31,742 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=3
+2025-08-26 14:54:32,979 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 14:54:33,104 - INFO - Scraping URL: https://uk.trustpilot.com/review/murci.co.uk?page=3
+2025-08-26 14:54:33,436 - ERROR - Error scraping page https://uk.trustpilot.com/review/murci.co.uk?page=3: Page.goto: Connection closed while reading from the driver
+2025-08-26 14:54:33,465 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 14:54:33,607 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 14:54:33,670 - INFO - Finished scraping loop.
+2025-08-26 15:08:50,349 - INFO - Brands to scrape (excluding Wander Doll): ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-26 15:08:50,349 - INFO - Total brands to scrape: 26
+2025-08-26 15:08:50,366 - INFO - Connecting to database: sqlite:///reviews.db
+2025-08-26 15:08:50,370 - INFO - Database connection successful!
+2025-08-26 15:08:50,371 - INFO - [START] Starting scrape for brand: house-of-cb
+2025-08-26 15:08:50,372 - INFO - [START] Starting scrape for brand: tala
+2025-08-26 15:08:50,372 - INFO - [START] Starting scrape for brand: oddmuse-london
+2025-08-26 15:08:50,374 - INFO - [START] Starting scrape for brand: because-of-alice
+2025-08-26 15:08:50,379 - ERROR - [ERROR] house-of-cb: Scraping failed - 'WordListCorpusReader' object has no attribute '_LazyCorpusLoader__reader_cls'
+2025-08-26 15:08:50,379 - ERROR - [ERROR] tala: Scraping failed - 'WordListCorpusReader' object has no attribute '_LazyCorpusLoader__args'
+2025-08-26 15:08:50,389 - INFO - [START] Starting scrape for brand: bbx-brand
+2025-08-26 15:08:50,396 - INFO - [START] Starting scrape for brand: murci
+2025-08-26 15:08:50,402 - INFO - [START] Starting scrape for brand: couture-club
+2025-08-26 15:08:50,403 - INFO - Starting browser...
+2025-08-26 15:08:50,404 - INFO - Starting browser...
+2025-08-26 15:08:50,405 - INFO - Starting browser...
+2025-08-26 15:08:50,410 - INFO - Starting browser...
+2025-08-26 15:08:50,414 - INFO - Starting browser...
+2025-08-26 15:08:51,308 - INFO - Browser started.
+2025-08-26 15:08:51,309 - INFO - [LOGO] Logo already exists in database for bbx-brand
+2025-08-26 15:08:51,317 - INFO - Found 0 existing reviews in database for 'bbx-brand'
+2025-08-26 15:08:51,318 - INFO - Starting to scrape all pages...
+2025-08-26 15:08:51,318 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 15:08:51,319 - INFO - Scraping URL: https://uk.trustpilot.com/review/bbxbrand.com?page=1
+2025-08-26 15:08:51,334 - INFO - Browser started.
+2025-08-26 15:08:51,336 - INFO - [LOGO] Logo already exists in database for couture-club
+2025-08-26 15:08:51,340 - INFO - Found 0 existing reviews in database for 'couture-club'
+2025-08-26 15:08:51,340 - INFO - Starting to scrape all pages...
+2025-08-26 15:08:51,340 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 15:08:51,343 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.thecoutureclub.com?page=1
+2025-08-26 15:08:51,346 - INFO - Browser started.
+2025-08-26 15:08:51,348 - INFO - [LOGO] Logo already exists in database for because-of-alice
+2025-08-26 15:08:51,349 - INFO - Found 0 existing reviews in database for 'because-of-alice'
+2025-08-26 15:08:51,350 - INFO - Starting to scrape all pages...
+2025-08-26 15:08:51,350 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 15:08:51,350 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.becauseofalice.com?page=1
+2025-08-26 15:08:51,358 - INFO - Browser started.
+2025-08-26 15:08:51,360 - INFO - [LOGO] Logo already exists in database for oddmuse-london
+2025-08-26 15:08:51,362 - INFO - Found 0 existing reviews in database for 'oddmuse-london'
+2025-08-26 15:08:51,363 - INFO - Starting to scrape all pages...
+2025-08-26 15:08:51,363 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 15:08:51,363 - INFO - Scraping URL: https://uk.trustpilot.com/review/oddmuse.co.uk?page=1
+2025-08-26 15:08:51,370 - INFO - Browser started.
+2025-08-26 15:08:51,372 - INFO - [LOGO] Logo already exists in database for murci
+2025-08-26 15:08:51,373 - INFO - Found 0 existing reviews in database for 'murci'
+2025-08-26 15:08:51,373 - INFO - Starting to scrape all pages...
+2025-08-26 15:08:51,373 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 15:08:51,373 - INFO - Scraping URL: https://uk.trustpilot.com/review/murci.co.uk?page=1
+2025-08-26 15:09:09,489 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 15:09:09,576 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 15:09:09,698 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 15:09:09,725 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 15:09:11,646 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 15:09:13,163 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 15:09:13,164 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.becauseofalice.com?page=2
+2025-08-26 15:09:13,613 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 15:09:13,613 - INFO - Scraping URL: https://uk.trustpilot.com/review/bbxbrand.com?page=2
+2025-08-26 15:09:14,263 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 15:09:14,269 - INFO - Scraping URL: https://uk.trustpilot.com/review/murci.co.uk?page=2
+2025-08-26 15:09:15,170 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 15:09:15,172 - INFO - Scraping URL: https://uk.trustpilot.com/review/oddmuse.co.uk?page=2
+2025-08-26 15:09:15,985 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 15:09:16,167 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.thecoutureclub.com?page=2
+2025-08-26 15:09:25,234 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 15:09:25,252 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 15:09:25,485 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 15:09:25,625 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 15:09:25,636 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 15:09:30,394 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 15:09:30,395 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.becauseofalice.com?page=3
+2025-08-26 15:09:30,402 - ERROR - Error scraping page https://uk.trustpilot.com/review/www.becauseofalice.com?page=3: Page.goto: Connection closed while reading from the driver
+2025-08-26 15:09:30,403 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 15:09:30,404 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 15:09:30,404 - INFO - Finished scraping loop.
+2025-08-26 15:09:30,931 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 15:09:30,962 - INFO - Scraping URL: https://uk.trustpilot.com/review/bbxbrand.com?page=3
+2025-08-26 15:09:31,042 - ERROR - Error scraping page https://uk.trustpilot.com/review/bbxbrand.com?page=3: Page.goto: Connection closed while reading from the driver
+2025-08-26 15:09:31,073 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 15:09:31,104 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 15:09:31,134 - INFO - Finished scraping loop.
+2025-08-26 15:09:31,560 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 15:09:31,576 - INFO - Scraping URL: https://uk.trustpilot.com/review/oddmuse.co.uk?page=3
+2025-08-26 15:09:31,606 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 15:09:31,654 - INFO - Scraping URL: https://uk.trustpilot.com/review/murci.co.uk?page=3
+2025-08-26 15:09:31,905 - ERROR - Error scraping page https://uk.trustpilot.com/review/oddmuse.co.uk?page=3: Page.goto: Connection closed while reading from the driver
+2025-08-26 15:09:31,982 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 15:09:31,999 - ERROR - Error scraping page https://uk.trustpilot.com/review/murci.co.uk?page=3: Page.goto: Connection closed while reading from the driver
+2025-08-26 15:09:32,044 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 15:09:32,137 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 15:09:32,168 - INFO - Finished scraping loop.
+2025-08-26 15:09:32,279 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 15:09:32,388 - INFO - Finished scraping loop.
+2025-08-26 15:09:32,404 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 15:09:32,558 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.thecoutureclub.com?page=3
+2025-08-26 15:09:33,170 - ERROR - Error scraping page https://uk.trustpilot.com/review/www.thecoutureclub.com?page=3: Page.goto: Connection closed while reading from the driver
+2025-08-26 15:09:33,231 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 15:09:33,279 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 15:09:33,433 - INFO - Finished scraping loop.
+2025-08-26 15:14:55,111 - INFO - Brands to scrape (excluding Wander Doll): ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-26 15:14:55,112 - INFO - Total brands to scrape: 26
+2025-08-26 15:14:55,112 - INFO - [PARALLEL] ULTRA-FAST PARALLEL BULK SCRAPING STARTED
+2025-08-26 15:14:55,112 - INFO - [INFO] Brands to scrape: ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-26 15:14:55,112 - INFO - [INFO] Max pages per brand: NO LIMIT - ALL PAGES
+2025-08-26 15:14:55,112 - INFO - [INFO] Starting from page: 1
+2025-08-26 15:14:55,112 - INFO - [INFO] Parallel workers: 5 brands at a time
+2025-08-26 15:14:55,112 - INFO - [INFO] This will scrape ALL reviews for each brand!
+2025-08-26 15:14:55,113 - INFO - Connecting to database: sqlite:///reviews.db
+2025-08-26 15:14:55,115 - INFO - Database connection successful!
+2025-08-26 15:14:55,117 - INFO - [START] Starting scrape for brand: house-of-cb
+2025-08-26 15:14:55,117 - INFO - [START] Starting scrape for brand: tala
+2025-08-26 15:14:55,118 - INFO - [START] Starting scrape for brand: oddmuse-london
+2025-08-26 15:14:55,119 - INFO - [START] Starting scrape for brand: because-of-alice
+2025-08-26 15:14:55,120 - ERROR - [ERROR] oddmuse-london: Scraping failed - 'WordListCorpusReader' object has no attribute '_LazyCorpusLoader__args'
+2025-08-26 15:14:55,121 - INFO - [START] Starting scrape for brand: bbx-brand
+2025-08-26 15:14:55,122 - INFO - [START] Starting scrape for brand: murci
+2025-08-26 15:14:55,122 - WARNING - [WARNING] oddmuse-london: No new reviews scraped
+2025-08-26 15:14:55,127 - ERROR - [ERROR] house-of-cb: Scraping failed - 'WordListCorpusReader' object has no attribute '_LazyCorpusLoader__args'
+2025-08-26 15:14:55,132 - INFO - Starting browser...
+2025-08-26 15:14:55,134 - INFO - [START] Starting scrape for brand: couture-club
+2025-08-26 15:14:55,134 - WARNING - [WARNING] house-of-cb: No new reviews scraped
+2025-08-26 15:14:55,136 - INFO - Starting browser...
+2025-08-26 15:14:55,139 - INFO - Starting browser...
+2025-08-26 15:14:55,140 - INFO - Starting browser...
+2025-08-26 15:14:55,142 - INFO - Starting browser...
+2025-08-26 15:14:56,092 - INFO - Browser started successfully
+2025-08-26 15:14:56,093 - INFO - Browser started.
+2025-08-26 15:14:56,095 - INFO - [LOGO] Logo already exists in database for couture-club
+2025-08-26 15:14:56,104 - INFO - Found 0 existing reviews in database for 'couture-club'
+2025-08-26 15:14:56,104 - INFO - Starting to scrape all pages...
+2025-08-26 15:14:56,105 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 15:14:56,105 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.thecoutureclub.com?page=1
+2025-08-26 15:14:56,177 - INFO - Browser started successfully
+2025-08-26 15:14:56,177 - INFO - Browser started.
+2025-08-26 15:14:56,180 - INFO - [LOGO] Logo already exists in database for because-of-alice
+2025-08-26 15:14:56,182 - INFO - Found 0 existing reviews in database for 'because-of-alice'
+2025-08-26 15:14:56,183 - INFO - Starting to scrape all pages...
+2025-08-26 15:14:56,183 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 15:14:56,183 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.becauseofalice.com?page=1
+2025-08-26 15:14:56,186 - INFO - Browser started successfully
+2025-08-26 15:14:56,187 - INFO - Browser started.
+2025-08-26 15:14:56,189 - INFO - [LOGO] Logo already exists in database for bbx-brand
+2025-08-26 15:14:56,191 - INFO - Found 0 existing reviews in database for 'bbx-brand'
+2025-08-26 15:14:56,191 - INFO - Starting to scrape all pages...
+2025-08-26 15:14:56,191 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 15:14:56,192 - INFO - Scraping URL: https://uk.trustpilot.com/review/bbxbrand.com?page=1
+2025-08-26 15:14:56,216 - INFO - Browser started successfully
+2025-08-26 15:14:56,217 - INFO - Browser started.
+2025-08-26 15:14:56,218 - INFO - [LOGO] Logo already exists in database for tala
+2025-08-26 15:14:56,221 - INFO - Found 0 existing reviews in database for 'tala'
+2025-08-26 15:14:56,221 - INFO - Starting to scrape all pages...
+2025-08-26 15:14:56,221 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 15:14:56,222 - INFO - Scraping URL: https://uk.trustpilot.com/review/wearetala.com?page=1
+2025-08-26 15:14:56,232 - INFO - Browser started successfully
+2025-08-26 15:14:56,233 - INFO - Browser started.
+2025-08-26 15:14:56,234 - INFO - [LOGO] Logo already exists in database for murci
+2025-08-26 15:14:56,235 - INFO - Found 0 existing reviews in database for 'murci'
+2025-08-26 15:14:56,235 - INFO - Starting to scrape all pages...
+2025-08-26 15:14:56,236 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 15:14:56,236 - INFO - Scraping URL: https://uk.trustpilot.com/review/murci.co.uk?page=1
+2025-08-26 15:14:58,288 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:14:58,626 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:14:58,690 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:14:58,882 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:14:59,874 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 15:14:59,964 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:15:00,666 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 15:15:00,705 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 15:15:01,352 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 15:15:02,085 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 15:15:04,057 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 15:15:04,057 - INFO - Scraping URL: https://uk.trustpilot.com/review/bbxbrand.com?page=2
+2025-08-26 15:15:04,185 - WARNING - Page load attempt 1 failed: Page.goto: Target page, context or browser has been closed
+Call log:
+  - navigating to "https://uk.trustpilot.com/review/bbxbrand.com?page=2", waiting until "domcontentloaded"
+, retrying...
+2025-08-26 15:15:04,345 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 15:15:04,346 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.becauseofalice.com?page=2
+2025-08-26 15:15:04,351 - WARNING - Page load attempt 1 failed: Page.goto: Target page, context or browser has been closed, retrying...
+2025-08-26 15:15:04,509 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 15:15:04,510 - INFO - Scraping URL: https://uk.trustpilot.com/review/murci.co.uk?page=2
+2025-08-26 15:15:04,516 - WARNING - Page load attempt 1 failed: Page.goto: Connection closed while reading from the driver, retrying...
+2025-08-26 15:15:05,320 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 15:15:05,321 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.thecoutureclub.com?page=2
+2025-08-26 15:15:05,324 - WARNING - Page load attempt 1 failed: Page.goto: Connection closed while reading from the driver, retrying...
+2025-08-26 15:15:06,165 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 15:15:06,166 - INFO - Scraping URL: https://uk.trustpilot.com/review/wearetala.com?page=2
+2025-08-26 15:15:06,169 - WARNING - Page load attempt 1 failed: Page.goto: Connection closed while reading from the driver, retrying...
+2025-08-26 15:15:06,218 - WARNING - Page load attempt 2 failed: Page.goto: Connection closed while reading from the driver, retrying...
+2025-08-26 15:15:06,356 - WARNING - Page load attempt 2 failed: Page.goto: Connection closed while reading from the driver, retrying...
+2025-08-26 15:15:06,520 - WARNING - Page load attempt 2 failed: Page.goto: Connection closed while reading from the driver, retrying...
+2025-08-26 15:15:43,556 - INFO - Brands to scrape (excluding Wander Doll): ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-26 15:15:43,556 - INFO - Total brands to scrape: 26
+2025-08-26 15:15:43,556 - INFO - [PARALLEL] ULTRA-FAST PARALLEL BULK SCRAPING STARTED
+2025-08-26 15:15:43,557 - INFO - [INFO] Brands to scrape: ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-26 15:15:43,557 - INFO - [INFO] Max pages per brand: NO LIMIT - ALL PAGES
+2025-08-26 15:15:43,557 - INFO - [INFO] Starting from page: 1
+2025-08-26 15:15:43,557 - INFO - [INFO] Parallel workers: 5 brands at a time
+2025-08-26 15:15:43,557 - INFO - [INFO] This will scrape ALL reviews for each brand!
+2025-08-26 15:15:43,557 - INFO - Connecting to database: sqlite:///reviews.db
+2025-08-26 15:15:43,559 - INFO - Database connection successful!
+2025-08-26 15:15:43,560 - INFO - [START] Starting scrape for brand: house-of-cb
+2025-08-26 15:15:43,561 - INFO - [START] Starting scrape for brand: tala
+2025-08-26 15:15:43,561 - INFO - [START] Starting scrape for brand: oddmuse-london
+2025-08-26 15:15:43,562 - INFO - [START] Starting scrape for brand: because-of-alice
+2025-08-26 15:15:43,563 - ERROR - [ERROR] oddmuse-london: Scraping failed - 'WordListCorpusReader' object has no attribute '_LazyCorpusLoader__reader_cls'
+2025-08-26 15:15:43,568 - INFO - [START] Starting scrape for brand: bbx-brand
+2025-08-26 15:15:43,570 - INFO - [START] Starting scrape for brand: murci
+2025-08-26 15:15:43,570 - WARNING - [WARNING] oddmuse-london: No new reviews scraped
+2025-08-26 15:15:43,572 - INFO - Starting browser...
+2025-08-26 15:15:43,574 - ERROR - [ERROR] house-of-cb: Scraping failed - 'WordListCorpusReader' object has no attribute '_LazyCorpusLoader__args'
+2025-08-26 15:15:43,576 - INFO - [START] Starting scrape for brand: couture-club
+2025-08-26 15:15:43,576 - INFO - Starting browser...
+2025-08-26 15:15:43,577 - WARNING - [WARNING] house-of-cb: No new reviews scraped
+2025-08-26 15:15:43,578 - INFO - Starting browser...
+2025-08-26 15:15:43,578 - INFO - Starting browser...
+2025-08-26 15:15:43,584 - INFO - Starting browser...
+2025-08-26 15:15:44,476 - INFO - Browser started successfully
+2025-08-26 15:15:44,477 - INFO - Browser started.
+2025-08-26 15:15:44,478 - INFO - [LOGO] Logo already exists in database for because-of-alice
+2025-08-26 15:15:44,485 - INFO - Found 0 existing reviews in database for 'because-of-alice'
+2025-08-26 15:15:44,486 - INFO - Starting to scrape all pages...
+2025-08-26 15:15:44,487 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 15:15:44,487 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.becauseofalice.com?page=1
+2025-08-26 15:15:44,521 - INFO - Browser started successfully
+2025-08-26 15:15:44,522 - INFO - Browser started.
+2025-08-26 15:15:44,523 - INFO - [LOGO] Logo already exists in database for bbx-brand
+2025-08-26 15:15:44,525 - INFO - Found 0 existing reviews in database for 'bbx-brand'
+2025-08-26 15:15:44,526 - INFO - Starting to scrape all pages...
+2025-08-26 15:15:44,526 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 15:15:44,526 - INFO - Scraping URL: https://uk.trustpilot.com/review/bbxbrand.com?page=1
+2025-08-26 15:15:44,547 - INFO - Browser started successfully
+2025-08-26 15:15:44,547 - INFO - Browser started.
+2025-08-26 15:15:44,549 - INFO - [LOGO] Logo already exists in database for tala
+2025-08-26 15:15:44,550 - INFO - Found 0 existing reviews in database for 'tala'
+2025-08-26 15:15:44,551 - INFO - Starting to scrape all pages...
+2025-08-26 15:15:44,551 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 15:15:44,552 - INFO - Scraping URL: https://uk.trustpilot.com/review/wearetala.com?page=1
+2025-08-26 15:15:44,576 - INFO - Browser started successfully
+2025-08-26 15:15:44,577 - INFO - Browser started.
+2025-08-26 15:15:44,578 - INFO - [LOGO] Logo already exists in database for couture-club
+2025-08-26 15:15:44,579 - INFO - Found 0 existing reviews in database for 'couture-club'
+2025-08-26 15:15:44,580 - INFO - Starting to scrape all pages...
+2025-08-26 15:15:44,580 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 15:15:44,581 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.thecoutureclub.com?page=1
+2025-08-26 15:15:44,584 - INFO - Browser started successfully
+2025-08-26 15:15:44,584 - INFO - Browser started.
+2025-08-26 15:15:44,586 - INFO - [LOGO] Logo already exists in database for murci
+2025-08-26 15:15:44,588 - INFO - Found 0 existing reviews in database for 'murci'
+2025-08-26 15:15:44,589 - INFO - Starting to scrape all pages...
+2025-08-26 15:15:44,589 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 15:15:44,589 - INFO - Scraping URL: https://uk.trustpilot.com/review/murci.co.uk?page=1
+2025-08-26 15:15:46,849 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:15:47,291 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:15:47,317 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:15:47,363 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:15:47,597 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:15:47,987 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 15:15:48,853 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 15:15:48,864 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 15:15:49,022 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 15:15:49,211 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 15:15:52,261 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 15:15:52,261 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.becauseofalice.com?page=2
+2025-08-26 15:15:52,274 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 15:15:52,274 - INFO - Scraping URL: https://uk.trustpilot.com/review/bbxbrand.com?page=2
+2025-08-26 15:15:52,858 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:15:52,906 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:15:53,645 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 15:15:53,758 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 15:15:54,119 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 15:15:54,119 - INFO - Scraping URL: https://uk.trustpilot.com/review/wearetala.com?page=2
+2025-08-26 15:15:54,122 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 15:15:54,122 - INFO - Scraping URL: https://uk.trustpilot.com/review/murci.co.uk?page=2
+2025-08-26 15:15:54,659 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:15:55,058 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:15:55,368 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 15:15:55,925 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 15:15:56,183 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 15:15:56,184 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.thecoutureclub.com?page=2
+2025-08-26 15:15:56,848 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:15:57,717 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 15:15:57,718 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.becauseofalice.com?page=3
+2025-08-26 15:15:57,728 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 15:15:58,587 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 15:15:58,588 - INFO - Scraping URL: https://uk.trustpilot.com/review/bbxbrand.com?page=3
+2025-08-26 15:15:58,605 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:15:58,894 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 15:15:58,895 - INFO - Scraping URL: https://uk.trustpilot.com/review/murci.co.uk?page=3
+2025-08-26 15:15:59,369 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 15:15:59,370 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 15:15:59,370 - INFO - Finished scraping loop.
+2025-08-26 15:15:59,380 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 15:15:59,383 - INFO - Scraping URL: https://uk.trustpilot.com/review/wearetala.com?page=3
+2025-08-26 15:15:59,397 - INFO - Found 7 reviews using selector: article
+2025-08-26 15:15:59,466 - INFO - [SUCCESS] because-of-alice: Scraping completed - 0 new reviews
+2025-08-26 15:15:59,466 - INFO - [START] Starting scrape for brand: club-l-london
+2025-08-26 15:15:59,466 - WARNING - [WARNING] because-of-alice: No new reviews scraped
+2025-08-26 15:15:59,469 - INFO - Starting browser...
+2025-08-26 15:15:59,688 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 15:15:59,688 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 15:15:59,688 - INFO - Finished scraping loop.
+2025-08-26 15:15:59,756 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:15:59,795 - INFO - [SUCCESS] bbx-brand: Scraping completed - 0 new reviews
+2025-08-26 15:15:59,796 - INFO - [START] Starting scrape for brand: jaki
+2025-08-26 15:15:59,796 - WARNING - [WARNING] bbx-brand: No new reviews scraped
+2025-08-26 15:15:59,799 - INFO - Starting browser...
+2025-08-26 15:16:00,330 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:16:00,502 - INFO - Browser started successfully
+2025-08-26 15:16:00,503 - INFO - Browser started.
+2025-08-26 15:16:00,504 - INFO - [LOGO] Logo already exists in database for club-l-london
+2025-08-26 15:16:00,506 - INFO - Found 0 existing reviews in database for 'club-l-london'
+2025-08-26 15:16:00,506 - INFO - Starting to scrape all pages...
+2025-08-26 15:16:00,506 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 15:16:00,507 - INFO - Scraping URL: https://uk.trustpilot.com/review/clubllondon.com?page=1
+2025-08-26 15:16:00,603 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 15:16:00,603 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 15:16:00,604 - INFO - Finished scraping loop.
+2025-08-26 15:16:00,687 - INFO - [SUCCESS] murci: Scraping completed - 0 new reviews
+2025-08-26 15:16:00,688 - INFO - [START] Starting scrape for brand: maniere-de-voir
+2025-08-26 15:16:00,688 - WARNING - [WARNING] murci: No new reviews scraped
+2025-08-26 15:16:00,693 - INFO - Starting browser...
+2025-08-26 15:16:00,779 - INFO - Browser started successfully
+2025-08-26 15:16:00,780 - INFO - Browser started.
+2025-08-26 15:16:00,781 - INFO - [LOGO] Logo already exists in database for jaki
+2025-08-26 15:16:00,782 - INFO - Found 0 existing reviews in database for 'jaki'
+2025-08-26 15:16:00,782 - INFO - Starting to scrape all pages...
+2025-08-26 15:16:00,782 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 15:16:00,783 - INFO - Scraping URL: https://uk.trustpilot.com/review/jaki.co.uk?page=1
+2025-08-26 15:16:01,361 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 15:16:01,362 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 15:16:01,362 - INFO - Finished scraping loop.
+2025-08-26 15:16:01,391 - INFO - Browser started successfully
+2025-08-26 15:16:01,391 - INFO - Browser started.
+2025-08-26 15:16:01,392 - INFO - [LOGO] Logo already exists in database for maniere-de-voir
+2025-08-26 15:16:01,393 - INFO - Found 0 existing reviews in database for 'maniere-de-voir'
+2025-08-26 15:16:01,393 - INFO - Starting to scrape all pages...
+2025-08-26 15:16:01,394 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 15:16:01,394 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.manieredevoir.com?page=1
+2025-08-26 15:16:01,428 - INFO - [SUCCESS] tala: Scraping completed - 0 new reviews
+2025-08-26 15:16:01,428 - INFO - [START] Starting scrape for brand: glory
+2025-08-26 15:16:01,428 - WARNING - [WARNING] tala: No new reviews scraped
+2025-08-26 15:16:01,431 - INFO - Starting browser...
+2025-08-26 15:16:02,053 - INFO - Browser started successfully
+2025-08-26 15:16:02,053 - INFO - Browser started.
+2025-08-26 15:16:02,055 - INFO - [LOGO] Logo already exists in database for glory
+2025-08-26 15:16:02,056 - INFO - Found 0 existing reviews in database for 'glory'
+2025-08-26 15:16:02,056 - INFO - Starting to scrape all pages...
+2025-08-26 15:16:02,056 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 15:16:02,056 - INFO - Scraping URL: https://uk.trustpilot.com/review/gloryclothing.fr?page=1
+2025-08-26 15:16:02,729 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:16:03,173 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 15:16:03,173 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.thecoutureclub.com?page=3
+2025-08-26 15:16:03,247 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:16:03,381 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 15:16:03,948 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 15:16:04,025 - INFO - Found 17 reviews using selector: article
+2025-08-26 15:16:04,624 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:16:04,673 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 15:16:05,258 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:16:05,485 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 15:16:06,118 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 15:16:06,118 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 15:16:06,118 - INFO - Finished scraping loop.
+2025-08-26 15:16:06,208 - INFO - [SUCCESS] couture-club: Scraping completed - 0 new reviews
+2025-08-26 15:16:06,208 - INFO - [START] Starting scrape for brand: khanums
+2025-08-26 15:16:06,208 - WARNING - [WARNING] couture-club: No new reviews scraped
+2025-08-26 15:16:06,212 - INFO - Starting browser...
+2025-08-26 15:16:06,839 - INFO - Browser started successfully
+2025-08-26 15:16:06,839 - INFO - Browser started.
+2025-08-26 15:16:06,840 - INFO - [LOGO] Logo already exists in database for khanums
+2025-08-26 15:16:06,841 - INFO - Found 0 existing reviews in database for 'khanums'
+2025-08-26 15:16:06,842 - INFO - Starting to scrape all pages...
+2025-08-26 15:16:06,842 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 15:16:06,842 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.khanums.co?page=1
+2025-08-26 15:16:07,150 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 15:16:07,151 - INFO - Scraping URL: https://uk.trustpilot.com/review/jaki.co.uk?page=2
+2025-08-26 15:16:08,173 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 15:16:08,173 - INFO - Scraping URL: https://uk.trustpilot.com/review/gloryclothing.fr?page=2
+2025-08-26 15:16:08,518 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:16:08,592 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:16:09,037 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 15:16:09,037 - INFO - Scraping URL: https://uk.trustpilot.com/review/clubllondon.com?page=2
+2025-08-26 15:16:09,055 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 15:16:09,056 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.manieredevoir.com?page=2
+2025-08-26 15:16:09,402 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 15:16:09,497 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 15:16:09,868 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:16:10,561 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 15:16:10,611 - INFO - Found 24 reviews using selector: article
+2025-08-26 15:16:11,240 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 15:16:12,661 - WARNING - No reviews found on attempt 1, retrying...
+2025-08-26 15:16:13,309 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 15:16:13,310 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.khanums.co?page=2
+2025-08-26 15:16:13,314 - WARNING - Page load attempt 1 failed: Page.goto: Target page, context or browser has been closed, retrying...
+2025-08-26 15:16:13,897 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 15:16:13,899 - INFO - Scraping URL: https://uk.trustpilot.com/review/jaki.co.uk?page=3
+2025-08-26 15:16:13,901 - WARNING - Page load attempt 1 failed: Page.goto: Connection closed while reading from the driver, retrying...
+2025-08-26 15:16:14,663 - WARNING - Page load attempt 2 failed: Page.goto: Connection closed while reading from the driver, retrying...
+2025-08-26 15:16:15,242 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 15:16:15,243 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.manieredevoir.com?page=3
+2025-08-26 15:16:15,245 - WARNING - Page load attempt 1 failed: Page.goto: Connection closed while reading from the driver, retrying...
+2025-08-26 15:16:15,319 - WARNING - Page load attempt 2 failed: Page.goto: Connection closed while reading from the driver, retrying...
+2025-08-26 15:16:18,195 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 15:16:18,257 - INFO - Scraping URL: https://uk.trustpilot.com/review/clubllondon.com?page=3
+2025-08-26 15:16:19,560 - WARNING - Page load attempt 1 failed: Page.goto: Connection closed while reading from the driver, retrying...
+2025-08-26 18:06:37,690 - INFO - Brands to scrape (excluding Wander Doll): ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-26 18:06:37,691 - INFO - Total brands to scrape: 26
+2025-08-26 18:06:37,691 - INFO - [PARALLEL] ULTRA-FAST PARALLEL BULK SCRAPING STARTED
+2025-08-26 18:06:37,691 - INFO - [INFO] Brands to scrape: ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-26 18:06:37,692 - INFO - [INFO] Max pages per brand: NO LIMIT - ALL PAGES
+2025-08-26 18:06:37,692 - INFO - [INFO] Starting from page: 1
+2025-08-26 18:06:37,693 - INFO - [INFO] Parallel workers: 5 brands at a time
+2025-08-26 18:06:37,693 - INFO - [INFO] This will scrape ALL reviews for each brand!
+2025-08-26 18:06:37,693 - INFO - Connecting to database: sqlite:///reviews.db
+2025-08-26 18:06:37,703 - INFO - Database connection successful!
+2025-08-26 18:06:37,705 - INFO - [START] Starting scrape for brand: house-of-cb
+2025-08-26 18:06:37,706 - INFO - [START] Starting scrape for brand: tala
+2025-08-26 18:06:37,709 - INFO - [START] Starting scrape for brand: oddmuse-london
+2025-08-26 18:06:37,712 - INFO - [START] Starting scrape for brand: because-of-alice
+2025-08-26 18:06:37,716 - ERROR - [ERROR] oddmuse-london: Scraping failed - 'WordListCorpusReader' object has no attribute '_LazyCorpusLoader__reader_cls'
+2025-08-26 18:06:37,717 - INFO - [START] Starting scrape for brand: bbx-brand
+2025-08-26 18:06:37,717 - ERROR - [ERROR] tala: Scraping failed - 'WordListCorpusReader' object has no attribute '_LazyCorpusLoader__args'
+2025-08-26 18:06:37,719 - ERROR - [ERROR] because-of-alice: Scraping failed - 'WordListCorpusReader' object has no attribute '_LazyCorpusLoader__reader_cls'
+2025-08-26 18:06:37,720 - WARNING - [WARNING] oddmuse-london: No new reviews scraped
+2025-08-26 18:06:37,720 - INFO - [START] Starting scrape for brand: murci
+2025-08-26 18:06:37,721 - INFO - [START] Starting scrape for brand: couture-club
+2025-08-26 18:06:37,726 - INFO - [START] Starting scrape for brand: club-l-london
+2025-08-26 18:06:37,738 - WARNING - [WARNING] tala: No new reviews scraped
+2025-08-26 18:06:37,750 - INFO - Starting browser...
+2025-08-26 18:06:37,757 - WARNING - [WARNING] because-of-alice: No new reviews scraped
+2025-08-26 18:06:37,759 - INFO - Starting browser...
+2025-08-26 18:06:37,761 - INFO - Starting browser...
+2025-08-26 18:06:37,763 - INFO - Starting browser...
+2025-08-26 18:06:37,767 - INFO - Starting browser...
+2025-08-26 18:06:55,197 - INFO - Browser started successfully
+2025-08-26 18:06:55,198 - INFO - Browser started successfully
+2025-08-26 18:06:55,198 - INFO - Browser started.
+2025-08-26 18:06:55,198 - INFO - Browser started.
+2025-08-26 18:06:55,199 - INFO - Browser started successfully
+2025-08-26 18:06:55,200 - INFO - Browser started successfully
+2025-08-26 18:06:55,201 - INFO - [LOGO] Logo already exists in database for murci
+2025-08-26 18:06:55,201 - INFO - [LOGO] Logo already exists in database for couture-club
+2025-08-26 18:06:55,201 - INFO - Browser started.
+2025-08-26 18:06:55,202 - INFO - Browser started successfully
+2025-08-26 18:06:55,202 - INFO - Browser started.
+2025-08-26 18:06:55,211 - INFO - Found 0 existing reviews in database for 'murci'
+2025-08-26 18:06:55,212 - INFO - Found 0 existing reviews in database for 'couture-club'
+2025-08-26 18:06:55,212 - INFO - [LOGO] Logo already exists in database for club-l-london
+2025-08-26 18:06:55,212 - INFO - Browser started.
+2025-08-26 18:06:55,213 - INFO - Starting to scrape all pages...
+2025-08-26 18:06:55,214 - INFO - Starting to scrape all pages...
+2025-08-26 18:06:55,216 - INFO - Found 0 existing reviews in database for 'club-l-london'
+2025-08-26 18:06:55,216 - INFO - [LOGO] Logo already exists in database for house-of-cb
+2025-08-26 18:06:55,217 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 18:06:55,218 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 18:06:55,218 - INFO - [LOGO] Logo already exists in database for bbx-brand
+2025-08-26 18:06:55,218 - INFO - Starting to scrape all pages...
+2025-08-26 18:06:55,220 - INFO - Scraping URL: https://uk.trustpilot.com/review/murci.co.uk?page=1
+2025-08-26 18:06:55,220 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.thecoutureclub.com?page=1
+2025-08-26 18:06:55,221 - INFO - Found 0 existing reviews in database for 'house-of-cb'
+2025-08-26 18:06:55,223 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 18:06:55,224 - INFO - Found 0 existing reviews in database for 'bbx-brand'
+2025-08-26 18:06:55,226 - INFO - Starting to scrape all pages...
+2025-08-26 18:06:55,227 - INFO - Scraping URL: https://uk.trustpilot.com/review/clubllondon.com?page=1
+2025-08-26 18:06:55,228 - INFO - Starting to scrape all pages...
+2025-08-26 18:06:55,229 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 18:06:55,230 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 18:06:55,231 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=1
+2025-08-26 18:06:55,232 - INFO - Scraping URL: https://uk.trustpilot.com/review/bbxbrand.com?page=1
+2025-08-26 18:07:00,976 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:01,038 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:01,269 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:01,291 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:01,699 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:03,428 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 18:07:03,475 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 18:07:03,666 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 18:07:03,940 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 18:07:04,017 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 18:07:07,262 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 18:07:07,263 - INFO - Scraping URL: https://uk.trustpilot.com/review/clubllondon.com?page=2
+2025-08-26 18:07:07,673 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 18:07:07,678 - INFO - Scraping URL: https://uk.trustpilot.com/review/murci.co.uk?page=2
+2025-08-26 18:07:07,715 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 18:07:07,717 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.thecoutureclub.com?page=2
+2025-08-26 18:07:08,440 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 18:07:08,464 - INFO - Scraping URL: https://uk.trustpilot.com/review/bbxbrand.com?page=2
+2025-08-26 18:07:09,008 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:09,832 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:10,061 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:10,194 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 18:07:10,195 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=2
+2025-08-26 18:07:10,473 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:10,695 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 18:07:11,300 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 18:07:12,154 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 18:07:12,156 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 18:07:12,373 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:13,868 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 18:07:15,689 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 18:07:15,696 - INFO - Scraping URL: https://uk.trustpilot.com/review/clubllondon.com?page=3
+2025-08-26 18:07:17,004 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:17,064 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 18:07:17,065 - INFO - Scraping URL: https://uk.trustpilot.com/review/murci.co.uk?page=3
+2025-08-26 18:07:17,669 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 18:07:17,671 - INFO - Scraping URL: https://uk.trustpilot.com/review/bbxbrand.com?page=3
+2025-08-26 18:07:17,688 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 18:07:17,689 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.thecoutureclub.com?page=3
+2025-08-26 18:07:18,324 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 18:07:18,775 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=3
+2025-08-26 18:07:19,065 - INFO - Found 7 reviews using selector: article
+2025-08-26 18:07:19,192 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:19,557 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 18:07:19,564 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 18:07:19,565 - INFO - Finished scraping loop.
+2025-08-26 18:07:19,746 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 18:07:19,749 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 18:07:19,752 - INFO - Finished scraping loop.
+2025-08-26 18:07:20,091 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:20,378 - INFO - [SUCCESS] Scraping complete! Total new reviews saved: 0
+2025-08-26 18:07:20,379 - INFO - [SUCCESS] bbx-brand: Scraping completed - 0 new reviews
+2025-08-26 18:07:20,380 - INFO - [START] Starting scrape for brand: jaki
+2025-08-26 18:07:20,380 - WARNING - [WARNING] bbx-brand: No new reviews scraped
+2025-08-26 18:07:20,397 - INFO - Starting browser...
+2025-08-26 18:07:20,715 - INFO - [SUCCESS] Scraping complete! Total new reviews saved: 0
+2025-08-26 18:07:20,715 - INFO - [SUCCESS] club-l-london: Scraping completed - 0 new reviews
+2025-08-26 18:07:20,716 - INFO - [START] Starting scrape for brand: maniere-de-voir
+2025-08-26 18:07:20,717 - WARNING - [WARNING] club-l-london: No new reviews scraped
+2025-08-26 18:07:20,722 - INFO - Starting browser...
+2025-08-26 18:07:20,895 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:20,906 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 18:07:20,906 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 18:07:20,907 - INFO - Finished scraping loop.
+2025-08-26 18:07:21,080 - INFO - [SUCCESS] Scraping complete! Total new reviews saved: 0
+2025-08-26 18:07:21,080 - INFO - [SUCCESS] murci: Scraping completed - 0 new reviews
+2025-08-26 18:07:21,081 - INFO - [START] Starting scrape for brand: glory
+2025-08-26 18:07:21,081 - WARNING - [WARNING] murci: No new reviews scraped
+2025-08-26 18:07:21,088 - INFO - Starting browser...
+2025-08-26 18:07:21,521 - INFO - Browser started successfully
+2025-08-26 18:07:21,521 - INFO - Browser started.
+2025-08-26 18:07:21,523 - INFO - [LOGO] Logo already exists in database for jaki
+2025-08-26 18:07:21,525 - INFO - Found 0 existing reviews in database for 'jaki'
+2025-08-26 18:07:21,525 - INFO - Starting to scrape all pages...
+2025-08-26 18:07:21,525 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 18:07:21,526 - INFO - Scraping URL: https://uk.trustpilot.com/review/jaki.co.uk?page=1
+2025-08-26 18:07:21,774 - INFO - Browser started successfully
+2025-08-26 18:07:21,775 - INFO - Browser started.
+2025-08-26 18:07:21,777 - INFO - [LOGO] Logo already exists in database for maniere-de-voir
+2025-08-26 18:07:21,778 - INFO - Found 0 existing reviews in database for 'maniere-de-voir'
+2025-08-26 18:07:21,779 - INFO - Starting to scrape all pages...
+2025-08-26 18:07:21,780 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 18:07:21,781 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.manieredevoir.com?page=1
+2025-08-26 18:07:22,121 - INFO - Browser started successfully
+2025-08-26 18:07:22,122 - INFO - Browser started.
+2025-08-26 18:07:22,124 - INFO - [LOGO] Logo already exists in database for glory
+2025-08-26 18:07:22,127 - INFO - Found 0 existing reviews in database for 'glory'
+2025-08-26 18:07:22,128 - INFO - Starting to scrape all pages...
+2025-08-26 18:07:22,128 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 18:07:22,129 - INFO - Scraping URL: https://uk.trustpilot.com/review/gloryclothing.fr?page=1
+2025-08-26 18:07:22,141 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 18:07:22,141 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 18:07:22,142 - INFO - Finished scraping loop.
+2025-08-26 18:07:22,266 - INFO - [SUCCESS] Scraping complete! Total new reviews saved: 0
+2025-08-26 18:07:22,267 - INFO - [SUCCESS] couture-club: Scraping completed - 0 new reviews
+2025-08-26 18:07:22,267 - INFO - [START] Starting scrape for brand: khanums
+2025-08-26 18:07:22,268 - WARNING - [WARNING] couture-club: No new reviews scraped
+2025-08-26 18:07:22,274 - INFO - Starting browser...
+2025-08-26 18:07:22,319 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 18:07:22,320 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 18:07:22,320 - INFO - Finished scraping loop.
+2025-08-26 18:07:22,438 - INFO - [SUCCESS] Scraping complete! Total new reviews saved: 0
+2025-08-26 18:07:22,438 - INFO - [SUCCESS] house-of-cb: Scraping completed - 0 new reviews
+2025-08-26 18:07:22,438 - INFO - [START] Starting scrape for brand: dfyne
+2025-08-26 18:07:22,439 - WARNING - [WARNING] house-of-cb: No new reviews scraped
+2025-08-26 18:07:22,445 - INFO - Starting browser...
+2025-08-26 18:07:23,418 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:23,430 - INFO - Browser started successfully
+2025-08-26 18:07:23,430 - INFO - Browser started.
+2025-08-26 18:07:23,432 - INFO - [LOGO] Logo already exists in database for khanums
+2025-08-26 18:07:23,435 - INFO - Found 0 existing reviews in database for 'khanums'
+2025-08-26 18:07:23,436 - INFO - Starting to scrape all pages...
+2025-08-26 18:07:23,436 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 18:07:23,436 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.khanums.co?page=1
+2025-08-26 18:07:23,477 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:23,607 - INFO - Browser started successfully
+2025-08-26 18:07:23,608 - INFO - Browser started.
+2025-08-26 18:07:23,611 - INFO - [LOGO] Logo already exists in database for dfyne
+2025-08-26 18:07:23,613 - INFO - Found 0 existing reviews in database for 'dfyne'
+2025-08-26 18:07:23,614 - INFO - Starting to scrape all pages...
+2025-08-26 18:07:23,615 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 18:07:23,615 - INFO - Scraping URL: https://uk.trustpilot.com/review/dfyne.com?page=1
+2025-08-26 18:07:24,175 - INFO - Found 17 reviews using selector: article
+2025-08-26 18:07:24,955 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 18:07:25,033 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 18:07:25,266 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 18:07:25,438 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:25,659 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:26,654 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 18:07:26,993 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 18:07:28,569 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 18:07:28,570 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.manieredevoir.com?page=2
+2025-08-26 18:07:30,330 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:30,438 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 18:07:30,439 - INFO - Scraping URL: https://uk.trustpilot.com/review/dfyne.com?page=2
+2025-08-26 18:07:31,267 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 18:07:31,273 - INFO - Scraping URL: https://uk.trustpilot.com/review/gloryclothing.fr?page=2
+2025-08-26 18:07:31,709 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 18:07:31,836 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 18:07:31,837 - INFO - Scraping URL: https://uk.trustpilot.com/review/jaki.co.uk?page=2
+2025-08-26 18:07:32,012 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 18:07:32,013 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.khanums.co?page=2
+2025-08-26 18:07:32,129 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:33,566 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:33,695 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 18:07:34,091 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:34,745 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 18:07:34,751 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.manieredevoir.com?page=3
+2025-08-26 18:07:35,062 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 18:07:35,532 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 18:07:36,304 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:37,729 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 18:07:37,730 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 18:07:37,730 - INFO - Finished scraping loop.
+2025-08-26 18:07:37,932 - INFO - [SUCCESS] Scraping complete! Total new reviews saved: 0
+2025-08-26 18:07:37,932 - INFO - [SUCCESS] maniere-de-voir: Scraping completed - 0 new reviews
+2025-08-26 18:07:37,932 - INFO - [START] Starting scrape for brand: cernucci
+2025-08-26 18:07:37,933 - WARNING - [WARNING] maniere-de-voir: No new reviews scraped
+2025-08-26 18:07:37,937 - INFO - Starting browser...
+2025-08-26 18:07:38,777 - INFO - Browser started successfully
+2025-08-26 18:07:38,777 - INFO - Browser started.
+2025-08-26 18:07:38,778 - INFO - [LOGO] Logo already exists in database for cernucci
+2025-08-26 18:07:38,780 - INFO - Found 0 existing reviews in database for 'cernucci'
+2025-08-26 18:07:38,780 - INFO - Starting to scrape all pages...
+2025-08-26 18:07:38,780 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 18:07:38,780 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.cernucci.com?page=1
+2025-08-26 18:07:39,643 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 18:07:39,644 - INFO - Scraping URL: https://uk.trustpilot.com/review/jaki.co.uk?page=3
+2025-08-26 18:07:39,804 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 18:07:39,805 - INFO - Scraping URL: https://uk.trustpilot.com/review/dfyne.com?page=3
+2025-08-26 18:07:39,893 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 18:07:39,894 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.khanums.co?page=3
+2025-08-26 18:07:40,678 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:41,555 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:41,588 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:41,971 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:42,955 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 18:07:43,443 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 18:07:43,444 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 18:07:43,444 - INFO - Finished scraping loop.
+2025-08-26 18:07:43,503 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 18:07:43,503 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 18:07:43,505 - INFO - Finished scraping loop.
+2025-08-26 18:07:43,608 - INFO - [SUCCESS] Scraping complete! Total new reviews saved: 0
+2025-08-26 18:07:43,609 - INFO - [SUCCESS] jaki: Scraping completed - 0 new reviews
+2025-08-26 18:07:43,609 - INFO - [START] Starting scrape for brand: motel-rocks
+2025-08-26 18:07:43,609 - WARNING - [WARNING] jaki: No new reviews scraped
+2025-08-26 18:07:43,615 - INFO - Starting browser...
+2025-08-26 18:07:43,620 - INFO - [SUCCESS] Scraping complete! Total new reviews saved: 0
+2025-08-26 18:07:43,621 - INFO - [SUCCESS] dfyne: Scraping completed - 0 new reviews
+2025-08-26 18:07:43,621 - INFO - [START] Starting scrape for brand: nadine-merabi
+2025-08-26 18:07:43,621 - WARNING - [WARNING] dfyne: No new reviews scraped
+2025-08-26 18:07:43,628 - INFO - Starting browser...
+2025-08-26 18:07:43,749 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 18:07:43,750 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 18:07:43,750 - INFO - Finished scraping loop.
+2025-08-26 18:07:43,858 - INFO - [SUCCESS] Scraping complete! Total new reviews saved: 0
+2025-08-26 18:07:43,859 - INFO - [SUCCESS] khanums: Scraping completed - 0 new reviews
+2025-08-26 18:07:43,859 - INFO - [START] Starting scrape for brand: poster-girl
+2025-08-26 18:07:43,859 - WARNING - [WARNING] khanums: No new reviews scraped
+2025-08-26 18:07:43,864 - INFO - Starting browser...
+2025-08-26 18:07:44,391 - INFO - Browser started successfully
+2025-08-26 18:07:44,391 - INFO - Browser started.
+2025-08-26 18:07:44,393 - INFO - [LOGO] Logo already exists in database for motel-rocks
+2025-08-26 18:07:44,394 - INFO - Found 0 existing reviews in database for 'motel-rocks'
+2025-08-26 18:07:44,394 - INFO - Starting to scrape all pages...
+2025-08-26 18:07:44,395 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 18:07:44,395 - INFO - Scraping URL: https://uk.trustpilot.com/review/motelrocks.com?page=1
+2025-08-26 18:07:44,407 - INFO - Browser started successfully
+2025-08-26 18:07:44,408 - INFO - Browser started.
+2025-08-26 18:07:44,409 - INFO - [LOGO] Logo already exists in database for nadine-merabi
+2025-08-26 18:07:44,410 - INFO - Found 0 existing reviews in database for 'nadine-merabi'
+2025-08-26 18:07:44,410 - INFO - Starting to scrape all pages...
+2025-08-26 18:07:44,410 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 18:07:44,411 - INFO - Scraping URL: https://uk.trustpilot.com/review/nadinemerabi.com?page=1
+2025-08-26 18:07:44,682 - INFO - Browser started successfully
+2025-08-26 18:07:44,683 - INFO - Browser started.
+2025-08-26 18:07:44,685 - INFO - [LOGO] Logo already exists in database for poster-girl
+2025-08-26 18:07:44,687 - INFO - Found 0 existing reviews in database for 'poster-girl'
+2025-08-26 18:07:44,687 - INFO - Starting to scrape all pages...
+2025-08-26 18:07:44,687 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 18:07:44,687 - INFO - Scraping URL: https://uk.trustpilot.com/review/poster-girl.com?page=1
+2025-08-26 18:07:46,053 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:46,374 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:46,779 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:47,870 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 18:07:48,187 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 18:07:48,380 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 18:07:49,061 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 18:07:49,062 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.cernucci.com?page=2
+2025-08-26 18:07:51,233 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:53,578 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 18:07:54,410 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 18:07:54,418 - INFO - Scraping URL: https://uk.trustpilot.com/review/motelrocks.com?page=2
+2025-08-26 18:07:54,831 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 18:07:54,832 - INFO - Scraping URL: https://uk.trustpilot.com/review/poster-girl.com?page=2
+2025-08-26 18:07:55,092 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 18:07:55,093 - INFO - Scraping URL: https://uk.trustpilot.com/review/nadinemerabi.com?page=2
+2025-08-26 18:07:56,545 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:56,955 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:57,414 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 18:07:57,416 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.cernucci.com?page=3
+2025-08-26 18:07:57,463 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:59,062 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 18:07:59,281 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 18:07:59,498 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:07:59,599 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 18:08:01,420 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 18:08:01,420 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 18:08:01,421 - INFO - Finished scraping loop.
+2025-08-26 18:08:01,833 - INFO - [SUCCESS] Scraping complete! Total new reviews saved: 0
+2025-08-26 18:08:01,833 - INFO - [SUCCESS] cernucci: Scraping completed - 0 new reviews
+2025-08-26 18:08:01,834 - INFO - [START] Starting scrape for brand: represent
+2025-08-26 18:08:01,834 - WARNING - [WARNING] cernucci: No new reviews scraped
+2025-08-26 18:08:01,842 - INFO - Starting browser...
+2025-08-26 18:08:02,937 - INFO - Browser started successfully
+2025-08-26 18:08:02,937 - INFO - Browser started.
+2025-08-26 18:08:02,939 - INFO - [LOGO] Logo already exists in database for represent
+2025-08-26 18:08:02,941 - INFO - Found 0 existing reviews in database for 'represent'
+2025-08-26 18:08:02,942 - INFO - Starting to scrape all pages...
+2025-08-26 18:08:02,942 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 18:08:02,942 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.represent.com?page=1
+2025-08-26 18:08:03,395 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 18:08:03,396 - INFO - Scraping URL: https://uk.trustpilot.com/review/poster-girl.com?page=3
+2025-08-26 18:08:04,934 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:08:05,256 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:08:05,318 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 18:08:05,319 - INFO - Scraping URL: https://uk.trustpilot.com/review/motelrocks.com?page=3
+2025-08-26 18:08:06,283 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 18:08:06,287 - INFO - Scraping URL: https://uk.trustpilot.com/review/nadinemerabi.com?page=3
+2025-08-26 18:08:06,400 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 18:08:07,744 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:08:08,252 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 18:08:08,257 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 18:08:08,276 - INFO - Finished scraping loop.
+2025-08-26 18:08:10,258 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:08:10,258 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 18:08:10,260 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.represent.com?page=2
+2025-08-26 18:08:12,006 - WARNING - No reviews found on attempt 1, retrying...
+2025-08-26 18:08:14,422 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:08:21,474 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 18:08:21,475 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 18:08:21,475 - INFO - Finished scraping loop.
+2025-08-26 18:08:22,022 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 18:08:22,022 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 18:08:22,023 - INFO - Finished scraping loop.
+2025-08-26 18:08:24,096 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 18:08:24,725 - INFO - [SUCCESS] Scraping complete! Total new reviews saved: 0
+2025-08-26 18:08:24,725 - INFO - [SUCCESS] poster-girl: Scraping completed - 0 new reviews
+2025-08-26 18:08:24,726 - INFO - [START] Starting scrape for brand: represent-clo
+2025-08-26 18:08:24,727 - WARNING - [WARNING] poster-girl: No new reviews scraped
+2025-08-26 18:08:24,739 - INFO - Starting browser...
+2025-08-26 18:08:25,108 - INFO - [SUCCESS] Scraping complete! Total new reviews saved: 0
+2025-08-26 18:08:25,109 - INFO - [SUCCESS] nadine-merabi: Scraping completed - 0 new reviews
+2025-08-26 18:08:25,110 - INFO - [START] Starting scrape for brand: rat-and-boa
+2025-08-26 18:08:25,110 - WARNING - [WARNING] nadine-merabi: No new reviews scraped
+2025-08-26 18:08:25,223 - INFO - Starting browser...
+2025-08-26 18:08:25,978 - INFO - Browser started successfully
+2025-08-26 18:08:25,980 - INFO - Browser started.
+2025-08-26 18:08:25,985 - INFO - [LOGO] Logo already exists in database for represent-clo
+2025-08-26 18:08:25,987 - INFO - Found 0 existing reviews in database for 'represent-clo'
+2025-08-26 18:08:25,991 - INFO - Starting to scrape all pages...
+2025-08-26 18:08:25,993 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 18:08:25,994 - INFO - Scraping URL: https://uk.trustpilot.com/review/representclo.com?page=1
+2025-08-26 18:08:27,455 - INFO - Browser started successfully
+2025-08-26 18:08:27,637 - INFO - Browser started.
+2025-08-26 18:08:27,640 - INFO - [LOGO] Logo already exists in database for rat-and-boa
+2025-08-26 18:08:27,654 - INFO - Found 0 existing reviews in database for 'rat-and-boa'
+2025-08-26 18:08:27,660 - INFO - Starting to scrape all pages...
+2025-08-26 18:08:27,665 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 18:08:27,845 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 18:08:27,860 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.ratandboa.com?page=1
+2025-08-26 18:08:28,063 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.represent.com?page=3
+2025-08-26 18:08:31,676 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:08:32,495 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:08:32,878 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:08:40,802 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 18:08:41,161 - WARNING - No reviews found on page 3. Consecutive empty pages: 3
+2025-08-26 18:08:41,162 - WARNING - Stopping: 3 consecutive empty pages reached.
+2025-08-26 18:08:41,162 - INFO - Finished scraping loop.
+2025-08-26 18:08:42,014 - INFO - [SUCCESS] Scraping complete! Total new reviews saved: 0
+2025-08-26 18:08:42,040 - INFO - [SUCCESS] motel-rocks: Scraping completed - 0 new reviews
+2025-08-26 18:08:42,058 - INFO - [START] Starting scrape for brand: oh-polly
+2025-08-26 18:08:42,060 - WARNING - [WARNING] motel-rocks: No new reviews scraped
+2025-08-26 18:08:42,351 - INFO - Starting browser...
+2025-08-26 18:08:44,020 - INFO - [SUCCESS] Scraping complete! Total new reviews saved: 0
+2025-08-26 18:08:44,020 - INFO - [SUCCESS] represent: Scraping completed - 0 new reviews
+2025-08-26 18:08:44,020 - INFO - [START] Starting scrape for brand: hera-clothing
+2025-08-26 18:08:44,021 - WARNING - [WARNING] represent: No new reviews scraped
+2025-08-26 18:08:44,026 - INFO - Starting browser...
+2025-08-26 18:08:44,074 - INFO - Browser started successfully
+2025-08-26 18:08:44,075 - INFO - Browser started.
+2025-08-26 18:08:44,076 - INFO - [LOGO] Logo already exists in database for oh-polly
+2025-08-26 18:08:44,077 - INFO - Found 0 existing reviews in database for 'oh-polly'
+2025-08-26 18:08:44,078 - INFO - Starting to scrape all pages...
+2025-08-26 18:08:44,078 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 18:08:44,078 - INFO - Scraping URL: https://uk.trustpilot.com/review/ohpolly.com?page=1
+2025-08-26 18:08:44,080 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 18:08:44,604 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 18:08:44,605 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.ratandboa.com?page=2
+2025-08-26 18:08:45,984 - INFO - Browser started successfully
+2025-08-26 18:08:45,985 - INFO - Browser started.
+2025-08-26 18:08:45,986 - INFO - [LOGO] Logo already exists in database for hera-clothing
+2025-08-26 18:08:45,987 - INFO - Found 0 existing reviews in database for 'hera-clothing'
+2025-08-26 18:08:45,988 - INFO - Starting to scrape all pages...
+2025-08-26 18:08:45,991 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 18:08:45,991 - INFO - Scraping URL: https://uk.trustpilot.com/review/heraclothing.com?page=1
+2025-08-26 18:08:47,907 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:08:48,092 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:08:48,776 - INFO - Found 24 reviews using selector: article
+2025-08-26 18:08:49,029 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 18:08:49,030 - INFO - Scraping URL: https://uk.trustpilot.com/review/representclo.com?page=2
+2025-08-26 18:08:50,020 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 18:08:50,182 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 18:08:52,167 - WARNING - No reviews found on attempt 2, retrying...
+2025-08-26 18:08:52,266 - WARNING - Error processing review card: ElementHandle.text_content: Target page, context or browser has been closed
+Call log:
+  - waiting for locator(":scope")
+
+2025-08-26 18:08:52,430 - WARNING - Error processing review card: ElementHandle.query_selector: Target page, context or browser has been closed
+2025-08-26 18:08:52,441 - WARNING - Error processing review card: ElementHandle.query_selector: Target page, context or browser has been closed
+2025-08-26 18:08:52,453 - WARNING - Error processing review card: ElementHandle.query_selector: Target page, context or browser has been closed
+2025-08-26 18:08:52,469 - WARNING - Error processing review card: ElementHandle.query_selector: Target page, context or browser has been closed
+2025-08-26 18:08:52,510 - WARNING - Error processing review card: ElementHandle.query_selector: Target page, context or browser has been closed
+2025-08-26 18:08:52,573 - WARNING - No reviews found on page 1. Consecutive empty pages: 1
+2025-08-26 18:08:53,335 - WARNING - No reviews found on attempt 1, retrying...
+2025-08-26 18:08:54,024 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 18:08:54,025 - INFO - Scraping URL: https://uk.trustpilot.com/review/ohpolly.com?page=2
+2025-08-26 18:08:54,963 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 18:08:54,970 - INFO - Scraping URL: https://uk.trustpilot.com/review/www.ratandboa.com?page=3
+2025-08-26 18:08:55,332 - WARNING - Page load attempt 1 failed: Page.goto: Connection closed while reading from the driver, retrying...
+2025-08-26 18:08:55,472 - WARNING - Page load attempt 2 failed: Page.goto: Target page, context or browser has been closed, retrying...
+2025-08-26 18:08:55,516 - ERROR - Failed to load page after all retries: Page.goto: Connection closed while reading from the driver
+2025-08-26 18:08:55,518 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 18:08:55,659 - WARNING - Page load attempt 1 failed: Page.goto: Connection closed while reading from the driver, retrying...
+2025-08-26 18:08:57,336 - WARNING - Page load attempt 2 failed: Page.goto: Connection closed while reading from the driver, retrying...
+2025-08-26 18:08:57,492 - ERROR - Failed to load page after all retries: Page.goto: Connection closed while reading from the driver
+2025-08-26 18:08:57,497 - WARNING - No reviews found on page 2. Consecutive empty pages: 2
+2025-08-26 18:08:57,740 - WARNING - Page load attempt 2 failed: Page.goto: Connection closed while reading from the driver, retrying...
+2025-08-26 18:08:57,781 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 18:08:57,784 - INFO - Scraping URL: https://uk.trustpilot.com/review/heraclothing.com?page=2
+2025-08-26 18:08:57,790 - WARNING - Page load attempt 1 failed: Page.goto: Connection closed while reading from the driver, retrying...
+2025-08-26 18:08:59,954 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 18:08:59,995 - INFO - Scraping URL: https://uk.trustpilot.com/review/gloryclothing.fr?page=3
+2025-08-26 18:09:01,734 - WARNING - Page load attempt 1 failed: Page.goto: Connection closed while reading from the driver, retrying...
+2025-08-26 18:09:02,876 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-26 18:09:03,035 - INFO - Scraping URL: https://uk.trustpilot.com/review/representclo.com?page=3
+2025-08-26 20:38:13,005 - INFO - Brands to scrape (excluding Wander Doll): ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-26 20:38:13,006 - INFO - Total brands to scrape: 26
+2025-08-26 20:38:13,007 - INFO - Brands to scrape (excluding Wander Doll): ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-26 20:38:13,007 - INFO - Total brands to scrape: 26
+2025-08-26 20:38:13,007 - INFO - [BULK] SEQUENTIAL BULK SCRAPING STARTED
+2025-08-26 20:38:13,007 - INFO - [INFO] Brands to scrape: ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-26 20:38:13,008 - INFO - [INFO] Max pages per brand: NO LIMIT - ALL PAGES
+2025-08-26 20:38:13,008 - INFO - [INFO] Starting from page: 1
+2025-08-26 20:38:13,008 - INFO - [INFO] This will scrape ALL reviews for each brand!
+2025-08-26 20:38:13,008 - INFO - Connecting to database: sqlite:///reviews.db
+2025-08-26 20:38:13,014 - INFO - Database connection successful!
+2025-08-26 20:38:13,014 - INFO - 
+============================================================
+2025-08-26 20:38:13,014 - INFO - [PROGRESS] Progress: 1/26 - Brand: house-of-cb
+2025-08-26 20:38:13,015 - INFO - ============================================================
+2025-08-26 20:38:13,035 - INFO - [SUCCESS] house-of-cb: Source URL available
+2025-08-26 20:38:13,037 - INFO - [START] Starting scrape for brand: house-of-cb
+2025-08-26 20:38:13,050 - INFO - Starting browser...
+2025-08-26 20:38:14,317 - INFO - Browser started.
+2025-08-26 20:38:14,319 - INFO - [LOGO] Logo already exists in database for house-of-cb
+2025-08-26 20:38:14,337 - INFO - Found 0 existing reviews in database for 'house-of-cb'
+2025-08-26 20:38:14,338 - INFO - Starting to scrape all pages...
+2025-08-26 20:38:14,339 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 20:38:14,342 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=1
+2025-08-26 20:38:28,596 - INFO - Found 24 reviews on page 1
+2025-08-26 20:38:28,599 - INFO - Found 24 new reviews on page 1
+2025-08-26 20:38:30,885 - ERROR - [ERROR] Fallback INSERT also failed: (sqlite3.IntegrityError) UNIQUE constraint failed: reviews.brand_name, reviews.review_link
+[SQL: INSERT INTO reviews (brand_name, customer_name, review, rating, date, review_link, sentiment_score, sentiment_category, categories, matched_keywords) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: ('house-of-cb', 'Stephanie', 'Terrible customer service and returns policy. Their sizing is also completely off! \nI wish I had read these reviews before placing my order. I’ve been waiting almost a month for my shipment to reach... See more', 1, '2025-08-18', 'https://uk.trustpilot.com/review/houseofcb.com?page=1', -0.125, 'negative', '["Customer Service & Shipping", "Returns & Exchanges"]', '["customer service", "return", "service"]')]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2025-08-26 20:38:30,897 - ERROR - [ERROR] Fallback INSERT also failed: (sqlite3.IntegrityError) UNIQUE constraint failed: reviews.brand_name, reviews.review_link
+[SQL: INSERT INTO reviews (brand_name, customer_name, review, rating, date, review_link, sentiment_score, sentiment_category, categories, matched_keywords) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: ('house-of-cb', 'Amani Miran', 'Bought my birthday dress from HouseOfCB and I absolutely fell in love ! All the dresses are stunning but this one stood out for me so I had to get it the quality was amazing and absolutely complimente... See more', 5, '2025-07-31', 'https://uk.trustpilot.com/review/houseofcb.com?page=1', 0.4375, 'positive', '["Product Quality"]', '["quality"]')]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2025-08-26 20:38:30,911 - ERROR - [ERROR] Fallback INSERT also failed: (sqlite3.IntegrityError) UNIQUE constraint failed: reviews.brand_name, reviews.review_link
+[SQL: INSERT INTO reviews (brand_name, customer_name, review, rating, date, review_link, sentiment_score, sentiment_category, categories, matched_keywords) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: ('house-of-cb', 'Pola', 'returned a dress that had a faulty stitch (everything was still attached, tags and all), and not only was I refused a refund, but I was also blamed for damaging it myself — which I 100% did not d... See more', 1, '2025-07-30', 'https://uk.trustpilot.com/review/houseofcb.com?page=1', 0.25, 'neutral', '["Returns & Exchanges"]', '["refund"]')]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2025-08-26 23:38:00,481 - INFO - Brands to scrape (excluding Wander Doll): ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-26 23:38:00,482 - INFO - Total brands to scrape: 26
+2025-08-26 23:38:00,483 - INFO - Brands to scrape (excluding Wander Doll): ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-26 23:38:00,483 - INFO - Total brands to scrape: 26
+2025-08-26 23:38:00,483 - INFO - [BULK] SEQUENTIAL BULK SCRAPING STARTED
+2025-08-26 23:38:00,483 - INFO - [INFO] Brands to scrape: ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-26 23:38:00,484 - INFO - [INFO] Max pages per brand: NO LIMIT - ALL PAGES
+2025-08-26 23:38:00,484 - INFO - [INFO] Starting from page: 1
+2025-08-26 23:38:00,484 - INFO - [INFO] This will scrape ALL reviews for each brand!
+2025-08-26 23:38:00,484 - INFO - Connecting to database: sqlite:///reviews.db
+2025-08-26 23:38:00,504 - INFO - Database connection successful!
+2025-08-26 23:38:00,504 - INFO - 
+============================================================
+2025-08-26 23:38:00,505 - INFO - [PROGRESS] Progress: 1/26 - Brand: house-of-cb
+2025-08-26 23:38:00,505 - INFO - ============================================================
+2025-08-26 23:38:00,529 - INFO - [SUCCESS] house-of-cb: Source URL available
+2025-08-26 23:38:00,531 - INFO - [START] Starting scrape for brand: house-of-cb
+2025-08-26 23:38:00,546 - INFO - Starting browser...
+2025-08-26 23:38:02,388 - INFO - Browser started.
+2025-08-26 23:38:02,390 - INFO - [LOGO] Logo already exists in database for house-of-cb
+2025-08-26 23:38:02,400 - INFO - Found 0 existing reviews in database for 'house-of-cb'
+2025-08-26 23:38:02,402 - INFO - Starting to scrape all pages...
+2025-08-26 23:38:02,402 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-26 23:38:02,404 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=1
+2025-08-26 23:38:11,107 - WARNING - Could not find individual review link for review by Sammie P...
+2025-08-26 23:38:11,343 - WARNING - Could not find individual review link for review by Stephanie...
+2025-08-26 23:38:11,587 - WARNING - Could not find individual review link for review by Amani Miran...
+2025-08-26 23:38:11,806 - WARNING - Could not find individual review link for review by Pola...
+2025-08-26 23:38:15,599 - INFO - Found 20 reviews on page 1
+2025-08-26 23:38:15,601 - INFO - Found 20 new reviews on page 1
+2025-08-26 23:38:18,164 - INFO - [SUCCESS] Page 1: Inserted 20 new reviews to database
+2025-08-26 23:38:18,165 - INFO - [SUCCESS] Page 1 completed. Total new reviews so far: 20
+2025-08-26 23:38:23,097 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-26 23:38:23,101 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=2
+2025-08-26 23:38:26,251 - ERROR - Task was destroyed but it is pending!
+task: <Task pending name='Task-441' coro=<Page.goto() done, defined at C:\Users\tejab\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\playwright\_impl\_page.py:545> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[SyncBase._sync.<locals>.<lambda>() at C:\Users\tejab\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\playwright\_impl\_sync_base.py:111, ProtocolCallback.__init__.<locals>.cb() at C:\Users\tejab\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\playwright\_impl\_connection.py:198]>
+2025-08-26 23:38:26,253 - ERROR - Task was destroyed but it is pending!
+task: <Task pending name='Task-442' coro=<Browser.close() running at C:\Users\tejab\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\playwright\_impl\_browser.py:186> cb=[SyncBase._sync.<locals>.<lambda>() at C:\Users\tejab\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\playwright\_impl\_sync_base.py:111]>

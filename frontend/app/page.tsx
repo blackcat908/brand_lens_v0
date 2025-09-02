@@ -80,20 +80,13 @@ export default function BrandsPage() {
   // Initialize logos hook
   const { logos, loading: logosLoading, error: logosError, refetch: refetchLogos } = useLogos();
   
-  // Debug logos loading
-  React.useEffect(() => {
-    console.log('[BrandsPage] Logos state:', { logos, logosLoading, logosError });
-    if (logos) {
-      console.log('[BrandsPage] Available logos:', Object.keys(logos));
-    }
-  }, [logos, logosLoading, logosError]);
+  // Debug logos loading - REMOVED to reduce console spam
   
-  // Poll for logo updates every 30 seconds
+  // Poll for logo updates every 5 minutes (much reduced frequency)
   React.useEffect(() => {
     const logoPollingInterval = setInterval(() => {
-      console.log('[BrandsPage] Polling for logo updates...');
       refetchLogos();
-    }, 30000); // 30 seconds
+    }, 300000); // 5 minutes (much reduced frequency)
     
     return () => clearInterval(logoPollingInterval);
   }, [refetchLogos]);
@@ -113,13 +106,13 @@ export default function BrandsPage() {
     fetchBrandsSummary();
   }, []);
 
-  // Polling for syncing brands with 0 reviews (optional, can keep or remove)
+  // Polling for syncing brands with 0 reviews (much reduced frequency)
   React.useEffect(() => {
     const hasSyncing = brands.some(b => b.reviewCount === 0);
     if (!hasSyncing) return;
     const interval = setInterval(() => {
       fetchBrandsSummary();
-    }, 5000);
+    }, 60000); // <-- Reduced to 60 seconds
     return () => clearInterval(interval);
   }, [brands]);
 
@@ -167,21 +160,16 @@ export default function BrandsPage() {
       });
       const newBrand = resp.find(b => b.brand === pollingBrandRef.current);
       if (newBrand) {
-        // Stop polling if we have a logo AND reviews, or if we have reviews (even without logo)
-        const hasLogo = newBrand.logo && !newBrand.logo.includes('placeholder');
+        // Stop polling if we have reviews (ultra-fast scraper is done)
         const hasReviews = newBrand.reviewCount && newBrand.reviewCount > 0;
-        // Only stop polling if scraping is truly complete (e.g., backend status or review count no longer increasing)
-        // For now, keep polling until backend confirms scraping is done or cancelled
-        // (You may want to add a backend status flag in the future)
-        if ((hasLogo && hasReviews) || hasReviews) {
-          // Comment out the stop logic to keep polling until backend confirms done
-          // setPolling(false);
-          // pollingBrandRef.current = "";
-          // clearInterval(interval);
-          // clearTimeout(timeout);
+        if (hasReviews) {
+          setPolling(false);
+          pollingBrandRef.current = "";
+          clearInterval(interval);
+          clearTimeout(timeout);
         }
       }
-    }, 3000); // <-- Set polling interval to 3 seconds
+    }, 600000); // <-- Increased to 10 minutes to reduce GET requests
     
     return () => {
       clearInterval(interval);

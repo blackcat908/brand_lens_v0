@@ -1,0 +1,140 @@
+2025-08-10 10:39:56,363 - INFO - Brands to scrape (excluding Wander Doll): ['murci', 'bbxbrand', 'becauseofalice', 'oddmuse']
+2025-08-10 10:57:28,898 - INFO - Brands to scrape (excluding Wander Doll): ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-10 10:57:28,901 - INFO - Total brands to scrape: 26
+2025-08-10 11:02:37,549 - INFO - Brands to scrape (excluding Wander Doll): ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-10 11:02:37,549 - INFO - Total brands to scrape: 26
+2025-08-10 11:02:37,550 - INFO - Brands to scrape (excluding Wander Doll): ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-10 11:02:37,550 - INFO - Total brands to scrape: 26
+2025-08-10 11:02:37,653 - INFO - Connecting to database: sqlite:///reviews.db
+2025-08-10 11:02:37,717 - INFO - Database connection successful!
+2025-08-10 11:02:37,782 - INFO - 
+============================================================
+2025-08-10 11:02:37,807 - INFO - ============================================================
+2025-08-10 11:02:37,837 - INFO - [DEBUG] brand_name passed to scraper: 'house-of-cb'
+2025-08-10 11:02:37,845 - INFO - Starting browser...
+2025-08-10 11:02:51,065 - INFO - Browser started.
+2025-08-10 11:02:51,067 - INFO - [LOGO] No logo found in database for house-of-cb, fetching from Trustpilot...
+2025-08-10 11:02:51,067 - INFO - [LOGO] Fetching logo for brand: house-of-cb from https://uk.trustpilot.com/review/houseofcb.com
+2025-08-10 11:02:51,068 - ERROR - [LOGO] ERROR: It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-10 11:02:51,078 - INFO - Found 0 existing reviews in database for 'house-of-cb'
+2025-08-10 11:02:51,079 - INFO - Starting to scrape all pages...
+2025-08-10 11:02:51,079 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-10 11:02:51,080 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=1
+2025-08-10 11:03:02,317 - INFO - Found 20 reviews on page 1
+2025-08-10 11:03:02,320 - INFO - Found 20 new reviews on page 1
+2025-08-10 11:03:13,392 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-10 11:03:13,392 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=2
+2025-08-10 11:03:19,359 - INFO - Found 20 reviews on page 2
+2025-08-10 11:03:19,362 - INFO - Found 20 new reviews on page 2
+2025-08-10 11:03:25,076 - INFO - 
+=== PROCESSING PAGE 3 ===
+2025-08-10 11:03:25,076 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=3
+2025-08-10 11:03:30,455 - INFO - Found 20 reviews on page 3
+2025-08-10 11:03:30,458 - INFO - Found 20 new reviews on page 3
+2025-08-10 11:03:33,913 - INFO - 
+=== PROCESSING PAGE 4 ===
+2025-08-10 11:03:33,913 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=4
+2025-08-10 11:03:38,971 - INFO - Found 20 reviews on page 4
+2025-08-10 11:03:38,973 - INFO - Found 20 new reviews on page 4
+2025-08-10 11:03:45,225 - INFO - 
+=== PROCESSING PAGE 5 ===
+2025-08-10 11:03:45,225 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=5
+2025-08-10 11:03:50,678 - INFO - Found 20 reviews on page 5
+2025-08-10 11:03:50,684 - INFO - Found 20 new reviews on page 5
+2025-08-10 11:03:55,158 - INFO - 
+=== PROCESSING PAGE 6 ===
+2025-08-10 11:03:55,160 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=6
+2025-08-10 11:04:01,602 - INFO - Found 20 reviews on page 6
+2025-08-10 11:04:01,608 - INFO - Found 20 new reviews on page 6
+2025-08-10 11:04:04,915 - INFO - 
+=== PROCESSING PAGE 7 ===
+2025-08-10 11:04:04,916 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=7
+2025-08-10 11:04:11,448 - INFO - Found 20 reviews on page 7
+2025-08-10 11:04:11,453 - INFO - Found 20 new reviews on page 7
+2025-08-10 11:04:17,692 - INFO - 
+=== PROCESSING PAGE 8 ===
+2025-08-10 11:04:17,692 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=8
+2025-08-10 11:04:24,314 - INFO - Found 20 reviews on page 8
+2025-08-10 11:04:24,319 - INFO - Found 20 new reviews on page 8
+2025-08-10 11:04:31,402 - INFO - 
+=== PROCESSING PAGE 9 ===
+2025-08-10 11:04:31,402 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=9
+2025-08-10 11:04:36,301 - INFO - Found 20 reviews on page 9
+2025-08-10 11:04:36,308 - INFO - Found 20 new reviews on page 9
+2025-08-10 11:04:39,768 - INFO - 
+=== PROCESSING PAGE 10 ===
+2025-08-10 11:04:39,772 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=10
+2025-08-10 11:04:45,881 - INFO - Found 20 reviews on page 10
+2025-08-10 11:04:45,888 - INFO - Found 20 new reviews on page 10
+2025-08-10 11:04:52,888 - INFO - 
+=== PROCESSING PAGE 11 ===
+2025-08-10 11:04:52,889 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=11
+2025-08-10 11:04:58,952 - INFO - Found 20 reviews on page 11
+2025-08-10 11:04:58,959 - INFO - Found 20 new reviews on page 11
+2025-08-10 11:15:36,926 - INFO - Brands to scrape (excluding Wander Doll): ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-10 11:15:36,927 - INFO - Total brands to scrape: 26
+2025-08-10 11:15:36,928 - INFO - Brands to scrape (excluding Wander Doll): ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-10 11:15:36,928 - INFO - Total brands to scrape: 26
+2025-08-10 11:15:36,929 - INFO - [BULK] BULK SCRAPING STARTED
+2025-08-10 11:15:36,929 - INFO - [INFO] Brands to scrape: ['house-of-cb', 'tala', 'oddmuse-london', 'because-of-alice', 'bbx-brand', 'murci', 'couture-club', 'club-l-london', 'jaki', 'maniere-de-voir', 'glory', 'khanums', 'dfyne', 'cernucci', 'motel-rocks', 'nadine-merabi', 'poster-girl', 'represent', 'represent-clo', 'rat-and-boa', 'oh-polly', 'hera-clothing', 'jaded-london', 'meshki', 'nobodys-child', 'charli-london']
+2025-08-10 11:15:36,929 - INFO - [INFO] Max pages per brand: NO LIMIT - ALL PAGES
+2025-08-10 11:15:36,929 - INFO - [INFO] Starting from page: 1
+2025-08-10 11:15:36,929 - INFO - [INFO] This will scrape ALL reviews for each brand!
+2025-08-10 11:15:36,929 - INFO - Connecting to database: sqlite:///reviews.db
+2025-08-10 11:15:36,933 - INFO - Database connection successful!
+2025-08-10 11:15:36,934 - INFO - 
+============================================================
+2025-08-10 11:15:36,934 - INFO - [PROGRESS] Progress: 1/26 - Brand: house-of-cb
+2025-08-10 11:15:36,934 - INFO - ============================================================
+2025-08-10 11:15:36,945 - INFO - [SUCCESS] house-of-cb: Source URL available
+2025-08-10 11:15:36,945 - INFO - [START] Starting scrape for brand: house-of-cb
+2025-08-10 11:15:36,948 - INFO - [DEBUG] brand_name passed to scraper: 'house-of-cb'
+2025-08-10 11:15:36,957 - INFO - Starting browser...
+2025-08-10 11:15:38,419 - INFO - Browser started.
+2025-08-10 11:15:38,422 - INFO - [LOGO] No logo found in database for house-of-cb, fetching from Trustpilot...
+2025-08-10 11:15:38,423 - INFO - [LOGO] Fetching logo for brand: house-of-cb from https://uk.trustpilot.com/review/houseofcb.com
+2025-08-10 11:15:38,423 - ERROR - [LOGO] ERROR: It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-10 11:15:38,431 - INFO - Found 220 existing reviews in database for 'house-of-cb'
+2025-08-10 11:15:38,432 - INFO - Starting to scrape all pages...
+2025-08-10 11:15:38,433 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-10 11:15:38,433 - INFO - Scraping URL: https://uk.trustpilot.com/review/houseofcb.com?page=1
+2025-08-10 11:15:49,383 - INFO - Found 20 reviews on page 1
+2025-08-10 11:15:49,393 - INFO - Found 0 new reviews on page 1
+2025-08-10 11:15:49,398 - INFO - Encountered previously saved reviews. Likely reached the end of new content.
+2025-08-10 11:15:49,398 - INFO - Finished scraping loop.
+2025-08-10 11:15:49,565 - INFO - [COMPLETE] Scraping complete! Total new reviews saved: 0
+2025-08-10 11:15:49,565 - INFO - [SUCCESS] house-of-cb: Scraping completed - 0 new reviews
+2025-08-10 11:15:49,566 - WARNING - [WARNING] house-of-cb: No new reviews scraped
+2025-08-10 11:15:49,566 - INFO - [INFO] Waiting 10 seconds before next brand...
+2025-08-10 11:15:59,569 - INFO - 
+============================================================
+2025-08-10 11:15:59,569 - INFO - [PROGRESS] Progress: 2/26 - Brand: tala
+2025-08-10 11:15:59,570 - INFO - ============================================================
+2025-08-10 11:15:59,573 - INFO - [SUCCESS] tala: Source URL available
+2025-08-10 11:15:59,574 - INFO - [START] Starting scrape for brand: tala
+2025-08-10 11:15:59,578 - INFO - [DEBUG] brand_name passed to scraper: 'tala'
+2025-08-10 11:15:59,590 - INFO - Starting browser...
+2025-08-10 11:16:00,832 - INFO - Browser started.
+2025-08-10 11:16:00,835 - INFO - [LOGO] No logo found in database for tala, fetching from Trustpilot...
+2025-08-10 11:16:00,835 - INFO - [LOGO] Fetching logo for brand: tala from https://uk.trustpilot.com/review/wearetala.com
+2025-08-10 11:16:00,836 - ERROR - [LOGO] ERROR: It looks like you are using Playwright Sync API inside the asyncio loop.
+Please use the Async API instead.
+2025-08-10 11:16:00,838 - INFO - Found 0 existing reviews in database for 'tala'
+2025-08-10 11:16:00,838 - INFO - Starting to scrape all pages...
+2025-08-10 11:16:00,839 - INFO - 
+=== PROCESSING PAGE 1 ===
+2025-08-10 11:16:00,840 - INFO - Scraping URL: https://uk.trustpilot.com/review/wearetala.com?page=1
+2025-08-10 11:16:09,462 - INFO - Found 20 reviews on page 1
+2025-08-10 11:16:09,464 - INFO - Found 20 new reviews on page 1
+2025-08-10 11:16:17,567 - INFO - 
+=== PROCESSING PAGE 2 ===
+2025-08-10 11:16:17,568 - INFO - Scraping URL: https://uk.trustpilot.com/review/wearetala.com?page=2
+2025-08-10 11:16:26,194 - ERROR - Task was destroyed but it is pending!
+task: <Task pending name='Task-1075' coro=<ElementHandle.text_content() done, defined at C:\Users\tejab\AppData\Local\Programs\Python\Python311\Lib\site-packages\playwright\_impl\_element_handle.py:77> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[SyncBase._sync.<locals>.<lambda>() at C:\Users\tejab\AppData\Local\Programs\Python\Python311\Lib\site-packages\playwright\_impl\_sync_base.py:111, ProtocolCallback.__init__.<locals>.cb() at C:\Users\tejab\AppData\Local\Programs\Python\Python311\Lib\site-packages\playwright\_impl\_connection.py:228]>
+2025-08-10 11:16:26,196 - ERROR - Task was destroyed but it is pending!
+task: <Task pending name='Task-1076' coro=<Browser.close() running at C:\Users\tejab\AppData\Local\Programs\Python\Python311\Lib\site-packages\playwright\_impl\_browser.py:232> cb=[SyncBase._sync.<locals>.<lambda>() at C:\Users\tejab\AppData\Local\Programs\Python\Python311\Lib\site-packages\playwright\_impl\_sync_base.py:111]>

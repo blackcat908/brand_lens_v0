@@ -11,7 +11,7 @@ export function KeywordHighlighter({ text, keywords, className = "" }: KeywordHi
     // Create a regex pattern that matches any of the keywords (case insensitive, whole words)
     const pattern = new RegExp(`\\b(${keywords.join("|")})\\b`, "gi")
 
-    return text.replace(pattern, '<mark class="bg-yellow-200 px-1 rounded font-medium">$1</mark>')
+    return text.replace(pattern, '<mark class="!bg-gray-300 !text-gray-800 px-1 rounded font-medium border border-gray-200">$1</mark>')
   }
 
   return (

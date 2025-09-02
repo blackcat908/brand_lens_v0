@@ -1,0 +1,23 @@
+2025-08-12 14:13:16,414 - INFO - House of CB Data Deletion Script
+2025-08-12 14:13:16,415 - INFO - This will permanently delete all data for 'house of cb' from the database
+2025-08-12 14:13:20,727 - INFO - Connecting to database: sqlite:///reviews.db
+2025-08-12 14:13:20,748 - INFO - Database connection successful!
+2025-08-12 14:13:20,749 - INFO - Starting deletion of 'house of cb' data from database...
+2025-08-12 14:13:20,749 - INFO - Searching for brand variations: ['house-of-cb', 'house of cb', 'houseofcb', 'house-of-cb.com', 'houseofcb.com']
+2025-08-12 14:13:20,782 - INFO - Found 220 reviews for variation 'house-of-cb'
+2025-08-12 14:13:20,785 - INFO - Found 0 reviews for variation 'house of cb'
+2025-08-12 14:13:20,787 - INFO - Found 0 reviews for variation 'houseofcb'
+2025-08-12 14:13:20,789 - INFO - Found 0 reviews for variation 'house-of-cb.com'
+2025-08-12 14:13:20,791 - INFO - Found 0 reviews for variation 'houseofcb.com'
+2025-08-12 14:13:20,791 - INFO - Total unique reviews to delete: 220
+2025-08-12 14:13:20,799 - INFO - Deleted 220 reviews
+2025-08-12 14:13:20,806 - INFO - Database changes committed successfully
+2025-08-12 14:13:20,809 - INFO - 
+============================================================
+2025-08-12 14:13:20,810 - INFO - DELETION SUMMARY
+2025-08-12 14:13:20,810 - INFO - ============================================================
+2025-08-12 14:13:20,811 - INFO - Reviews deleted: 220
+2025-08-12 14:13:20,811 - INFO - Remaining reviews in database: 416
+2025-08-12 14:13:20,812 - INFO - Brand source URLs: 27
+2025-08-12 14:13:20,813 - INFO - ============================================================
+2025-08-12 14:13:20,815 - INFO - Data deletion completed successfully

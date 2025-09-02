@@ -6,20 +6,43 @@ import os
 
 # Brand configurations
 BRANDS = [
-    'wanderdoll',
-    'murci', 
-    'bbxbrand',
-    'becauseofalice',
-    'oddmuse'
+    'house-of-cb',
+    'tala', 
+    'oddmuse-london',
+    'because-of-alice',
+    'bbx-brand',
+    'murci',
+    'couture-club',
+    'club-l-london',
+    'jaki',
+    'maniere-de-voir',
+    'glory',
+    'khanums',
+    'dfyne',
+    'cernucci',
+    'motel-rocks',
+    'nadine-merabi',
+    'poster-girl',
+    'represent',
+    'represent-clo',
+    'rat-and-boa',
+    'oh-polly',
+    'hera-clothing',
+    'jaded-london',
+    'meshki',
+    'nobodys-child',
+    'charli-london'
 ]
 
 # Scraping settings
 SCRAPING_CONFIG = {
-    'max_pages_per_brand': 50,  # Limit pages for production
+    'max_pages_per_brand': None,  # No limit - scrape all pages until natural end
     'delay_between_brands': 10,  # Seconds to wait between brands
-    'delay_between_pages': 5,   # Seconds to wait between pages
-    'headless': True,           # Run browser in headless mode
+    'delay_between_pages': (0, 1),  # min, max seconds (random range for speed)
+            'headless': True,           # Run browser in headless mode (invisible)
     'timeout': 60000,           # Page load timeout in milliseconds
+    'max_retries': 3,           # retry attempts per page
+    'max_consecutive_empty': 3, # stop after N empty pages
 }
 
 # Database settings - use Railway's reference variable
@@ -28,7 +51,7 @@ if not database_url:
     print("ERROR: DATABASE_URL environment variable is not set!")
     print("Please set DATABASE_URL in Railway variables to: ${{ Postgres.DATABASE_URL }}")
     # Use fallback for local development
-    database_url = 'sqlite:///reviews.db'
+    database_url = 'sqlite:///reviews.db'  # Fallback to SQLite for local development
 
 DATABASE_CONFIG = {
     'url': database_url,
@@ -41,6 +64,17 @@ LOGGING_CONFIG = {
     'format': '%(asctime)s - %(levelname)s - %(message)s',
     'log_dir': 'logs',
     'max_log_files': 30,  # Keep last 30 days of logs
+    'log_to_console': True,  # Log to console
+    'log_to_file': True,     # Log to file
+}
+
+# AI Service settings
+AI_CONFIG = {
+    'openai_api_key': os.environ.get('OPENAI_API_KEY') or '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',
+    'model': 'gpt-3.5-turbo',
+    'max_tokens': 4000,  # Increased for larger datasets
+    'temperature': 0.7,
+    # NO REVIEW LIMITS - Process ALL filtered reviews!
 }
 
 # Production settings

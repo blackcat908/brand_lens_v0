@@ -98,11 +98,11 @@ class ApiService {
     page: number = 1,
     perPage: number = 20,
     filters?: {
-      rating?: number;
+      rating?: number | number[]; // Updated to support arrays
       sentiment?: string;
       dateFrom?: string;
       dateTo?: string;
-      category?: string;
+      category?: string | string[]; // Updated to support arrays
     }
   ): Promise<ReviewsResponse> {
     const params = new URLSearchParams({
@@ -111,7 +111,12 @@ class ApiService {
     });
 
     if (filters?.rating) {
-      params.append('rating', filters.rating.toString());
+      // Handle both single values and arrays
+      if (Array.isArray(filters.rating)) {
+        params.append('rating', JSON.stringify(filters.rating));
+      } else {
+        params.append('rating', filters.rating.toString());
+      }
     }
     if (filters?.sentiment) {
       params.append('sentiment', filters.sentiment);
@@ -123,7 +128,12 @@ class ApiService {
       params.append('date_to', filters.dateTo);
     }
     if (filters?.category) {
-      params.append('category', filters.category);
+      // Handle both single values and arrays
+      if (Array.isArray(filters.category)) {
+        params.append('category', JSON.stringify(filters.category));
+      } else {
+        params.append('category', filters.category);
+      }
     }
 
     const response = await fetch(`${this.baseUrl}/brands/${normalizeBrandSlug(brand)}/reviews?${params}`);
@@ -137,22 +147,36 @@ class ApiService {
   async getBrandAnalytics(
     brand: string,
     filters?: {
-      rating?: number;
+      rating?: number | number[]; // Updated to support arrays
       sentiment?: string;
       dateFrom?: string;
       dateTo?: string;
-      category?: string;
+      category?: string | string[]; // Updated to support arrays
     }
   ): Promise<Analytics> {
     if (!brand || typeof brand !== 'string' || brand.trim() === '') {
       throw new Error('Invalid brand id for analytics fetch');
     }
     const params = new URLSearchParams();
-    if (filters?.rating) params.append('rating', filters.rating.toString());
+    if (filters?.rating) {
+      // Handle both single values and arrays
+      if (Array.isArray(filters.rating)) {
+        params.append('rating', JSON.stringify(filters.rating));
+      } else {
+        params.append('rating', filters.rating.toString());
+      }
+    }
     if (filters?.sentiment) params.append('sentiment', filters.sentiment);
     if (filters?.dateFrom) params.append('date_from', filters.dateFrom);
     if (filters?.dateTo) params.append('date_to', filters.dateTo);
-    if (filters?.category) params.append('category', filters.category);
+    if (filters?.category) {
+      // Handle both single values and arrays
+      if (Array.isArray(filters.category)) {
+        params.append('category', JSON.stringify(filters.category));
+      } else {
+        params.append('category', filters.category);
+      }
+    }
     const url = `${this.baseUrl}/brands/${normalizeBrandSlug(brand)}/analytics${params.toString() ? '?' + params.toString() : ''}`;
     const response = await fetch(url);
     if (!response.ok) {
@@ -209,19 +233,33 @@ class ApiService {
     return this.getBrandReviews(backendBrand, page, perPage, filters);
   }
 
-  async getBrandAnalyticsByFrontendId(
+  // Get all reviews for a brand (no pagination) - for analytics purposes
+  async getAllBrandReviewsByFrontendId(
     brandId: string,
     filters?: {
-      rating?: number;
+      rating?: number | number[]; // Updated to support arrays
       sentiment?: string;
       dateFrom?: string;
       dateTo?: string;
-      category?: string;
+      category?: string | string[]; // Updated to support arrays
+    }
+  ): Promise<Review[]> {
+    const backendBrand = this.mapBrandId(brandId);
+    // Fetch with a very large page size to get all reviews
+    const response = await this.getBrandReviews(backendBrand, 1, 10000, filters);
+    return response.reviews;
+  }
+
+  async getBrandAnalyticsByFrontendId(
+    brandId: string,
+    filters?: {
+      rating?: number | number[]; // Updated to support arrays
+      sentiment?: string;
+      dateFrom?: string;
+      dateTo?: string;
+      category?: string | string[]; // Updated to support arrays
     }
   ): Promise<Analytics> {
-    if (!brandId || typeof brandId !== 'string' || brandId.trim() === '') {
-      throw new Error('Invalid brand id for analytics fetch');
-    }
     const backendBrand = this.mapBrandId(brandId);
     return this.getBrandAnalytics(backendBrand, filters);
   }

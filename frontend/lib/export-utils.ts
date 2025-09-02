@@ -263,3 +263,122 @@ export function exportBrandReportAsPDF(brandData: BrandData) {
 
   doc.save(`${brandData.name}_complete_report.pdf`)
 }
+
+// Export AI report as PDF
+export function exportAIReportAsPDF(reportContent: string, brandName: string, prompt: string) {
+  const doc = new jsPDF()
+  let yPosition = 20
+
+  // Title
+  doc.setFontSize(18)
+  doc.text(`AI Report - ${brandName}`, 14, yPosition)
+  yPosition += 15
+
+  // Subtitle
+  doc.setFontSize(10)
+  doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, yPosition)
+  yPosition += 10
+
+  // Prompt section
+  doc.setFontSize(12)
+  doc.text("Analysis Prompt:", 14, yPosition)
+  yPosition += 8
+  
+  doc.setFontSize(10)
+  const promptLines = doc.splitTextToSize(prompt, 180)
+  doc.text(promptLines, 14, yPosition)
+  yPosition += promptLines.length * 5 + 15
+
+  // Report content
+  doc.setFontSize(12)
+  doc.text("Report Content:", 14, yPosition)
+  yPosition += 8
+
+  // Split report content into lines and add to PDF
+  const reportLines = reportContent.split('\n')
+  doc.setFontSize(10)
+  
+  for (const line of reportLines) {
+    if (yPosition > 270) {
+      doc.addPage()
+      yPosition = 20
+    }
+    
+    if (line.startsWith('# ')) {
+      // Main heading
+      doc.setFontSize(14)
+      doc.text(line.substring(2), 14, yPosition)
+      yPosition += 10
+    } else if (line.startsWith('## ')) {
+      // Subheading
+      doc.setFontSize(12)
+      doc.text(line.substring(3), 14, yPosition)
+      yPosition += 8
+    } else if (line.startsWith('**') && line.endsWith('**')) {
+      // Bold text
+      doc.setFontSize(10)
+      doc.setFont(undefined, 'bold')
+      doc.text(line.substring(2, line.length - 2), 14, yPosition)
+      yPosition += 5
+    } else if (line.trim() === '') {
+      // Empty line
+      yPosition += 5
+    } else {
+      // Regular text
+      doc.setFontSize(10)
+      doc.setFont(undefined, 'normal')
+      const textLines = doc.splitTextToSize(line, 180)
+      doc.text(textLines, 14, yPosition)
+      yPosition += textLines.length * 5
+    }
+  }
+
+  doc.save(`${brandName}_ai_report.pdf`)
+}
+
+// Export AI report as Word document (using HTML format)
+export function exportAIReportAsWord(reportContent: string, brandName: string, prompt: string) {
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>AI Report - ${brandName}</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        h2 { color: #555; margin-top: 30px; }
+        h3 { color: #666; }
+        .prompt { background-color: #f5f5f5; padding: 15px; border-left: 4px solid #007acc; margin: 20px 0; }
+        .timestamp { color: #888; font-size: 12px; }
+        ul, ol { margin-left: 20px; }
+        li { margin-bottom: 5px; }
+        strong { font-weight: bold; }
+        hr { border: none; border-top: 1px solid #ddd; margin: 30px 0; }
+      </style>
+    </head>
+    <body>
+      <h1>AI Report - ${brandName}</h1>
+      <p class="timestamp">Generated on ${new Date().toLocaleDateString()}</p>
+      
+      <h2>Analysis Prompt</h2>
+      <div class="prompt">
+        <strong>${prompt}</strong>
+      </div>
+      
+      <h2>Report Content</h2>
+      <div>${reportContent.replace(/\n/g, '<br>').replace(/# /g, '<h1>').replace(/## /g, '<h2>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</div>
+    </body>
+    </html>
+  `
+
+  const blob = new Blob([htmlContent], { type: 'application/msword' })
+  const link = document.createElement('a')
+  const url = URL.createObjectURL(blob)
+  link.setAttribute('href', url)
+  link.setAttribute('download', `${brandName}_ai_report.doc`)
+  link.style.visibility = 'hidden'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}

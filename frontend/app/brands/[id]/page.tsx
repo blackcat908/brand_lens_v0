@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
-import { ArrowLeft, Star, ThumbsUp, ThumbsDown, Download, FileText, Filter, X, BarChart3, PieChart, Settings, Globe, SlidersHorizontal, ChevronDown, Loader2, RotateCw, Meh, Image, Upload, Trash2 } from "lucide-react"
+import { ArrowLeft, Star, ThumbsUp, ThumbsDown, Download, FileText, Filter, X, BarChart3, PieChart, Settings, Globe, SlidersHorizontal, ChevronDown, Loader2, RotateCw, Meh } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -59,7 +59,7 @@ function robustHighlightKeywords(text: string, keywords: string[], searchTerm?: 
   
   let result = text;
   
-  // First, highlight keywords in yellow
+  // First, highlight keywords in subtle gray
   const escapedKeywords = keywords
     .filter(Boolean)
     .map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
@@ -68,7 +68,7 @@ function robustHighlightKeywords(text: string, keywords: string[], searchTerm?: 
   if (escapedKeywords.length > 0) {
     const keywordRegex = new RegExp(`\\b(${escapedKeywords.join('|')})\\b`, 'gi');
     result = result.replace(keywordRegex, match =>
-    `<mark class="bg-yellow-200 text-yellow-900 px-1 rounded font-medium">${match}</mark>`
+    `<mark class="!bg-gray-300 !text-gray-800 px-1 rounded font-medium border border-gray-200">${match}</mark>`
       );
   }
   
@@ -195,13 +195,19 @@ export default function BrandDetailPage() {
 
   // 1. Replace individual filter states with a single filters state object:
   const [filters, setFilters] = useState({
-    category: "Sizing & Fit Mentions",
-    rating: "all",
+    category: ["Sizing & Fit Mentions"], // Changed to array for multi-select
+    rating: ["all"], // Changed to array for multi-select
     dateFilter: "all",
     customStartDate: "",
     customEndDate: ""
   });
   const [pendingFilters, setPendingFilters] = useState(filters);
+  
+  // State for additional information columns
+  const [showAdditionalInfo, setShowAdditionalInfo] = useState(false);
+  const [showCustomerColumn, setShowCustomerColumn] = useState(false);
+  const [showLinkColumn, setShowLinkColumn] = useState(false);
+  const [showMatchedKeywords, setShowMatchedKeywords] = useState(false);
   const params = useParams();
   let id = "";
   if (params) {
@@ -215,19 +221,15 @@ export default function BrandDetailPage() {
   // State for real data
   const [brand, setBrand] = useState<any>(null);
   const [analytics, setAnalytics] = useState<any>(null);
-  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]); // Paginated reviews for table display
+  const [allReviews, setAllReviews] = useState<any[]>([]); // All reviews for analytics
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pageSize, setPageSize] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalReviews, setTotalReviews] = useState(0);
 
-  // Logo management state
-  const [showLogoDialog, setShowLogoDialog] = useState(false);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [logoUploading, setLogoUploading] = useState(false);
-  const [logoError, setLogoError] = useState<string | null>(null);
+  
 
   // 1. Declare all state first
   const now = new Date();
@@ -251,11 +253,13 @@ export default function BrandDetailPage() {
     async function fetchData() {
       try {
         const apiFilters: any = {};
-        if (filters.category && filters.category !== "all") {
+        if (filters.category && filters.category.length > 0 && !filters.category.includes("all")) {
+          // Handle multiple categories - send as array
           apiFilters.category = filters.category;
         }
-        if (filters.rating && filters.rating !== "all") {
-          apiFilters.rating = Number(filters.rating);
+        if (filters.rating && filters.rating.length > 0 && !filters.rating.includes("all")) {
+          // Handle multiple ratings - convert to numbers
+          apiFilters.rating = filters.rating.map(r => Number(r));
         }
         if (filters.dateFilter && filters.dateFilter !== 'all') {
           if (filters.dateFilter === 'custom' && filters.customStartDate && filters.customEndDate) {
@@ -288,10 +292,18 @@ export default function BrandDetailPage() {
           }
         }
         console.log('Sending apiFilters to reviews API:', apiFilters);
+        
+        // Fetch paginated reviews for table display
         const reviewsResp = await apiService.getBrandReviewsByFrontendId(id, currentPage, pageSize, apiFilters);
         if (!isMounted) return;
         setReviews(reviewsResp.reviews);
         setTotalReviews(reviewsResp.total_reviews || 0);
+        
+        // Fetch all reviews for analytics (no pagination)
+        const allReviewsResp = await apiService.getAllBrandReviewsByFrontendId(id, apiFilters);
+        if (!isMounted) return;
+        setAllReviews(allReviewsResp);
+        
         // 2. Fix analytics fetch to use correct brand id mapping
         const analyticsResp = await apiService.getBrandAnalyticsByFrontendId(id, apiFilters);
         if (!isMounted) return;
@@ -446,7 +458,7 @@ export default function BrandDetailPage() {
     return keywordCategoriesMap[cat] || [];
   };
 
-  // Only use backend-filtered reviews; if you want to keep client-side search, filter here
+  // Apply client-side keyword search to paginated reviews for table display
   const filteredReviews = reviewFilters.keyword
     ? reviews.filter(r => (r.review || '').toLowerCase().includes(reviewFilters.keyword.toLowerCase()))
     : reviews;
@@ -469,12 +481,10 @@ export default function BrandDetailPage() {
 
   const [showKeywordsModal, setShowKeywordsModal] = useState(false)
   const [showSourcePopover, setShowSourcePopover] = useState(false)
-  const totalPages = Math.ceil(totalReviews / pageSize);
-  // 1. Add state for dynamic columns
-  const [showCustomerColumn, setShowCustomerColumn] = useState(false);
-  const [showLinkColumn, setShowLinkColumn] = useState(false);
-  // Add state for showing matched keywords column
-  const [showMatchedKeywords, setShowMatchedKeywords] = useState(false);
+  const [showAIReportModal, setShowAIReportModal] = useState(false)
+  const [aiReportPrompt, setAIReportPrompt] = useState("")
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false)
+  const [generatedReport, setGeneratedReport] = useState("")
 
   // Add sorting state
   const [sortBy, setSortBy] = useState<'customer' | 'date' | 'rating'>("date");
@@ -489,13 +499,13 @@ export default function BrandDetailPage() {
     }
   };
 
-  // Sort filteredReviews before pagination
+  // Sort reviews before pagination
   const sortedReviews = useMemo(() => {
-    const sorted = [...filteredReviews];
+    const sorted = [...reviews];
     sorted.sort((a, b) => {
       if (sortBy === "customer") {
-        const nameA = (a.customer || "").toLowerCase();
-        const nameB = (b.customer || "").toLowerCase();
+        const nameA = (a.customer_name || a.customer || "").toLowerCase();
+        const nameB = (b.customer_name || b.customer || "").toLowerCase();
         if (nameA < nameB) return sortDirection === "asc" ? -1 : 1;
         if (nameA > nameB) return sortDirection === "asc" ? 1 : -1;
         return 0;
@@ -511,9 +521,9 @@ export default function BrandDetailPage() {
       return 0;
     });
     return sorted;
-  }, [filteredReviews, sortBy, sortDirection]);
+  }, [reviews, sortBy, sortDirection]);
 
-  const paginatedReviews = sortedReviews.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
 
   const [sourceUrl, setSourceUrl] = useState("");
   const [sourceUrlLoading, setSourceUrlLoading] = useState(true);
@@ -605,21 +615,90 @@ export default function BrandDetailPage() {
     [reviews, sizingFitKeywords]
   );
 
-  // Fix Sizing & Fit Mentions total count (with fallback)
-  const totalSizingFitReviews = reviewsWithSizingFitMentions.length;
+  // Create unified filtered dataset that respects ALL filters (category, rating, date, keyword)
+  const unifiedFilteredReviews = useMemo(() => {
+    let filtered = [...allReviews];
 
-  // Helper: Get all reviews (for avg rating, sentiment score)
-  const allReviews = reviews;
+    // Apply category filter (keyword-based filtering)
+    if (filters.category && filters.category.length > 0 && !filters.category.includes("all")) {
+      // Handle multiple categories - check if review matches any of the selected categories
+      const allCategoryKeywords = filters.category.flatMap(cat => getCategoryKeywords(cat));
+      filtered = filtered.filter((review) =>
+        allCategoryKeywords.some((keyword: string) => 
+          (review.review || "").toLowerCase().includes(keyword.toLowerCase())
+        )
+      );
+    }
 
-  // Average Rating: from all reviews
-  const averageRating = allReviews.length > 0 ? (allReviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / allReviews.length) : 0;
+    // Apply rating filter
+    if (filters.rating && filters.rating.length > 0 && !filters.rating.includes("all")) {
+      // Handle multiple ratings - check if review rating matches any of the selected ratings
+      const ratingNums = filters.rating.map(r => Number(r));
+      filtered = filtered.filter((r) => ratingNums.includes(Number(r.rating)));
+    }
 
-  // Sentiment Score: from all reviews
-  const sentimentScore = allReviews.length > 0 ? (allReviews.reduce((sum, r) => sum + (Number(r.sentiment_score) || 0), 0) / allReviews.length) : 0;
+    // Apply date filter
+    if (filters.dateFilter && filters.dateFilter !== 'all') {
+      const now = new Date();
+      let startDate: Date;
+      let endDate: Date = now;
+      
+      switch (filters.dateFilter) {
+        case '7d':
+          startDate = subDays(now, 7);
+          break;
+        case '30d':
+          startDate = subDays(now, 30);
+          break;
+        case '3m':
+          startDate = subMonths(now, 3);
+          break;
+        case '6m':
+          startDate = subMonths(now, 6);
+          break;
+        case 'custom':
+          if (filters.customStartDate && filters.customEndDate) {
+            startDate = parseISO(filters.customStartDate);
+            endDate = parseISO(filters.customEndDate);
+          } else {
+            return filtered; // No custom dates, return unfiltered
+          }
+          break;
+        default:
+          return filtered; // No date filter, return unfiltered
+      }
+      
+      filtered = filtered.filter((r) => {
+        if (!r.date) return false;
+        const reviewDate = new Date(r.date);
+        return reviewDate >= startDate && reviewDate <= endDate;
+      });
+    }
 
-  // Positive/Negative/Neutral chart: from filteredReviews
+    // Apply keyword search filter
+    if (reviewFilters.keyword) {
+      filtered = filtered.filter(r => 
+        (r.review || '').toLowerCase().includes(reviewFilters.keyword.toLowerCase())
+      );
+    }
+
+    return filtered;
+  }, [allReviews, filters, reviewFilters.keyword]);
+
+  // Analytics calculations based on unified filtered data
+  const totalSizingFitReviews = unifiedFilteredReviews.length;
+
+  // Average Rating: from filtered reviews
+  const averageRating = unifiedFilteredReviews.length > 0 ? 
+    (unifiedFilteredReviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / unifiedFilteredReviews.length) : 0;
+
+  // Sentiment Score: from filtered reviews
+  const sentimentScore = unifiedFilteredReviews.length > 0 ? 
+    (unifiedFilteredReviews.reduce((sum, r) => sum + (Number(r.sentiment_score) || 0), 0) / unifiedFilteredReviews.length) : 0;
+
+  // Positive/Negative/Neutral chart: from unified filtered reviews
   const filteredPosNegMetrics = useMemo(() => {
-    if (filteredReviews.length === 0) {
+    if (unifiedFilteredReviews.length === 0) {
       return {
         totalSizingFitReviews: 0,
         positiveCount: 0,
@@ -628,12 +707,18 @@ export default function BrandDetailPage() {
       };
     }
     return {
-      totalSizingFitReviews: filteredReviews.length,
-      positiveCount: filteredReviews.filter((r) => r.rating >= 4).length,
-      negativeCount: filteredReviews.filter((r) => r.rating <= 2).length,
-      neutralCount: filteredReviews.filter((r) => r.rating === 3).length,
+      totalSizingFitReviews: unifiedFilteredReviews.length,
+      positiveCount: unifiedFilteredReviews.filter((r) => r.rating >= 4).length,
+      negativeCount: unifiedFilteredReviews.filter((r) => r.rating <= 2).length,
+      neutralCount: unifiedFilteredReviews.filter((r) => r.rating === 3).length,
     };
-  }, [filteredReviews]);
+  }, [unifiedFilteredReviews]);
+
+  // Use paginated reviews from backend for table display
+  const paginatedReviews = reviews;
+  
+  // Calculate total pages based on total reviews from backend
+  const totalPages = Math.ceil(totalReviews / pageSize);
 
   // State for visible columns
   // const [showLinkColumn, setShowLinkColumn] = useState(false); // This state is now managed by the checkbox
@@ -679,11 +764,13 @@ export default function BrandDetailPage() {
       
       // Fetch reviews with current pagination settings instead of all reviews
       const apiFilters: any = {};
-      if (filters.category && filters.category !== "all") {
+      if (filters.category && filters.category.length > 0 && !filters.category.includes("all")) {
+        // Handle multiple categories - send as array
         apiFilters.category = filters.category;
       }
-      if (filters.rating && filters.rating !== "all") {
-        apiFilters.rating = Number(filters.rating);
+      if (filters.rating && filters.rating.length > 0 && !filters.rating.includes("all")) {
+        // Handle multiple ratings - convert to numbers
+        apiFilters.rating = filters.rating.map(r => Number(r));
       }
       if (filters.dateFilter && filters.dateFilter !== 'all') {
         if (filters.dateFilter === 'custom' && filters.customStartDate && filters.customEndDate) {
@@ -722,6 +809,10 @@ export default function BrandDetailPage() {
       }));
       setReviews(mappedReviews);
       setTotalReviews(reviewsResp.total_reviews || 0);
+      
+      // Also fetch all reviews for analytics
+      const allReviewsResp = await apiService.getAllBrandReviewsByFrontendId(id, apiFilters);
+      setAllReviews(allReviewsResp);
       
       // Only mark reviews as new if they were actually added in this update
       if (newReviews > 0) {
@@ -772,129 +863,7 @@ export default function BrandDetailPage() {
     }
   }, [updateMessage]);
 
-  // Logo management functions
-  const handleLogoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        setLogoError('Please select an image file');
-        return;
-      }
-      
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setLogoError('File size must be less than 5MB');
-        return;
-      }
-      
-      setLogoFile(file);
-      setLogoError(null);
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setLogoPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const removeLogo = () => {
-    setLogoFile(null);
-    setLogoPreview(null);
-    setLogoError(null);
-  };
-
-  const uploadLogo = async () => {
-    if (!logoFile || !id) return;
-    
-    try {
-      setLogoUploading(true);
-      setLogoError(null);
-      
-      // Convert file to base64
-      const base64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          resolve(result);
-        }
-        reader.readAsDataURL(logoFile);
-      });
-      
-      // Upload to backend
-      const apiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000') + '/api';
-      const response = await fetch(`${apiUrl}/upload_logo`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          brand_name: id,
-          logo_data: base64,
-          logo_filename: logoFile.name,
-          logo_mime_type: logoFile.type
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to upload logo');
-      }
-      
-      const result = await response.json();
-      toast({
-        title: "Logo uploaded successfully!",
-        description: `Logo for ${id} has been updated.`,
-      });
-      
-      setShowLogoDialog(false);
-      removeLogo();
-      
-      // Refresh the page to show the new logo
-      window.location.reload();
-      
-    } catch (error) {
-      console.error('Logo upload error:', error);
-      setLogoError('Failed to upload logo. Please try again.');
-    } finally {
-      setLogoUploading(false);
-    }
-  };
-
-  const deleteLogo = async () => {
-    if (!id) return;
-    
-    try {
-      setLogoUploading(true);
-      setLogoError(null);
-      
-      const apiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000') + '/api';
-      const response = await fetch(`${apiUrl}/logos/${encodeURIComponent(id)}`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to delete logo');
-      }
-      
-      toast({
-        title: "Logo deleted successfully!",
-        description: `Logo for ${id} has been removed.`,
-      });
-      
-      setShowLogoDialog(false);
-      
-      // Refresh the page to show the placeholder
-      window.location.reload();
-      
-    } catch (error) {
-      console.error('Logo deletion error:', error);
-      setLogoError('Failed to delete logo. Please try again.');
-    } finally {
-      setLogoUploading(false);
-    }
-  };
+  
 
   // Show loading spinner or error if needed
   if (loading || reviews.length === 0) {
@@ -926,12 +895,6 @@ export default function BrandDetailPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 text-black dark:text-white">
-      <div className="container mx-auto px-4 pt-6">
-        <Link href="/" className="flex items-center text-gray-600 hover:text-blue-600 active:text-blue-800 text-sm font-medium transition-colors">
-          <ArrowLeft className="w-4 h-4 mr-1" />
-          Back to Home
-        </Link>
-      </div>
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -989,120 +952,7 @@ export default function BrandDetailPage() {
               <Settings className="w-4 h-4 mr-1" />
               Keyword Settings
             </Button>
-            <Dialog open={showLogoDialog} onOpenChange={setShowLogoDialog}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Image className="w-4 h-4 mr-1" />
-                  Logo
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogTitle>Manage Brand Logo</DialogTitle>
-                <div className="space-y-4">
-                  {/* Current Logo Preview */}
-                  <div>
-                    <Label className="text-sm font-medium">Current Logo</Label>
-                    <div className="mt-2 flex items-center space-x-4">
-                      <div className="w-16 h-16 border border-gray-300 rounded-md flex items-center justify-center overflow-hidden">
-                        <BrandLogo 
-                          src={meta.logo} 
-                          alt={`${meta.name} logo`} 
-                          maxWidth={64} 
-                          maxHeight={64} 
-                          brandName={meta.name}
-                        />
-                      </div>
-                      <Button 
-                        variant="destructive" 
-                        size="sm" 
-                        onClick={deleteLogo}
-                        disabled={logoUploading}
-                      >
-                        <Trash2 className="w-4 h-4 mr-1" />
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <Separator />
-                  
-                  {/* Upload New Logo */}
-                  <div>
-                    <Label className="text-sm font-medium">Upload New Logo</Label>
-                    <div className="mt-2 space-y-3">
-                      {/* Logo Preview */}
-                      {logoPreview && (
-                        <div className="relative inline-block">
-                          <img
-                            src={logoPreview}
-                            alt="Logo preview"
-                            className="w-20 h-20 object-contain border border-gray-300 rounded-lg"
-                          />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            className="absolute -top-2 -right-2 w-6 h-6 p-0"
-                            onClick={removeLogo}
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      )}
-                      
-                      {/* Upload Button */}
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleLogoSelect}
-                          className="hidden"
-                          id="logo-upload-input"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => document.getElementById('logo-upload-input')?.click()}
-                          disabled={logoUploading}
-                          className="flex items-center space-x-2"
-                        >
-                          <Upload className="w-4 h-4" />
-                          <span>{logoFile ? 'Change Logo' : 'Choose Logo'}</span>
-                        </Button>
-                      </div>
-                      
-                      {/* Error Message */}
-                      {logoError && (
-                        <p className="text-sm text-red-600">{logoError}</p>
-                      )}
-                      
-                      <p className="text-xs text-gray-500">
-                        Supported formats: JPG, PNG, GIF. Max size: 5MB.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowLogoDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={uploadLogo} 
-                    disabled={!logoFile || logoUploading}
-                  >
-                    {logoUploading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      'Upload Logo'
-                    )}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            
           </div>
         </div>
         {updateMessage && (
@@ -1118,119 +968,318 @@ export default function BrandDetailPage() {
               <CardTitle className="text-base font-bold text-foreground mb-1 text-center">Total Reviews</CardTitle>
             </CardHeader>
             <CardContent className="px-2 pb-2 flex flex-col items-center justify-center">
-              <div className="text-2xl font-bold text-center">{totalSizingFitReviews}</div>
-              <p className="text-[11px] text-gray-500 text-center">Sizing & Fit mentions</p>
+                                          <div className="text-2xl font-bold text-center">{totalSizingFitReviews}</div>
+                            <p className="text-[11px] text-gray-500 text-center">
+                              {filters.category.includes("all") ? "All reviews" : filters.category.join(", ")}
+                              {!filters.rating.includes("all") && ` • ${filters.rating.join(", ")}★`}
+                              {filters.dateFilter !== "all" && ` • ${filters.dateFilter}`}
+                              {reviewFilters.keyword && ` • "${reviewFilters.keyword}"`}
+                            </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-card text-card-foreground h-full p-0 min-w-[160px] shadow-lg transition-transform transition-shadow duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
+          <Card className="bg-card text-card-foreground h-full p-0 min-w-[160px] shadow-lg transition-transform transition-shadow duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1 relative group">
             <CardHeader className="pt-2 pb-0 px-2">
-              <CardTitle className="text-base font-bold text-foreground mb-1 text-center">Average Rating</CardTitle>
+              <CardTitle className="text-base font-bold text-foreground mb-1 text-center group-hover:hidden">Average Rating</CardTitle>
+              <CardTitle className="text-base font-bold text-foreground mb-1 text-center hidden group-hover:block">Rating Distribution</CardTitle>
             </CardHeader>
             <CardContent className="px-2 pb-2 flex flex-col items-center justify-center">
-              <div className="flex items-center justify-center space-x-2 text-center">
-                <div className="text-2xl font-bold">{averageRating.toFixed(1)}</div>
-                <Star className="w-5 h-5 text-yellow-500" />
+              {/* Default Content - Star Rating Visualization */}
+              <div className="group-hover:hidden">
+                <div className="flex items-center justify-center space-x-1 mb-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className={`w-8 h-7 ${
+                        star <= Math.floor(averageRating)
+                          ? averageRating >= 4
+                            ? "text-green-500 fill-current"
+                            : averageRating >= 3
+                            ? "text-yellow-500 fill-current"
+                            : "text-red-500 fill-current"
+                          : star === Math.ceil(averageRating) && averageRating % 1 > 0
+                          ? averageRating >= 4
+                            ? "text-green-500 fill-current opacity-50"
+                            : averageRating >= 3
+                            ? "text-yellow-500 fill-current opacity-50"
+                            : "text-red-500 fill-current opacity-50"
+                          : "text-gray-400"
+                      }`}
+                    />
+                  ))}
+                </div>
+                
+                {/* Rating Score */}
+                <div className="flex items-center justify-center text-center mb-1">
+                  <div className="text-2xl font-bold">{averageRating.toFixed(1)}</div>
+                </div>
+                
+                <p className="text-xs text-gray-500 text-center">
+                  From {filters.category.includes("all") ? "all reviews" : filters.category.join(", ")}
+                  {!filters.rating.includes("all") && ` (${filters.rating.join(", ")}★ only)`}
+                </p>
               </div>
-              <p className="text-xs text-gray-500 text-center">From all reviews</p>
+              
+              {/* Hover Content - Rating Distribution */}
+              <div className="hidden group-hover:block">
+                <div className="space-y-2">
+                  {(() => {
+                    // Calculate rating distribution from unifiedFilteredReviews
+                    const ratingCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+                    const totalReviews = unifiedFilteredReviews.length;
+                    
+                    unifiedFilteredReviews.forEach(review => {
+                      if (review.rating && ratingCounts.hasOwnProperty(review.rating)) {
+                        ratingCounts[review.rating as keyof typeof ratingCounts]++;
+                      }
+                    });
+                    
+                    const colors = {
+                      5: '#10b981', // Green
+                      4: '#34d399', // Light green
+                      3: '#fbbf24', // Yellow
+                      2: '#fb923c', // Orange
+                      1: '#ef4444'  // Red
+                    };
+                    
+                    return [5, 4, 3, 2, 1].map(rating => {
+                      const count = ratingCounts[rating as keyof typeof ratingCounts];
+                      const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
+                      const color = colors[rating as keyof typeof colors];
+                      
+                      return (
+                        <div key={rating} className="flex items-center space-x-1">
+                          <span className="text-xs font-medium w-4">{rating}★</span>
+                          <div className="flex-1 bg-gray-200 rounded-full h-2 min-w-[80px]">
+                            <div 
+                              className="h-2 rounded-full transition-all duration-300" 
+                              style={{ 
+                                width: `${percentage}%`,
+                                backgroundColor: color
+                              }}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-600 w-5 text-right">{count}</span>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Clickable Positive vs Negative Card */}
-          <Card className="relative overflow-hidden bg-card text-card-foreground h-full p-0 min-w-[180px] shadow-lg transition-transform transition-shadow duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
+          {/* Positive vs Negative Card */}
+          <Card 
+            className="relative overflow-hidden bg-card text-card-foreground h-full p-0 min-w-[180px] shadow-lg transition-transform transition-shadow duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1"
+          >
             <CardHeader className="pt-2 pb-0 px-2">
-              <CardTitle className="text-base font-bold text-foreground mb-1 text-center">Positive vs Negative</CardTitle>
+              <CardTitle className="text-base font-bold text-foreground mb-1 text-center">Sentiment Breakdown</CardTitle>
             </CardHeader>
-            <CardContent className="pb-2 flex flex-col items-center justify-center">
-              <div className="flex items-center mb-1 w-full justify-center space-x-4">
+            <CardContent className="pb-2 px-2 flex flex-col justify-center">
+              {/* Stacked Bar Visualization */}
+              <div className="space-y-2 mb-3">
+                {/* Positive Bar */}
                 <div className="flex items-center space-x-2">
-                  <ThumbsUp className="w-4 h-4 text-green-500" />
-                  <span className="font-bold">{filteredPosNegMetrics.positiveCount}</span>
+                  <ThumbsUp className="w-3 h-3 text-green-600 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="text-green-700 font-medium">Positive</span>
+                      <span className="font-bold">{filteredPosNegMetrics.positiveCount}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-green-500 h-2 rounded-full transition-all duration-500" 
+                        style={{ 
+                          width: `${filteredPosNegMetrics.totalSizingFitReviews > 0 ? 
+                            (filteredPosNegMetrics.positiveCount / filteredPosNegMetrics.totalSizingFitReviews) * 100 : 0}%` 
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
+
+                {/* Negative Bar */}
                 <div className="flex items-center space-x-2">
-                  <ThumbsDown className="w-4 h-4 text-red-500" />
-                  <span className="font-bold">{filteredPosNegMetrics.negativeCount}</span>
+                  <ThumbsDown className="w-3 h-3 text-red-600 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="text-red-700 font-medium">Negative</span>
+                      <span className="font-bold">{filteredPosNegMetrics.negativeCount}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-red-500 h-2 rounded-full transition-all duration-500" 
+                        style={{ 
+                          width: `${filteredPosNegMetrics.totalSizingFitReviews > 0 ? 
+                            (filteredPosNegMetrics.negativeCount / filteredPosNegMetrics.totalSizingFitReviews) * 100 : 0}%` 
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
+
+                {/* Neutral Bar */}
                 <div className="flex items-center space-x-2">
-                  <Meh className="w-4 h-4 text-yellow-500" />
-                  <span className="font-bold">{filteredPosNegMetrics.neutralCount}</span>
+                  <Meh className="w-3 h-3 text-yellow-600 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="text-yellow-700 font-medium">Neutral</span>
+                      <span className="font-bold">{filteredPosNegMetrics.neutralCount}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-yellow-500 h-2 rounded-full transition-all duration-500" 
+                        style={{ 
+                          width: `${filteredPosNegMetrics.totalSizingFitReviews > 0 ? 
+                            (filteredPosNegMetrics.neutralCount / filteredPosNegMetrics.totalSizingFitReviews) * 100 : 0}%` 
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-              {/* Spacer to align button with Monthly Trend card */}
-              <div className="h-4 mb-1" />
-              <Button
-                onClick={() => setShowDistributionChart(true)}
-                className="w-full bg-black text-white border border-black hover:bg-zinc-800 hover:text-white mt-1"
-                size="sm"
-              >
-                <PieChart className="w-4 h-4 mr-2" />
-                See Chart
-              </Button>
+
+
             </CardContent>
           </Card>
 
-          <Card className="bg-card text-card-foreground h-full p-0 min-w-[160px] shadow-lg transition-transform transition-shadow duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
+          <Card className="bg-card text-card-foreground h-full p-0 min-w-[160px] shadow-lg transition-transform transition-shadow duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1 relative group">
             <CardHeader className="pt-2 pb-0 px-2">
-              <CardTitle className="text-base font-bold text-foreground mb-1 text-center">Sentiment Score</CardTitle>
+              <CardTitle className="text-base font-bold text-foreground mb-0 text-center -mb-1 group-hover:hidden">Sentiment Score</CardTitle>
+              <CardTitle className="text-base font-bold text-foreground mb-0 text-center -mb-1 hidden group-hover:block">Sentiment Scale</CardTitle>
             </CardHeader>
-            <CardContent className="px-2 pb-2 flex flex-col items-center justify-center">
-              <div className="text-2xl font-bold text-center">{(analytics?.average_sentiment_score ?? 0).toFixed(2)}</div>
-              <Badge
-                className={
-                  ((analytics?.average_sentiment_score ?? 0) > 0.3
-                    ? "bg-green-100 text-green-800"
-                    : (analytics?.average_sentiment_score ?? 0) <= -0.1
-                    ? "bg-red-100 text-red-800"
-                    : "bg-yellow-100 text-yellow-800") +
-                  " text-base font-bold px-4 py-1.5 min-w-[70px]"
-                }
-              >
-                {(analytics?.average_sentiment_score ?? 0) > 0.3
-                  ? "Positive"
-                  : (analytics?.average_sentiment_score ?? 0) <= -0.1
-                  ? "Negative"
-                  : "Neutral"}
-              </Badge>
+            <CardContent className="px-2 pb-2 flex flex-col items-center justify-start">
+              {/* Default Content - Gauge Visualization */}
+              <div className="group-hover:hidden flex flex-col items-center justify-start">
+                <div className="relative w-32 h-32 mb-0">
+                  <svg className="w-32 h-32" viewBox="0 0 100 100">
+                    {/* Background arc */}
+                    <path
+                      d="M 20 50 A 30 30 0 0 1 80 50"
+                      stroke="#e5e7eb"
+                      strokeWidth="8"
+                      fill="none"
+                      strokeLinecap="round"
+                    />
+                    {/* Progress arc */}
+                    <path
+                      d={`M 20 50 A 30 30 0 0 1 ${50 + Math.cos(Math.PI * (sentimentScore + 1) / 2) * 30} ${50 - Math.sin(Math.PI * (sentimentScore + 1) / 2) * 30}`}
+                      stroke={
+                        sentimentScore > 0.3
+                          ? "#10b981"
+                          : sentimentScore <= -0.1
+                          ? "#ef4444"
+                          : "#f59e0b"
+                      }
+                      strokeWidth="8"
+                      fill="none"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  {/* Center text - Larger font */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-2xl font-bold">
+                      {sentimentScore.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Sentiment label - At bottom */}
+                <Badge
+                  className={
+                    (sentimentScore > 0.3
+                      ? "bg-green-100 text-green-800"
+                      : sentimentScore <= -0.1
+                      ? "bg-red-100 text-red-800"
+                      : "bg-yellow-100 text-yellow-800") +
+                    " text-sm font-bold px-3 py-1 -mt-8"
+                  }
+                >
+                  {sentimentScore > 0.3
+                    ? "Positive"
+                    : sentimentScore <= -0.1
+                    ? "Negative"
+                    : "Neutral"}
+                </Badge>
+              </div>
+              
+              {/* Hover Content - Sentiment Scale Bar */}
+              <div className="hidden group-hover:block w-full">
+                <div className="space-y-3">
+                  {/* Scale Bar */}
+                  <div className="relative">
+                    <div className="flex justify-between text-xs text-gray-600 mb-1">
+                      <span>-1</span>
+                      <span>0</span>
+                      <span>+1</span>
+                    </div>
+                    <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+                      {/* Color zones */}
+                      <div className="absolute left-0 w-1/3 h-full bg-red-500"></div>
+                      <div className="absolute left-1/3 w-1/3 h-full bg-yellow-500"></div>
+                      <div className="absolute right-0 w-1/3 h-full bg-green-500"></div>
+                      
+                      {/* Current score indicator */}
+                      <div 
+                        className="absolute top-0 w-1 h-full bg-black transform -translate-x-1/2"
+                        style={{ 
+                          left: `${((sentimentScore + 1) / 2) * 100}%`
+                        }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-600 mt-1">
+                      <span>Negative</span>
+                      <span>Neutral</span>
+                      <span>Positive</span>
+                    </div>
+                  </div>
+                  
+                  {/* Current score display */}
+                  <div className="text-center">
+                    <div className="text-lg font-bold">{sentimentScore.toFixed(2)}</div>
+                    <div className="text-xs text-gray-600">Current Score</div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
           {/* Clickable Monthly Trend Card */}
-          <Card className="relative overflow-hidden bg-card text-card-foreground h-full p-0 min-w-[180px] shadow-lg transition-transform transition-shadow duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
+          <Card 
+            className="relative overflow-hidden bg-card text-card-foreground h-full p-0 min-w-[180px] shadow-lg transition-transform transition-shadow duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+            onClick={() => setShowTrendChart(true)}
+          >
             <CardHeader className="pt-2 pb-0 px-2">
               <CardTitle className="text-base font-bold text-foreground mb-1 text-center">Monthly Trend</CardTitle>
             </CardHeader>
             <CardContent className="pt-1 pb-2 flex flex-col items-center justify-center">
-              <div className="flex justify-center items-center h-10 mb-1">
-                <svg width="72" height="40" viewBox="0 0 72 40">
-                  <rect x="3" y="33" width="6" height="12" rx="3" fill="#3b82f6" />
-                  <rect x="12" y="24" width="6" height="21" rx="3" fill="#3b82f6" />
-                  <rect x="21" y="15" width="6" height="30" rx="3" fill="#3b82f6" />
-                  <rect x="30" y="9" width="6" height="36" rx="3" fill="#3b82f6" />
-                  <rect x="39" y="15" width="6" height="30" rx="3" fill="#3b82f6" />
-                  <rect x="48" y="21" width="6" height="24" rx="3" fill="#3b82f6" />
-                  <rect x="57" y="27" width="6" height="18" rx="3" fill="#3b82f6" />
+              {/* Sparkline Chart */}
+              <div className="flex justify-center items-center h-20 mb-0">
+                <svg width="120" height="60" viewBox="0 0 80 40" className="overflow-visible">
+                  {/* Trend line */}
+                  <path
+                    d="M 5 38 L 10 32 L 18 35 L 25 28 L 32 31 L 40 22 L 48 26 L 55 19 L 62 24 L 70 16 L 75 12"
+                    stroke="#3b82f6"
+                    strokeWidth="4"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               </div>
-              <Button
-                onClick={() => setShowTrendChart(true)}
-                className="w-full bg-black text-white border border-black hover:bg-zinc-800 hover:text-white mt-1"
-                size="sm"
-              >
-                <BarChart3 className="w-4 h-4 mr-2" />
-                View Details
-              </Button>
             </CardContent>
           </Card>
 
           <Card className="bg-card text-card-foreground h-full p-1 shadow-lg transition-transform transition-shadow duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
             <CardHeader className="pt-0 pb-1 px-2">
-              <CardTitle className="text-base font-bold text-foreground mb-2">Top Issues</CardTitle>
+                                      <CardTitle className="text-base font-bold text-foreground mb-2">Top Mentions</CardTitle>
             </CardHeader>
             <CardContent className="pt-2 px-2 pb-1">
               <div className="flex flex-wrap gap-1 mt-0">
                 {(() => {
                   const keywordCounts: Record<string, { count: number; sentiment: string[] }> = {};
-                  filteredReviews.forEach(r => {
+                  unifiedFilteredReviews.forEach(r => {
                     currentKeywords.forEach((keyword: string) => {
                       if (r.review && r.review.toLowerCase().includes(keyword.toLowerCase())) {
                         if (!keywordCounts[keyword]) keywordCounts[keyword] = { count: 0, sentiment: [] };
@@ -1275,7 +1324,7 @@ export default function BrandDetailPage() {
                 <div>
                   <CardTitle>Review Details</CardTitle>
                   <p className="text-sm text-gray-600">
-                    Matched keywords are highlighted in <span className="bg-yellow-200 text-yellow-900 dark:bg-yellow-700 dark:text-yellow-100 px-1 rounded">yellow</span>
+                    Matched keywords are highlighted in <span className="!bg-gray-300 !text-gray-800 px-1 rounded font-medium border border-gray-200">gray</span>
                     {reviewFilters.keyword && (
                       <span>
                         , search terms in <span className="bg-blue-200 px-1 rounded border border-blue-300">blue</span>
@@ -1298,37 +1347,99 @@ export default function BrandDetailPage() {
                     </DialogTrigger>
                     <DialogContent>
                       <DialogTitle>Filter Reviews</DialogTitle>
-                      {/* Category dropdown */}
+                      {/* Category multi-select dropdown */}
                       <div className="mb-4">
                         <Label htmlFor="filter-category">Category</Label>
-                        <Select value={pendingFilters.category} onValueChange={value => setPendingFilters(f => ({ ...f, category: value }))}>
-                          <SelectTrigger className="h-8 text-xs px-2 bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-300 dark:border-zinc-700">
-                            <SelectValue placeholder="All Reviews" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Reviews</SelectItem>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="h-8 text-xs px-2 bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-300 dark:border-zinc-700 justify-between w-full">
+                              {pendingFilters.category.includes("all") ? "All Reviews" : 
+                               pendingFilters.category.length === 0 ? "Select Categories" :
+                               pendingFilters.category.length === 1 ? pendingFilters.category[0] :
+                               `${pendingFilters.category.length} categories selected`}
+                              <ChevronDown className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-56">
+                            <DropdownMenuCheckboxItem
+                              checked={pendingFilters.category.includes("all")}
+                              onCheckedChange={(checked) => {
+                                setPendingFilters(f => ({
+                                  ...f,
+                                  category: checked ? ["all"] : []
+                                }));
+                              }}
+                            >
+                              All Reviews
+                            </DropdownMenuCheckboxItem>
                             {Object.keys(customKeywords).map((cat: string) => (
-                              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                              <DropdownMenuCheckboxItem
+                                key={cat}
+                                checked={pendingFilters.category.includes(cat)}
+                                onCheckedChange={(checked) => {
+                                  setPendingFilters(f => {
+                                    const newCategory = checked 
+                                      ? [...f.category.filter(c => c !== "all"), cat]
+                                      : f.category.filter(c => c !== cat);
+                                    return {
+                                      ...f,
+                                      category: newCategory.length === 0 ? ["all"] : newCategory
+                                    };
+                                  });
+                                }}
+                              >
+                                {cat}
+                              </DropdownMenuCheckboxItem>
                             ))}
-                          </SelectContent>
-                        </Select>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
-                      {/* Rating dropdown */}
+                      {/* Rating multi-select dropdown */}
                       <div className="mb-4">
                         <Label htmlFor="filter-rating">Rating</Label>
-                        <Select value={pendingFilters.rating} onValueChange={value => setPendingFilters(f => ({ ...f, rating: value }))}>
-                          <SelectTrigger className="h-8 text-xs px-2 bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-300 dark:border-zinc-700">
-                            <SelectValue placeholder="All Ratings" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Ratings</SelectItem>
-                            <SelectItem value="5">5 Stars</SelectItem>
-                            <SelectItem value="4">4 Stars</SelectItem>
-                            <SelectItem value="3">3 Stars</SelectItem>
-                            <SelectItem value="2">2 Stars</SelectItem>
-                            <SelectItem value="1">1 Star</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="h-8 text-xs px-2 bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-300 dark:border-zinc-700 justify-between w-full">
+                              {pendingFilters.rating.includes("all") ? "All Ratings" : 
+                               pendingFilters.rating.length === 0 ? "Select Ratings" :
+                               pendingFilters.rating.length === 1 ? `${pendingFilters.rating[0]}★` :
+                               `${pendingFilters.rating.length} ratings selected`}
+                              <ChevronDown className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-56">
+                            <DropdownMenuCheckboxItem
+                              checked={pendingFilters.rating.includes("all")}
+                              onCheckedChange={(checked) => {
+                                setPendingFilters(f => ({
+                                  ...f,
+                                  rating: checked ? ["all"] : []
+                                }));
+                              }}
+                            >
+                              All Ratings
+                            </DropdownMenuCheckboxItem>
+                            {["5", "4", "3", "2", "1"].map((rating: string) => (
+                              <DropdownMenuCheckboxItem
+                                key={rating}
+                                checked={pendingFilters.rating.includes(rating)}
+                                onCheckedChange={(checked) => {
+                                  setPendingFilters(f => {
+                                    const newRating = checked 
+                                      ? [...f.rating.filter(r => r !== "all"), rating]
+                                      : f.rating.filter(r => r !== rating);
+                                    return {
+                                      ...f,
+                                      rating: newRating.length === 0 ? ["all"] : newRating
+                                    };
+                                  });
+                                }}
+                              >
+                                {rating}★
+                              </DropdownMenuCheckboxItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                       {/* Date filter dropdown */}
                       <div className="mb-4">
@@ -1355,6 +1466,36 @@ export default function BrandDetailPage() {
                         )}
                       </div>
 
+                      {/* Additional Information Section */}
+                      <div className="mb-4">
+                        <Label className="text-sm font-medium">Additional Information</Label>
+                        <div className="mt-2 space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="additional-info"
+                              checked={showAdditionalInfo}
+                              onCheckedChange={(checked) => {
+                                const isChecked = checked as boolean;
+                                setShowAdditionalInfo(isChecked);
+                                setShowCustomerColumn(isChecked);
+                                setShowLinkColumn(isChecked);
+                                setShowMatchedKeywords(isChecked);
+                              }}
+                            />
+                            <Label htmlFor="additional-info" className="text-sm">
+                              Enable Additional Information
+                            </Label>
+                          </div>
+                          {showAdditionalInfo && (
+                            <div className="ml-6 space-y-1 text-xs text-gray-600">
+                              <div>• Customer Information</div>
+                              <div>• Review Link</div>
+                              <div>• Matched Keywords</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
                       <DialogFooter>
                         <Button onClick={() => setFilterDialogOpen(false)} variant="outline">Cancel</Button>
                         <Button
@@ -1375,7 +1516,7 @@ export default function BrandDetailPage() {
                     variant="outline"
                     onClick={() => {
                       import("@/lib/export-utils").then(({ exportReviewsAsCSV }) => {
-                        exportReviewsAsCSV(filteredReviews, meta.name)
+                        exportReviewsAsCSV(unifiedFilteredReviews, meta.name)
                       })
                     }}
                   >
@@ -1384,14 +1525,10 @@ export default function BrandDetailPage() {
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      import("@/lib/export-utils").then(({ exportReviewsAsExcel }) => {
-                        exportReviewsAsExcel(filteredReviews, meta.name)
-                      })
-                    }}
+                    onClick={() => setShowAIReportModal(true)}
                   >
-                    <Download className="w-4 h-4 mr-1" />
-                    Excel
+                    <FileText className="w-4 h-4 mr-1" />
+                    AI Report
                   </Button>
                 </div>
               </div>
@@ -1403,34 +1540,8 @@ export default function BrandDetailPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {/* 2. Add checkboxes above the table */}
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-4">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={showCustomerColumn}
-                    onChange={e => setShowCustomerColumn(e.target.checked)}
-                  />
-                  <span style={{ marginLeft: '0.5rem' }}>Show Customer Name</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={showLinkColumn}
-                    onChange={e => setShowLinkColumn(e.target.checked)}
-                  />
-                  <span style={{ marginLeft: '0.5rem' }}>Show Link column</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={showMatchedKeywords}
-                    onChange={e => setShowMatchedKeywords(e.target.checked)}
-                  />
-                  <span style={{ marginLeft: '0.5rem' }}>Show Matched Keywords</span>
-                </label>
-              </div>
+            {/* Review count display */}
+            <div className="flex items-center justify-end mb-2">
               <div className="text-sm text-gray-600">
                 Showing {reviews.length} of {totalReviews} reviews
               </div>
@@ -1441,18 +1552,18 @@ export default function BrandDetailPage() {
                 {/* 3. Table header: render columns conditionally */}
                 <TableHeader>
                   <TableRow>
-                    {showCustomerColumn && <TableHead className="w-32 min-w-[8rem] max-w-[8rem] cursor-pointer select-none font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700" onClick={() => handleSort("customer")}>Customer{sortBy === "customer" && (sortDirection === "asc" ? " ▲" : " ▼")}</TableHead>}
-                    <TableHead className="w-28 min-w-[7rem] max-w-[7rem] cursor-pointer select-none text-nowrap font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700" onClick={() => handleSort("date")}>Date{sortBy === "date" && (sortDirection === "asc" ? " ▲" : " ▼")}</TableHead>
-                    <TableHead className="w-20 min-w-[5rem] max-w-[5rem] cursor-pointer select-none text-nowrap font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700" onClick={() => handleSort("rating")}>Rating{sortBy === "rating" && (sortDirection === "asc" ? " ▲" : " ▼")} <Star className="inline w-4 h-4 text-yellow-500 ml-1" /></TableHead>
-                    <TableHead className="w-auto font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">Review</TableHead>
-                    {showLinkColumn && <TableHead className="w-32 min-w-[8rem] max-w-[8rem] font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">Link</TableHead>}
-                    {showMatchedKeywords && <TableHead className="w-48 min-w-[12rem] max-w-[16rem] font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">Matched Keywords</TableHead>}
+                    {showCustomerColumn && <TableHead className="w-32 min-w-[8rem] max-w-[8rem] cursor-pointer select-none font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700 text-center" onClick={() => handleSort("customer")}>Customer{sortBy === "customer" && (sortDirection === "asc" ? " ▲" : " ▼")}</TableHead>}
+                    <TableHead className="w-28 min-w-[7rem] max-w-[7rem] cursor-pointer select-none text-nowrap font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700 text-center" onClick={() => handleSort("date")}>Date{sortBy === "date" && (sortDirection === "asc" ? " ▲" : " ▼")}</TableHead>
+                    <TableHead className="w-20 min-w-[5rem] max-w-[5rem] cursor-pointer select-none text-nowrap font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700 text-center" onClick={() => handleSort("rating")}>Rating{sortBy === "rating" && (sortDirection === "asc" ? " ▲" : " ▼")}</TableHead>
+                    <TableHead className="flex-1 font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700 text-center">Review</TableHead>
+                    {showLinkColumn && <TableHead className="w-32 min-w-[8rem] max-w-[8rem] font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700 text-center">Link</TableHead>}
+                    {showMatchedKeywords && <TableHead className="w-48 min-w-[12rem] max-w-[16rem] font-bold bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700 text-center">Matched Keywords</TableHead>}
                   </TableRow>
                 </TableHeader>
                 {/* 3. Table body: render columns conditionally */}
                 <TableBody>
-                  {reviews.length > 0 ? (
-                    reviews.map((review, idx) => {
+                  {sortedReviews.length > 0 ? (
+                    sortedReviews.map((review, idx) => {
                       const reviewKey = getReviewKey(review, idx);
                       const isExpanded = expandedReviews[reviewKey];
                       const isNew = newlyAddedReviewIds.has(reviewKey);
@@ -1461,9 +1572,9 @@ export default function BrandDetailPage() {
                         ? allCategoryKeywords
                         : selectedCategories.flatMap(getCategoryKeywords);
                       const highlightKeywordsArray =
-                        filters.category === "all" || filters.category === "All Reviews"
+                        filters.category.includes("all") || filters.category.includes("All Reviews")
                           ? review.matched_keywords || []
-                          : getCategoryKeywords(filters.category);
+                          : filters.category.flatMap(cat => getCategoryKeywords(cat));
                       console.log('Selected category:', filters.category);
                       console.log('Highlighting with keywords:', highlightKeywordsArray);
                       const highlightedHTML = robustHighlightKeywords(review.review, highlightKeywordsArray, reviewFilters.keyword);
@@ -1512,7 +1623,7 @@ export default function BrandDetailPage() {
                     })
                   ) : (
                     <TableRow key="no-reviews">
-                      <TableCell colSpan={showLinkColumn ? 5 : 4} className="text-center py-8 text-black" style={{ color: '#000' }}>
+                      <TableCell colSpan={showCustomerColumn && showLinkColumn && showMatchedKeywords ? 6 : showCustomerColumn && (showLinkColumn || showMatchedKeywords) ? 5 : showLinkColumn && showMatchedKeywords ? 5 : showCustomerColumn || showLinkColumn || showMatchedKeywords ? 4 : 3} className="text-center py-8 text-black" style={{ color: '#000' }}>
                         No reviews match the current filters
                       </TableCell>
                     </TableRow>
@@ -1661,9 +1772,166 @@ export default function BrandDetailPage() {
           </>
         )}
 
+        {/* AI Report Modal */}
+        {showAIReportModal && (
+          <>
+            <div className="fixed inset-0 bg-black bg-opacity-40 z-40 transition-opacity" />
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div className="bg-white dark:bg-[#18181b] dark:border dark:border-gray-700 dark:shadow-2xl rounded-lg shadow-lg p-6 w-full max-w-4xl transition-colors">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-bold text-black dark:text-white">AI Report Generator</h2>
+                  <Button variant="ghost" className="bg-black hover:bg-black focus:bg-black active:bg-black transition-transform duration-150 transform hover:scale-110 focus:scale-110" onClick={() => setShowAIReportModal(false)}>
+                    <X className="w-5 h-5 text-white" />
+                  </Button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="ai-prompt" className="text-sm font-medium">Enter your prompt for the AI report:</Label>
+                    <Input
+                      id="ai-prompt"
+                      placeholder="e.g., Analyze sizing complaints and provide recommendations..."
+                      value={aiReportPrompt}
+                      onChange={(e) => setAIReportPrompt(e.target.value)}
+                      className="mt-2"
+                    />
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <div className="text-sm text-gray-600">
+                      Based on {unifiedFilteredReviews.length} filtered reviews
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowAIReportModal(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={async () => {
+                          if (!aiReportPrompt.trim()) return;
+                          setIsGeneratingReport(true);
+                          try {
+                            // Calculate date range for AI report
+                            let reportStartDate: Date | null = null;
+                            let reportEndDate: Date | null = null;
+                            
+                            if (filters.dateFilter && filters.dateFilter !== 'all') {
+                              const now = new Date();
+                              switch (filters.dateFilter) {
+                                case '7d':
+                                  reportStartDate = subDays(now, 7);
+                                  break;
+                                case '30d':
+                                  reportStartDate = subDays(now, 30);
+                                  break;
+                                case '3m':
+                                  reportStartDate = subMonths(now, 3);
+                                  break;
+                                case '6m':
+                                  reportStartDate = subMonths(now, 6);
+                                  break;
+                                case 'custom':
+                                  if (filters.customStartDate && filters.customEndDate) {
+                                    reportStartDate = parseISO(filters.customStartDate);
+                                    reportEndDate = parseISO(filters.customEndDate);
+                                  }
+                                  break;
+                              }
+                            }
+                            
+                            // Call backend API to generate report with the actual filtered data
+                            const response = await fetch(`${getApiBaseUrl()}/generate-report`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                brand_name: id,
+                                prompt: aiReportPrompt,
+                                reviews_data: unifiedFilteredReviews // Send the actual filtered reviews
+                              })
+                            });
+                            
+                            if (!response.ok) {
+                              throw new Error('Failed to generate report');
+                            }
+                            
+                            const data = await response.json();
+                            setGeneratedReport(data.report);
+                          } catch (error) {
+                            console.error("Error generating report:", error);
+                            setGeneratedReport("Error generating report. Please try again.");
+                          } finally {
+                            setIsGeneratingReport(false);
+                          }
+                        }}
+                        disabled={!aiReportPrompt.trim() || isGeneratingReport}
+                      >
+                        {isGeneratingReport ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          "Generate Report"
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {generatedReport && (
+                    <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <div className="flex items-center mb-3">
+                        <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center mr-3">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <h3 className="font-semibold text-green-800 dark:text-green-200">Report Generated Successfully!</h3>
+                      </div>
+                      <p className="text-sm text-green-700 dark:text-green-300 mb-4">
+                        Your AI report has been generated based on {unifiedFilteredReviews.length} filtered reviews. 
+                        Download it in your preferred format below.
+                      </p>
+                      <div className="flex space-x-2">
+                        <Button 
+                          size="sm" 
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => {
+                            import("@/lib/export-utils").then(({ exportAIReportAsPDF }) => {
+                              exportAIReportAsPDF(generatedReport, meta.name, aiReportPrompt)
+                            })
+                          }}
+                        >
+                          <Download className="w-4 h-4 mr-1" />
+                          Download PDF
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="border-green-600 text-green-600 hover:bg-green-50"
+                          onClick={() => {
+                            import("@/lib/export-utils").then(({ exportAIReportAsWord }) => {
+                              exportAIReportAsWord(generatedReport, meta.name, aiReportPrompt)
+                            })
+                          }}
+                        >
+                          <Download className="w-4 h-4 mr-1" />
+                          Download Word
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
         {/* Unified Filter Dialog/Modal */}
         {/* This dialog is now handled by the button above the table */}
       </div>
     </div>
   )
 }
+
