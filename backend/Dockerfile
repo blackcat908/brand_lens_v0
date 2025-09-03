@@ -1,33 +1,12 @@
 # Use a full Python image (not slim) for easier dependency management
 FROM python:3.11
 
-# Install system dependencies for Playwright/Chromium
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     wget \
-    libnss3 \
-    libatk-bridge2.0-0 \
-    libgtk-3-0 \
-    libxss1 \
-    libasound2 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxrandr2 \
-    libgbm1 \
-    libxkbcommon0 \
-    libpango-1.0-0 \
-    libcups2 \
-    libdrm2 \
-    libx11-xcb1 \
-    libxext6 \
-    libxfixes3 \
-    libxi6 \
-    libxtst6 \
-    libxrender1 \
-    libatk1.0-0 \
-    libgdk-pixbuf2.0-0 \
-    libglib2.0-0 \
-    libdbus-1-3 \
-    libexpat1 \
+    curl \
+    ca-certificates \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
@@ -37,8 +16,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright browsers
-RUN python -m playwright install chromium
+# Install Playwright browsers with system dependencies
+RUN python -m playwright install --with-deps chromium
 
 # Install NLTK data
 RUN python -m nltk.downloader wordnet stopwords punkt
