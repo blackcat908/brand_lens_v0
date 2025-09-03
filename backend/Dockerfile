@@ -16,8 +16,19 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright browsers with system dependencies
-RUN python -m playwright install --with-deps chromium
+# Install essential system dependencies for Playwright
+RUN apt-get update && apt-get install -y \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libgtk-3-0 \
+    libgbm1 \
+    libxss1 \
+    fonts-liberation \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Playwright browsers (without system deps to avoid font issues)
+RUN python -m playwright install chromium
 
 # Install NLTK data
 RUN python -m nltk.downloader wordnet stopwords punkt
