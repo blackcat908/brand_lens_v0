@@ -2,7 +2,7 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from database import get_db_session, Review, get_brand_source_url, set_brand_source_url, get_reviews_by_brand, get_all_reviews, get_brands, add_review, delete_brand_and_reviews, get_brand_keywords, set_brand_keywords, get_global_keywords, set_global_keywords, get_reviews_by_brand_optimized, get_brand_analytics_optimized, get_brands_with_counts_optimized, update_brand_logo, get_brand_logo, delete_brand_logo
 from sentiment_analyzer import SentimentAnalyzer
-from ai_service import ai_service
+from ai_service import get_ai_service
 from datetime import datetime, timedelta
 import json
 from collections import defaultdict, Counter
@@ -925,6 +925,7 @@ def generate_ai_report():
         logger.info(f"[AI-REPORT] Received {len(reviews_data)} filtered reviews from frontend")
         
         # Use AI service to generate the report with the filtered data
+        ai_service = get_ai_service()
         report_content = ai_service.generate_report_from_data(brand_name, prompt, reviews_data)
         
         return jsonify({

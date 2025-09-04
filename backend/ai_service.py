@@ -15,8 +15,12 @@ class AIService:
             logger.warning("[AI-SERVICE] No OpenAI API key found. Set OPENAI_API_KEY environment variable.")
             self.client = None
         else:
-            self.client = OpenAI(api_key=api_key)
-            logger.info("[AI-SERVICE] OpenAI client initialized successfully")
+            try:
+                self.client = OpenAI(api_key=api_key)
+                logger.info("[AI-SERVICE] OpenAI client initialized successfully")
+            except Exception as e:
+                logger.error(f"[AI-SERVICE] Failed to initialize OpenAI client: {e}")
+                self.client = None
 
     def generate_report(self, brand_name: str, prompt: str, reviews: List[Dict[str, Any]]) -> str:
         """
@@ -297,5 +301,12 @@ Based on the analysis of {total_reviews} reviews:
         
         return "\n".join(csv_lines)
 
-# Global instance
-ai_service = AIService()
+# Global instance - lazy loaded to avoid startup crashes
+ai_service = None
+
+def get_ai_service():
+    """Get or create the AI service instance"""
+    global ai_service
+    if ai_service is None:
+        ai_service = AIService()
+    return ai_service
