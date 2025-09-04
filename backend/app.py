@@ -942,4 +942,5 @@ def generate_ai_report():
         return jsonify({'error': f'Failed to generate report: {str(e)}'}), 500
 
 if __name__ == '__main__':
+    # Railway deployment fix - force rebuild
     app.run(debug=False, host='0.0.0.0', port=5000) 
