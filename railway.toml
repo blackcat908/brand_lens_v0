@@ -1,0 +1,7 @@
+[build]
+# Tell Railway to build from the backend directory
+path = "backend"
+
+[deploy]
+# Optional: specify the start command if needed
+startCommand = "python app.py"
