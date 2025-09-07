@@ -432,6 +432,344 @@ def get_brand_reviews_robust(brand):
     })
 
 # --- HIGHLIGHT FUNCTION (AS BEFORE) ---
+def analyze_sizing_intelligence(reviews_data):
+    """
+    Advanced sizing intelligence analysis for e-commerce insights
+    Returns comprehensive sizing metrics for business intelligence
+    """
+    
+    # Advanced keyword categories for sizing intelligence
+    sizing_keywords = {
+        # Size Direction Intelligence
+        'runs_small': [
+            'runs small', 'order size up', 'size up', 'go up a size', 'too small', 
+            'tight fit', 'smaller than expected', 'order larger', 'get bigger size',
+            'runs tiny', 'very small', 'much smaller', 'way too small'
+        ],
+        'runs_large': [
+            'runs big', 'runs large', 'size down', 'go down a size', 'order smaller', 
+            'too big', 'oversized', 'larger than expected', 'get smaller size',
+            'runs huge', 'way too big', 'much larger', 'very big'
+        ],
+        'true_to_size': [
+            'true to size', 'perfect fit', 'fits as expected', 'accurate sizing',
+            'spot on', 'exactly right', 'fits perfectly', 'right size',
+            'fits well', 'good fit', 'accurate fit'
+        ],
+        
+        # Body Part Specific Issues  
+        'chest_bust_issues': [
+            'tight chest', 'loose bust', 'chest area', 'bust size', 'chest fit',
+            'bust too big', 'bust too small', 'chest too tight', 'chest perfect',
+            'boob area', 'breast area', 'upper body'
+        ],
+        'waist_issues': [
+            'waist too tight', 'waist loose', 'high waisted', 'waistline',
+            'waist perfect', 'waist area', 'waist fit', 'waist sizing',
+            'waist measurements', 'midsection', 'waist band'
+        ],
+        'hip_issues': [
+            'tight hips', 'hip area', 'fits hips', 'hip fit', 'hip sizing',
+            'hips too tight', 'loose on hips', 'hip measurements', 'bottom half',
+            'lower body', 'hip section'
+        ],
+        'sleeve_issues': [
+            'sleeve length', 'tight sleeves', 'sleeve too long', 'short sleeves',
+            'sleeve fit', 'arm area', 'sleeve sizing', 'sleeves perfect',
+            'arm length', 'sleeve measurements', 'arm fit'
+        ],
+        'length_issues': [
+            'too long', 'too short', 'perfect length', 'hem length',
+            'length perfect', 'dress length', 'pant length', 'skirt length',
+            'length sizing', 'length measurements', 'overall length'
+        ],
+        
+        # Size Change Behavior
+        'size_up_behavior': [
+            'ordered larger', 'went up a size', 'exchanged for bigger', 'sized up',
+            'got next size up', 'bought bigger', 'needed larger', 'upgrade size'
+        ],
+        'size_down_behavior': [
+            'ordered smaller', 'went down a size', 'exchanged for smaller', 'sized down',
+            'got smaller size', 'bought smaller', 'needed smaller', 'downsize'
+        ],
+        'multiple_sizes': [
+            'ordered two sizes', 'bought both sizes', 'tried different sizes',
+            'ordered multiple', 'got several sizes', 'purchased different sizes'
+        ],
+        
+        # Return/Exchange Behavior
+        'returned': [
+            'returned', 'sent back', 'had to return', 'returning this',
+            'sent it back', 'return policy', 'returned item'
+        ],
+        'exchanged': [
+            'exchanged for', 'swapped for', 'changed to', 'exchange for',
+            'traded for', 'switched to', 'got different size'
+        ],
+        'kept_anyway': [
+            'kept it anyway', 'decided to keep', 'still wearing',
+            'keeping despite', 'will keep', 'works anyway'
+        ],
+        
+        # Customer Profile Indicators
+        'height_mentions': [
+            'i\'m 5', 'height', 'tall', 'short person', 'petite',
+            'my height', 'being tall', 'being short'
+        ],
+        'size_mentions': [
+            'size 2', 'size 4', 'size 6', 'size 8', 'size 10', 'size 12',
+            'size 14', 'size 16', 'size 18', 'size 20', 'plus size',
+            'usually wear', 'normally size', 'typically size'
+        ],
+        'body_type': [
+            'curvy', 'athletic build', 'slim fit', 'pear shaped', 'apple shaped',
+            'hourglass', 'straight body', 'plus size', 'petite frame',
+            'broad shoulders', 'narrow hips', 'wide hips'
+        ]
+    }
+    
+    # Initialize results
+    results = {
+        'total_sizing_mentions': 0,
+        'size_direction_analysis': {
+            'runs_small_count': 0,
+            'runs_large_count': 0, 
+            'true_to_size_count': 0,
+            'size_direction_percentage': {}
+        },
+        'body_part_issues': {
+            'chest_bust': 0,
+            'waist': 0,
+            'hips': 0,
+            'sleeves': 0,
+            'length': 0
+        },
+        'customer_behavior': {
+            'size_up_count': 0,
+            'size_down_count': 0,
+            'multiple_sizes_count': 0,
+            'returned_count': 0,
+            'exchanged_count': 0,
+            'kept_anyway_count': 0
+        },
+        'customer_profiles': {
+            'height_mentions': 0,
+            'size_mentions': 0,
+            'body_type_mentions': 0
+        },
+        'actionable_insights': []
+    }
+    
+    # Analyze each review
+    total_reviews = len(reviews_data)
+    sizing_related_reviews = 0
+    
+    for review in reviews_data:
+        review_text = review.get('review', '').lower() if review.get('review') else ''
+        if not review_text:
+            continue
+            
+        has_sizing_mention = False
+        
+        # Check each keyword category
+        for category, keywords in sizing_keywords.items():
+            for keyword in keywords:
+                if keyword in review_text:
+                    has_sizing_mention = True
+                    
+                    # Size direction analysis
+                    if category == 'runs_small':
+                        results['size_direction_analysis']['runs_small_count'] += 1
+                    elif category == 'runs_large':
+                        results['size_direction_analysis']['runs_large_count'] += 1
+                    elif category == 'true_to_size':
+                        results['size_direction_analysis']['true_to_size_count'] += 1
+                    
+                    # Body part issues
+                    elif category == 'chest_bust_issues':
+                        results['body_part_issues']['chest_bust'] += 1
+                    elif category == 'waist_issues':
+                        results['body_part_issues']['waist'] += 1
+                    elif category == 'hip_issues':
+                        results['body_part_issues']['hips'] += 1
+                    elif category == 'sleeve_issues':
+                        results['body_part_issues']['sleeves'] += 1
+                    elif category == 'length_issues':
+                        results['body_part_issues']['length'] += 1
+                    
+                    # Customer behavior
+                    elif category == 'size_up_behavior':
+                        results['customer_behavior']['size_up_count'] += 1
+                    elif category == 'size_down_behavior':
+                        results['customer_behavior']['size_down_count'] += 1
+                    elif category == 'multiple_sizes':
+                        results['customer_behavior']['multiple_sizes_count'] += 1
+                    elif category == 'returned':
+                        results['customer_behavior']['returned_count'] += 1
+                    elif category == 'exchanged':
+                        results['customer_behavior']['exchanged_count'] += 1
+                    elif category == 'kept_anyway':
+                        results['customer_behavior']['kept_anyway_count'] += 1
+                    
+                    # Customer profiles
+                    elif category == 'height_mentions':
+                        results['customer_profiles']['height_mentions'] += 1
+                    elif category == 'size_mentions':
+                        results['customer_profiles']['size_mentions'] += 1
+                    elif category == 'body_type':
+                        results['customer_profiles']['body_type_mentions'] += 1
+                    
+                    break  # Found a match in this category, move to next category
+        
+        if has_sizing_mention:
+            sizing_related_reviews += 1
+    
+    results['total_sizing_mentions'] = sizing_related_reviews
+    
+    # Calculate percentages for size direction
+    total_direction_mentions = (results['size_direction_analysis']['runs_small_count'] + 
+                               results['size_direction_analysis']['runs_large_count'] + 
+                               results['size_direction_analysis']['true_to_size_count'])
+    
+    if total_direction_mentions > 0:
+        results['size_direction_analysis']['size_direction_percentage'] = {
+            'runs_small': round((results['size_direction_analysis']['runs_small_count'] / total_direction_mentions) * 100, 1),
+            'runs_large': round((results['size_direction_analysis']['runs_large_count'] / total_direction_mentions) * 100, 1),
+            'true_to_size': round((results['size_direction_analysis']['true_to_size_count'] / total_direction_mentions) * 100, 1)
+        }
+    
+    # Generate actionable insights
+    insights = []
+    
+    # Size direction insights
+    if results['size_direction_analysis']['runs_small_count'] > results['size_direction_analysis']['runs_large_count'] * 2:
+        insights.append({
+            'type': 'sizing_alert',
+            'priority': 'high',
+            'message': f"Brand runs small - {results['size_direction_analysis']['runs_small_count']} customers mention sizing up needed",
+            'recommendation': "Add 'Consider sizing up' note to product pages"
+        })
+    elif results['size_direction_analysis']['runs_large_count'] > results['size_direction_analysis']['runs_small_count'] * 2:
+        insights.append({
+            'type': 'sizing_alert', 
+            'priority': 'high',
+            'message': f"Brand runs large - {results['size_direction_analysis']['runs_large_count']} customers mention sizing down needed",
+            'recommendation': "Add 'Consider sizing down' note to product pages"
+        })
+    
+    # Body part issues insights
+    max_body_issue = max(results['body_part_issues'].items(), key=lambda x: x[1])
+    if max_body_issue[1] > 5:  # If more than 5 mentions of a specific body part issue
+        insights.append({
+            'type': 'fit_issue',
+            'priority': 'medium',
+            'message': f"Most common fit issue: {max_body_issue[0]} ({max_body_issue[1]} mentions)",
+            'recommendation': f"Review size chart measurements for {max_body_issue[0]} area"
+        })
+    
+    # Return behavior insights
+    if results['customer_behavior']['returned_count'] > sizing_related_reviews * 0.2:  # More than 20% mention returns
+        insights.append({
+            'type': 'business_impact',
+            'priority': 'high', 
+            'message': f"High return rate mentioned - {results['customer_behavior']['returned_count']} return mentions",
+            'recommendation': "Investigate sizing accuracy and improve size guide"
+        })
+    
+    results['actionable_insights'] = insights
+    
+    return results
+
+
+def calculate_sizing_accuracy_score(sizing_data):
+    """Calculate a 0-100 score for sizing accuracy"""
+    total_direction = (sizing_data['size_direction_analysis']['runs_small_count'] + 
+                      sizing_data['size_direction_analysis']['runs_large_count'] + 
+                      sizing_data['size_direction_analysis']['true_to_size_count'])
+    
+    if total_direction == 0:
+        return 85  # Neutral score if no data
+    
+    true_to_size_ratio = sizing_data['size_direction_analysis']['true_to_size_count'] / total_direction
+    sizing_issues_ratio = (sizing_data['size_direction_analysis']['runs_small_count'] + 
+                          sizing_data['size_direction_analysis']['runs_large_count']) / total_direction
+    
+    # Base score starts at 50, adds points for accuracy, subtracts for issues
+    base_score = 50
+    accuracy_bonus = true_to_size_ratio * 50  # Up to 50 points for perfect accuracy
+    issue_penalty = sizing_issues_ratio * 30   # Up to 30 points penalty for issues
+    
+    score = base_score + accuracy_bonus - issue_penalty
+    return min(100, max(0, round(score)))
+
+
+def calculate_return_risk_level(sizing_data):
+    """Calculate return risk level based on customer behavior"""
+    total_mentions = sizing_data['total_sizing_mentions']
+    if total_mentions == 0:
+        return 'low'
+    
+    return_mentions = sizing_data['customer_behavior']['returned_count']
+    sizing_issues = (sizing_data['size_direction_analysis']['runs_small_count'] + 
+                    sizing_data['size_direction_analysis']['runs_large_count'])
+    
+    return_rate = return_mentions / total_mentions
+    sizing_issue_rate = sizing_issues / total_mentions
+    
+    risk_score = (return_rate * 0.6) + (sizing_issue_rate * 0.4)
+    
+    if risk_score > 0.3:
+        return 'high'
+    elif risk_score > 0.15:
+        return 'medium'
+    else:
+        return 'low'
+
+
+def extract_satisfaction_indicators(sizing_data):
+    """Extract customer satisfaction indicators"""
+    total = sizing_data['total_sizing_mentions']
+    if total == 0:
+        return {
+            'overall_satisfaction': 'neutral',
+            'fit_satisfaction_rate': 0,
+            'key_concerns': []
+        }
+    
+    # Calculate fit satisfaction rate
+    positive_indicators = sizing_data['size_direction_analysis']['true_to_size_count']
+    fit_satisfaction_rate = (positive_indicators / total) * 100 if total > 0 else 0
+    
+    # Determine overall satisfaction
+    if fit_satisfaction_rate > 60:
+        overall_satisfaction = 'high'
+    elif fit_satisfaction_rate > 30:
+        overall_satisfaction = 'medium'
+    else:
+        overall_satisfaction = 'low'
+    
+    # Identify key concerns
+    concerns = []
+    body_issues = sizing_data['body_part_issues']
+    max_body_issue = max(body_issues.items(), key=lambda x: x[1])
+    if max_body_issue[1] > 3:
+        concerns.append(f"{max_body_issue[0].replace('_', ' ')} fit issues")
+    
+    if sizing_data['size_direction_analysis']['runs_small_count'] > total * 0.2:
+        concerns.append("runs small")
+    if sizing_data['size_direction_analysis']['runs_large_count'] > total * 0.2:
+        concerns.append("runs large")
+    if sizing_data['customer_behavior']['returned_count'] > total * 0.15:
+        concerns.append("high return rate")
+    
+    return {
+        'overall_satisfaction': overall_satisfaction,
+        'fit_satisfaction_rate': round(fit_satisfaction_rate, 1),
+        'key_concerns': concerns
+    }
+
+
 def highlight_keywords(text, keywords):
     if not text or not keywords:
         return text
@@ -584,13 +922,9 @@ def get_brand_analytics(brand):
         filtered_words = {word: count for word, count in word_counts.items() if word not in common_words and len(word) > 3}
         top_keywords = sorted(filtered_words.items(), key=lambda x: x[1], reverse=True)[:10]
         
-        # Sizing/fit mentions
-        sizing_fit_keywords = ['size', 'sizing', 'fit', 'fits', 'small', 'large', 'medium', 'tight', 'loose', 'perfect', 'runs', 'true', 'measurements']
-        sizing_fit_reviews = 0
-        for review in reviews:
-            review_text = review['review'].lower() if review['review'] else ''
-            if any(keyword in review_text for keyword in sizing_fit_keywords):
-                sizing_fit_reviews += 1
+        # Advanced sizing intelligence analysis
+        sizing_intelligence = analyze_sizing_intelligence(reviews)
+        sizing_fit_reviews = sizing_intelligence['total_sizing_mentions']
 
         # Log timing
         end_time = time.time()
@@ -606,8 +940,177 @@ def get_brand_analytics(brand):
             'monthly_trends': monthly_trends,
             'top_keywords': top_keywords,
             'last_updated': analytics_data['last_updated'],
-            'sizing_fit_mentions': sizing_fit_reviews
+            'sizing_fit_mentions': sizing_fit_reviews,
+            # NEW: Advanced sizing intelligence for business insights
+            'sizing_intelligence': sizing_intelligence,
+            'business_insights': {
+                'sizing_accuracy_score': calculate_sizing_accuracy_score(sizing_intelligence),
+                'return_risk_level': calculate_return_risk_level(sizing_intelligence),
+                'customer_satisfaction_indicators': extract_satisfaction_indicators(sizing_intelligence)
+            }
         })
+
+@app.route('/api/brands/<brand>/sizing-intelligence', methods=['GET'])
+def get_brand_sizing_intelligence(brand):
+    """
+    Dedicated endpoint for comprehensive sizing intelligence analysis
+    Perfect for business customers who need detailed insights
+    """
+    try:
+        with get_db_session() as db:
+            # Get all reviews for the brand
+            reviews = get_reviews_by_brand(db, brand)
+            
+            if not reviews:
+                return jsonify({
+                    'error': 'Brand not found or no reviews available',
+                    'brand': brand
+                }), 404
+            
+            # Run comprehensive sizing analysis
+            sizing_data = analyze_sizing_intelligence(reviews)
+            
+            # Calculate business metrics
+            business_metrics = {
+                'sizing_accuracy_score': calculate_sizing_accuracy_score(sizing_data),
+                'return_risk_level': calculate_return_risk_level(sizing_data),
+                'customer_satisfaction_indicators': extract_satisfaction_indicators(sizing_data)
+            }
+            
+            # Calculate additional business intelligence
+            total_reviews = len(reviews)
+            sizing_impact_score = (sizing_data['total_sizing_mentions'] / total_reviews) * 100 if total_reviews > 0 else 0
+            
+            # Generate executive summary
+            executive_summary = generate_executive_summary(sizing_data, business_metrics, brand)
+            
+            return jsonify({
+                'brand': brand,
+                'analysis_date': datetime.now().isoformat(),
+                'total_reviews_analyzed': total_reviews,
+                'sizing_impact_percentage': round(sizing_impact_score, 1),
+                'executive_summary': executive_summary,
+                'detailed_analysis': sizing_data,
+                'business_metrics': business_metrics,
+                'recommendations': generate_business_recommendations(sizing_data, business_metrics)
+            })
+            
+    except Exception as e:
+        logger.error(f"Error in sizing intelligence analysis for {brand}: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+def generate_executive_summary(sizing_data, business_metrics, brand_name):
+    """Generate executive summary for business stakeholders"""
+    summary = {
+        'key_findings': [],
+        'business_impact': '',
+        'priority_actions': []
+    }
+    
+    # Key findings
+    total_mentions = sizing_data['total_sizing_mentions']
+    if total_mentions > 0:
+        # Size direction findings
+        size_direction = sizing_data['size_direction_analysis']['size_direction_percentage']
+        if size_direction.get('runs_small', 0) > 40:
+            summary['key_findings'].append(f"Brand runs small - {size_direction['runs_small']}% of customers recommend sizing up")
+        elif size_direction.get('runs_large', 0) > 40:
+            summary['key_findings'].append(f"Brand runs large - {size_direction['runs_large']}% of customers recommend sizing down")
+        elif size_direction.get('true_to_size', 0) > 60:
+            summary['key_findings'].append(f"Excellent size accuracy - {size_direction['true_to_size']}% say sizing is accurate")
+        
+        # Body fit issues
+        body_issues = sizing_data['body_part_issues']
+        max_issue = max(body_issues.items(), key=lambda x: x[1])
+        if max_issue[1] > 5:
+            summary['key_findings'].append(f"Primary fit concern: {max_issue[0].replace('_', ' ')} ({max_issue[1]} mentions)")
+        
+        # Return behavior
+        return_rate = sizing_data['customer_behavior']['returned_count'] / total_mentions
+        if return_rate > 0.2:
+            summary['key_findings'].append(f"High return rate signals - {sizing_data['customer_behavior']['returned_count']} return mentions")
+    
+    # Business impact
+    accuracy_score = business_metrics['sizing_accuracy_score']
+    risk_level = business_metrics['return_risk_level']
+    
+    if accuracy_score >= 80:
+        summary['business_impact'] = f"Strong sizing performance (Score: {accuracy_score}/100) with {risk_level} return risk"
+    elif accuracy_score >= 60:
+        summary['business_impact'] = f"Moderate sizing performance (Score: {accuracy_score}/100) with {risk_level} return risk - room for improvement"
+    else:
+        summary['business_impact'] = f"Sizing challenges detected (Score: {accuracy_score}/100) with {risk_level} return risk - immediate action needed"
+    
+    # Priority actions
+    insights = sizing_data.get('actionable_insights', [])
+    for insight in insights:
+        if insight['priority'] == 'high':
+            summary['priority_actions'].append(insight['recommendation'])
+    
+    return summary
+
+
+def generate_business_recommendations(sizing_data, business_metrics):
+    """Generate specific business recommendations"""
+    recommendations = []
+    
+    accuracy_score = business_metrics['sizing_accuracy_score']
+    risk_level = business_metrics['return_risk_level']
+    
+    # Size chart recommendations
+    if accuracy_score < 70:
+        recommendations.append({
+            'category': 'Size Chart Optimization',
+            'priority': 'High',
+            'action': 'Review and update size chart measurements',
+            'expected_impact': 'Reduce returns by 15-25%',
+            'timeline': 'Immediate (1-2 weeks)'
+        })
+    
+    # Customer guidance recommendations
+    size_direction = sizing_data['size_direction_analysis']['size_direction_percentage']
+    if size_direction.get('runs_small', 0) > 30:
+        recommendations.append({
+            'category': 'Product Page Optimization',
+            'priority': 'High', 
+            'action': 'Add "Consider sizing up" guidance on product pages',
+            'expected_impact': 'Improve customer satisfaction by 20%',
+            'timeline': 'Short-term (1 week)'
+        })
+    elif size_direction.get('runs_large', 0) > 30:
+        recommendations.append({
+            'category': 'Product Page Optimization',
+            'priority': 'High',
+            'action': 'Add "Consider sizing down" guidance on product pages', 
+            'expected_impact': 'Improve customer satisfaction by 20%',
+            'timeline': 'Short-term (1 week)'
+        })
+    
+    # Fit guide recommendations
+    body_issues = sizing_data['body_part_issues']
+    max_issue = max(body_issues.items(), key=lambda x: x[1])
+    if max_issue[1] > 5:
+        recommendations.append({
+            'category': 'Fit Guide Enhancement',
+            'priority': 'Medium',
+            'action': f'Create detailed fit guide for {max_issue[0].replace("_", " ")} measurements',
+            'expected_impact': 'Reduce fit-related returns by 10-15%',
+            'timeline': 'Medium-term (2-4 weeks)'
+        })
+    
+    # Customer education
+    if risk_level == 'high':
+        recommendations.append({
+            'category': 'Customer Education',
+            'priority': 'High',
+            'action': 'Implement size recommendation quiz or AI fitting tool',
+            'expected_impact': 'Reduce returns by 20-30%',
+            'timeline': 'Long-term (1-3 months)'
+        })
+    
+    return recommendations
+
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
