@@ -335,6 +335,25 @@ def set_brand_keywords(db, brand_id: str, category: str, keywords: list[str]) ->
         db.add(obj)
     db.commit()
 
+def add_brand_keywords(db, brand_id: str, category: str, new_keywords: list[str]) -> list[str]:
+    """Add new keywords to existing brand keywords (append to array)"""
+    obj = db.query(BrandKeyword).filter(BrandKeyword.brand_id == brand_id, BrandKeyword.category == category).first()
+    if obj:
+        try:
+            existing_keywords = json.loads(obj.keywords)
+        except:
+            existing_keywords = []
+    else:
+        existing_keywords = []
+        obj = BrandKeyword(brand_id=brand_id, category=category, keywords="[]")
+        db.add(obj)
+    
+    # Merge keywords (avoid duplicates)
+    all_keywords = list(set(existing_keywords + new_keywords))
+    obj.keywords = json.dumps(sorted(all_keywords))
+    db.commit()
+    return all_keywords
+
 def get_global_keywords(db) -> dict:
     objs = db.query(GlobalKeyword).all()
     result = {}
@@ -352,7 +371,26 @@ def set_global_keywords(db, category: str, keywords: list[str]) -> None:
     else:
         obj = GlobalKeyword(category=category, keywords=json.dumps(keywords))
         db.add(obj)
-    db.commit() 
+    db.commit()
+
+def add_global_keywords(db, category: str, new_keywords: list[str]) -> list[str]:
+    """Add new keywords to existing global keywords (append to array)"""
+    obj = db.query(GlobalKeyword).filter(GlobalKeyword.category == category).first()
+    if obj:
+        try:
+            existing_keywords = json.loads(obj.keywords)
+        except:
+            existing_keywords = []
+    else:
+        existing_keywords = []
+        obj = GlobalKeyword(category=category, keywords="[]")
+        db.add(obj)
+    
+    # Merge keywords (avoid duplicates)
+    all_keywords = list(set(existing_keywords + new_keywords))
+    obj.keywords = json.dumps(sorted(all_keywords))
+    db.commit()
+    return all_keywords 
 
 def update_brand_logo(db, brand_name: str, logo_data: str, logo_filename: str, logo_mime_type: str) -> bool:
     """Update or add logo for a brand."""
