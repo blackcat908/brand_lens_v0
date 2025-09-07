@@ -104,18 +104,31 @@ export default function BrandsPage() {
 
   // Fetch only summary brand data from backend API
   const fetchBrandsSummary = async () => {
-    setLoading(true);
     try {
       const resp = await apiService.getBrands();
       setBrands(resp || []);
     } catch (e) {
       setBrands([]);
     }
-    setLoading(false);
   };
+
+  // Load both logos and brands together to prevent race condition
   useEffect(() => {
-    fetchBrandsSummary();
-  }, []);
+    const loadAllData = async () => {
+      setLoading(true);
+      try {
+        // Wait for logos to load first
+        await refetchLogos();
+        // Then load brands
+        await fetchBrandsSummary();
+      } catch (e) {
+        console.error('Error loading data:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadAllData();
+  }, [refetchLogos]);
 
   // Polling for syncing brands with 0 reviews (much reduced frequency)
   React.useEffect(() => {
@@ -308,7 +321,20 @@ export default function BrandsPage() {
           </div>
         </div>
 
-        {sortedBrands.length === 0 && searchQuery.trim() !== "" ? (
+        {/* Show loading state while data is being fetched */}
+        {(loading || logosLoading) ? (
+          <div className="text-center py-12">
+            <div className="flex items-center justify-center space-x-2 mb-4">
+              <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
+              <span className="text-gray-500 dark:text-gray-400 text-lg">
+                Loading brands and logos...
+              </span>
+            </div>
+            <div className="text-gray-400 dark:text-gray-500 text-sm">
+              This may take a moment on first load
+            </div>
+          </div>
+        ) : sortedBrands.length === 0 && searchQuery.trim() !== "" ? (
           <div className="text-center py-12">
             <div className="text-gray-500 dark:text-gray-400 text-lg mb-2">
               No brands found for "{searchQuery}"

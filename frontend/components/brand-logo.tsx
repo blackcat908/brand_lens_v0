@@ -75,32 +75,31 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
 
   // Determine if we should fetch from API
   useEffect(() => {
-    console.log(`[BrandLogo] useEffect triggered for brand: "${brandName}", src: "${src}"`);
+    // Don't try to fetch logos while the main logos are still loading
+    if (logosLoading) {
+      return;
+    }
+
     // If src is a placeholder or static file, and we have a brand name, try to get from cache
     if (brandName && (src.includes('placeholder-logo.png') || src.startsWith('/'))) {
-      console.log(`[BrandLogo] Attempting to get logo from cache for: "${brandName}"`);
       setIsLoading(true);
       const found = getLogoFromCache(brandName);
       if (!found) {
-        console.log(`[BrandLogo] Logo not found in cache for: "${brandName}", trying individual fetch`);
-        // Try to fetch individual logo
+        // Only try individual fetch as a last resort, and only if main logos have loaded
         fetchIndividualLogo(brandName).then((success) => {
           if (!success) {
-            console.log(`[BrandLogo] Individual fetch failed for: "${brandName}", using fallback`);
             setHasError(true);
             setLogoSrc(src); // Fall back to original src
           }
           setIsLoading(false);
         });
       } else {
-        console.log(`[BrandLogo] Logo found in cache for: "${brandName}"`);
         setIsLoading(false);
       }
     } else {
-      console.log(`[BrandLogo] Using provided src for: "${brandName}"`);
       setLogoSrc(src);
     }
-  }, [src, brandName, getLogoFromCache, fetchIndividualLogo]);
+  }, [src, brandName, getLogoFromCache, fetchIndividualLogo, logosLoading]);
 
   // Debug logoSrc changes
   useEffect(() => {
@@ -147,7 +146,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
         display: "block",
         background: "transparent",
         margin: "auto",
-          opacity: isLoading ? 0.5 : 1,
+            opacity: isLoading ? 0.5 : 1,
       }}
         onError={handleImageError}
         onLoad={handleImageLoad}
