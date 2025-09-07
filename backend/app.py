@@ -1554,13 +1554,24 @@ def get_filtered_reviews_and_analytics(brand, rating_filters=None, category_filt
         analytics_result = db.execute(text(analytics_query), analytics_params).fetchone()
         
         # 4. Get monthly trends for ALL filtered data (not just paginated)
+        # Use database-agnostic date formatting
+        from config import DATABASE_CONFIG
+        db_url = DATABASE_CONFIG.get('url', '')
+        
+        if 'postgresql' in db_url or 'postgres' in db_url:
+            # PostgreSQL syntax
+            date_format = "TO_CHAR(CAST(date AS DATE), 'YYYY-MM')"
+        else:
+            # SQLite syntax (fallback)
+            date_format = "strftime('%Y-%m', date)"
+            
         trends_query = f"""
             SELECT 
-                strftime('%Y-%m', date) as month,
+                {date_format} as month,
                 COUNT(*) as count
             FROM reviews 
             WHERE {where_clause}
-            GROUP BY strftime('%Y-%m', date)
+            GROUP BY {date_format}
             ORDER BY month DESC
             LIMIT 12
         """
