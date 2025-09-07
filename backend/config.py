@@ -52,7 +52,7 @@ if not database_url:
     print("Available environment variables:", [key for key in os.environ.keys() if 'DATA' in key.upper()])
     print("Using SQLite fallback for local development")
     # Use fallback for local development
-    database_url = 'sqlite:///reviews.db'  # Fallback to SQLite for local development
+    database_url = 'postgresql://postgres:gyRafIdjWaKHngpJqYJfbGDcYNzaaIyn@switchyard.proxy.rlwy.net:17267/railway'  # Fallback to SQLite for local development
 else:
     print(f"Database URL found: {database_url[:50]}...") # Show first 50 chars for verification
 
