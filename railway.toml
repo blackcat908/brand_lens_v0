@@ -3,5 +3,5 @@
 path = "backend"
 
 [deploy]
-# Optional: specify the start command if needed
-startCommand = "python app.py"
+# Use the proper start script for production
+startCommand = "bash start.sh"

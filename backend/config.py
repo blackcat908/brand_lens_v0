@@ -49,9 +49,12 @@ SCRAPING_CONFIG = {
 database_url = os.environ.get('DATABASE_URL')
 if not database_url:
     print("WARNING: DATABASE_URL environment variable is not set!")
+    print("Available environment variables:", [key for key in os.environ.keys() if 'DATA' in key.upper()])
     print("Using SQLite fallback for local development")
     # Use fallback for local development
     database_url = 'sqlite:///reviews.db'  # Fallback to SQLite for local development
+else:
+    print(f"Database URL found: {database_url[:50]}...") # Show first 50 chars for verification
 
 DATABASE_CONFIG = {
     'url': database_url,
