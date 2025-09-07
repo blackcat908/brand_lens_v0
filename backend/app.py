@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-from database import get_db_session, Review, get_brand_source_url, set_brand_source_url, get_reviews_by_brand, get_all_reviews, get_brands, add_review, delete_brand_and_reviews, get_brand_keywords, set_brand_keywords, get_global_keywords, set_global_keywords, get_reviews_by_brand_optimized, get_brand_analytics_optimized, get_brands_with_counts_optimized, update_brand_logo, get_brand_logo, delete_brand_logo
+from database import get_db_session, Review, get_brand_source_url, set_brand_source_url, get_reviews_by_brand, get_all_reviews, get_brands, add_review, delete_brand_and_reviews, get_brand_keywords, set_brand_keywords, add_brand_keywords, get_global_keywords, set_global_keywords, add_global_keywords, get_reviews_by_brand_optimized, get_brand_analytics_optimized, get_brands_with_counts_optimized, update_brand_logo, get_brand_logo, delete_brand_logo
 from sentiment_analyzer import SentimentAnalyzer
 from ai_service import get_ai_service
 from datetime import datetime, timedelta
@@ -10,6 +10,7 @@ from trustpilot_scraper import TrustpilotScraper, fetch_trustpilot_logo
 import re, requests
 import threading
 import os
+import time
 from sqlalchemy import text
 import logging
 
@@ -20,10 +21,57 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Simple keyword stemming for better matching
+def simple_stem(word):
+    """Simple stemming function for common English word patterns"""
+    word = word.lower().strip()
+    
+    # Handle common endings
+    if word.endswith('ies') and len(word) > 4:
+        return word[:-3] + 'y'
+    elif word.endswith('ied') and len(word) > 4:
+        return word[:-3] + 'y'
+    elif word.endswith('ying') and len(word) > 5:
+        return word[:-4] + 'ie'
+    elif word.endswith('ing') and len(word) > 4:
+        return word[:-3]
+    elif word.endswith('ed') and len(word) > 3:
+        return word[:-2]
+    elif word.endswith('er') and len(word) > 3:
+        return word[:-2]
+    elif word.endswith('est') and len(word) > 4:
+        return word[:-3]
+    elif word.endswith('s') and len(word) > 2 and not word.endswith('ss'):
+        return word[:-1]
+    
+    return word
+
+def keyword_matches_text(keyword, text):
+    """Enhanced keyword matching with stemming support"""
+    keyword = keyword.lower().strip()
+    text = text.lower()
+    
+    # Direct substring match (fastest)
+    if keyword in text:
+        return True
+    
+    # Stemmed matching for better coverage
+    keyword_stem = simple_stem(keyword)
+    words_in_text = re.findall(r'\b\w+\b', text)
+    
+    for word in words_in_text:
+        if simple_stem(word) == keyword_stem:
+            return True
+    
+    return False
+
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 # Update CORS to allow only Vercel frontend
 CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "*", "methods": ["GET", "POST", "DELETE", "OPTIONS"]}})
+
+# Configure Flask to ignore Playwright file changes to prevent auto-restart during scraping
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000
 
 # Initialize database when app starts
 def initialize_database():
@@ -53,6 +101,62 @@ def home():
         "status": "running",
         "timestamp": datetime.now().isoformat()
     })
+
+@app.route('/api/test-scraper', methods=['GET'])
+def test_scraper():
+    """Test endpoint to check if scraper dependencies are working"""
+    try:
+        logger.info("[TEST] Testing scraper dependencies...")
+        
+        # Test Playwright import
+        from playwright.sync_api import sync_playwright
+        logger.info("[TEST] Playwright imported successfully")
+        
+        # Test browser launch
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            logger.info("[TEST] Browser launched successfully")
+            browser.close()
+            logger.info("[TEST] Browser closed successfully")
+        
+        # Test scraper initialization
+        from trustpilot_scraper import TrustpilotScraper
+        scraper = TrustpilotScraper(headless=True)
+        logger.info("[TEST] Scraper initialized successfully")
+        
+        # Test database connection
+        from database import get_db_session, init_db
+        init_db()
+        with get_db_session() as db:
+            logger.info("[TEST] Database connection successful")
+        
+        return jsonify({
+            'success': True,
+            'message': 'All scraper dependencies are working correctly',
+            'tests_passed': [
+                'Playwright import',
+                'Browser launch',
+                'Scraper initialization', 
+                'Database connection'
+            ]
+        })
+        
+    except ImportError as ie:
+        logger.error(f"[TEST] Import error: {ie}")
+        return jsonify({
+            'success': False,
+            'error': f'Missing dependency: {str(ie)}',
+            'solution': 'Install Playwright: pip install playwright && playwright install chromium'
+        }), 500
+    except Exception as e:
+        logger.error(f"[TEST] Error: {e}")
+        import traceback
+        logger.error(f"[TEST] Traceback: {traceback.format_exc()}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
 
 @app.route('/api/brands', methods=['GET'])
 def get_brands_api():
@@ -116,20 +220,37 @@ def create_brand():
             new_reviews_count = scraper.scrape_brand_reviews(extracted_brand_name, max_pages=None, start_page=1, is_new_brand=True)
             logger.info(f"[SCRAPER] Brand '{extracted_brand_name}' completed successfully")
             logger.info(f"[SCRAPER] Total reviews: {new_reviews_count}")
+        except ImportError as ie:
+            logger.error(f"[SCRAPER] Import error - missing dependency: {ie}")
+            logger.error("[SCRAPER] Make sure Playwright is installed: pip install playwright && playwright install chromium")
         except Exception as e:
             logger.error(f"[SCRAPER] Error in scraper: {e}")
             import traceback
             logger.error(f"[SCRAPER] Traceback: {traceback.format_exc()}")
+        finally:
+            logger.info("[SCRAPER] Background scraper thread completed")
     
-    # Run in background thread
-    threading.Thread(target=run_ultra_fast_scraper, daemon=True).start()
-    
-    # Return immediate response
-    return jsonify({
-        'success': True, 
-        'message': 'Ultra-fast scraping started in background',
-        'trustpilot_url': trustpilot_url
-    })
+    # For development, run synchronously to avoid Flask restart interruption
+    # In production, you can change this back to threading for better performance
+    if os.environ.get('FLASK_ENV') == 'production':
+        # Run in background thread for production
+        threading.Thread(target=run_ultra_fast_scraper, daemon=True).start()
+        return jsonify({
+            'success': True, 
+            'message': 'Ultra-fast scraping started in background',
+            'trustpilot_url': trustpilot_url
+        })
+    else:
+        # Run asynchronously but return immediate response - let frontend poll for status
+        threading.Thread(target=run_ultra_fast_scraper, daemon=True).start()
+        
+        # Return immediate response without extracting brand name to avoid browser conflicts
+        return jsonify({
+            'success': True,
+            'message': 'Brand scraping started successfully',
+            'status': 'processing',
+            'trustpilot_url': trustpilot_url
+        })
 
 # --- COMMENTED OUT OLD REVIEWS ENDPOINT ---
 # @app.route('/api/brands/<brand>/reviews', methods=['GET'])
@@ -171,6 +292,9 @@ def create_brand():
 # --- NEW ROBUST REVIEWS ENDPOINT (NOW MAIN ENDPOINT) ---
 @app.route('/api/brands/<brand>/reviews', methods=['GET'])
 def get_brand_reviews_robust(brand):
+    import time
+    start_time = time.time()
+    
     page = int(request.args.get('page', 1))
     per_page = int(request.args.get('per_page', 20))
     rating_filter = request.args.get('rating')
@@ -265,20 +389,39 @@ def get_brand_reviews_robust(brand):
         end_idx = start_idx + per_page
         page_reviews = filtered_reviews[start_idx:end_idx]
 
-        review_list = [
-            {
+        review_list = []
+        for r in page_reviews:
+            # Parse matched keywords for highlighting
+            matched_keywords = r.get('matched_keywords')
+            if isinstance(matched_keywords, str) and matched_keywords.strip().startswith('['):
+                try:
+                    keywords_list = json.loads(matched_keywords)
+                except:
+                    keywords_list = []
+            elif isinstance(matched_keywords, list):
+                keywords_list = matched_keywords
+            else:
+                keywords_list = []
+            
+            # Apply highlighting to review text
+            highlighted_review = highlight_keywords(r['review'], keywords_list)
+            
+            review_list.append({
                 'customer_name': r['customer_name'],
-                'review': r['review'],
+                'review': highlighted_review,
                 'date': r['date'],
                 'rating': r['rating'],
                 'review_link': r['review_link'],
                 'sentiment_score': r['sentiment_score'],
                 'sentiment_category': r['sentiment_category'],
                 'categories': (lambda x: json.loads(x) if isinstance(x, str) and x.strip().startswith('[') else (x if isinstance(x, list) else []))(r.get('categories')),
-                'matched_keywords': (lambda x: json.loads(x) if isinstance(x, str) and x.strip().startswith('[') else (x if isinstance(x, list) else []))(r.get('matched_keywords'))
-            }
-            for r in page_reviews
-        ]
+                'matched_keywords': keywords_list
+            })
+    
+    # Log timing
+    end_time = time.time()
+    duration = end_time - start_time
+    logger.info(f"[TIMING] GET /api/brands/{brand}/reviews completed - Time: {duration:.2f}s")
     
     return jsonify({
         'brand': brand,
@@ -293,15 +436,32 @@ def highlight_keywords(text, keywords):
     if not text or not keywords:
         return text
     import re
+    
+    # Remove duplicates and sort by length (longest first to avoid partial matches)
+    unique_keywords = list(set(keywords))
+    sorted_keywords = sorted(unique_keywords, key=len, reverse=True)
+    
     def replacer(match):
-        return f'<mark class="bg-yellow-200 text-yellow-900 px-1 rounded font-medium">{match.group(0)}</mark>'
-    for kw in sorted(keywords, key=len, reverse=True):
-        pattern = re.compile(re.escape(kw), re.IGNORECASE)
+        return f'<mark class="bg-gray-200 text-gray-900 px-1 rounded font-medium">{match.group(0)}</mark>'
+    
+    # Create a pattern that avoids highlighting inside existing <mark> tags
+    for kw in sorted_keywords:
+        # Pattern that matches keyword but not if it's already inside a <mark> tag
+        # Uses negative lookbehind and lookahead to avoid highlighting inside existing marks
+        escaped_kw = re.escape(kw)
+        pattern = re.compile(
+            f'(?<!<mark[^>]*>)(?<!<mark[^>]*>[^<]*){escaped_kw}(?![^<]*</mark>)',
+            re.IGNORECASE
+        )
         text = pattern.sub(replacer, text)
+    
     return text
 
 @app.route('/api/brands/<brand>/analytics', methods=['GET'])
 def get_brand_analytics(brand):
+    import time
+    start_time = time.time()
+    
     # Parse multiple ratings and categories from query parameters
     rating_filter = request.args.get('rating')
     category_filter = request.args.get('category')
@@ -426,6 +586,11 @@ def get_brand_analytics(brand):
             if any(keyword in review_text for keyword in sizing_fit_keywords):
                 sizing_fit_reviews += 1
 
+        # Log timing
+        end_time = time.time()
+        duration = end_time - start_time
+        logger.info(f"[TIMING] GET /api/brands/{brand}/analytics completed - Time: {duration:.2f}s")
+        
         return jsonify({
             'brand': brand,
             'total_reviews': analytics_data['total_reviews'],
@@ -624,11 +789,40 @@ def set_brand_keywords_api(brand_id):
     data = request.get_json()
     category = data.get('category')
     keywords = data.get('keywords')
+    append_mode = data.get('append', False)  # New parameter for incremental addition
+    
     if not category or not isinstance(keywords, list):
         return jsonify({'error': 'category and keywords (list) required'}), 400
+    
     with get_db_session() as db:
-        set_brand_keywords(db, brand_id, category, keywords)
-    return jsonify({'success': True})
+        if append_mode:
+            # Use new incremental function
+            updated_keywords = add_brand_keywords(db, brand_id, category, keywords)
+            # Trigger incremental update of existing reviews for this brand
+            try:
+                response = update_reviews_keywords_internal(
+                    brand_id=brand_id,
+                    new_keywords=keywords,
+                    category=category,
+                    is_global=False
+                )
+                return jsonify({
+                    'success': True, 
+                    'updated_keywords': updated_keywords,
+                    'reviews_updated': response.get('updates_made', 0)
+                })
+            except Exception as e:
+                logger.warning(f"Failed to update existing reviews for brand {brand_id}: {e}")
+                return jsonify({
+                    'success': True, 
+                    'updated_keywords': updated_keywords,
+                    'reviews_updated': 0,
+                    'warning': 'Keywords saved but failed to update existing reviews'
+                })
+        else:
+            # Original behavior - replace all keywords
+            set_brand_keywords(db, brand_id, category, keywords)
+            return jsonify({'success': True})
 
 @app.route('/api/keywords', methods=['GET'])
 def get_keywords_global():
@@ -641,11 +835,41 @@ def set_keywords_global():
     data = request.get_json()
     category = data.get('category')
     keywords = data.get('keywords')
+    append_mode = data.get('append', False)  # New parameter for incremental addition
+    
     if not category or not isinstance(keywords, list):
         return jsonify({'error': 'category and keywords (list) required'}), 400
+    
     with get_db_session() as db:
-        set_global_keywords(db, category, keywords)
-    return jsonify({'success': True})
+        if append_mode:
+            # Use new incremental function
+            updated_keywords = add_global_keywords(db, category, keywords)
+            # Trigger incremental update of existing reviews
+            try:
+                from flask import current_app
+                with current_app.test_request_context():
+                    response = update_reviews_keywords_internal(
+                        new_keywords=keywords,
+                        category=category,
+                        is_global=True
+                    )
+                return jsonify({
+                    'success': True, 
+                    'updated_keywords': updated_keywords,
+                    'reviews_updated': response.get('updates_made', 0)
+                })
+            except Exception as e:
+                logger.warning(f"Failed to update existing reviews: {e}")
+                return jsonify({
+                    'success': True, 
+                    'updated_keywords': updated_keywords,
+                    'reviews_updated': 0,
+                    'warning': 'Keywords saved but failed to update existing reviews'
+                })
+        else:
+            # Original behavior - replace all keywords
+            set_global_keywords(db, category, keywords)
+            return jsonify({'success': True})
 
 # Globals and helpers (only if not already present)
 running_scrapers = {}  # brand_name -> (thread, cancel_event)
@@ -682,6 +906,97 @@ def cancel_brand_scraping(brand_name):
         return jsonify({'success': True, 'message': f'Brand {brand_name} scraping cancelled and removed from database'})
     except Exception as e:
         return jsonify({'error': f'Failed to cancel brand scraping: {str(e)}'}), 500
+
+# Internal helper for keyword updates (used by both API endpoint and automatic updates)
+def update_reviews_keywords_internal(brand_id=None, new_keywords=[], category='', is_global=True):
+    """Internal function to update existing reviews with new keywords"""
+    if not new_keywords:
+        return {'error': 'No keywords provided', 'updates_made': 0}
+        
+    with get_db_session() as db:
+        # Get reviews to update (all reviews if global, brand-specific if not)
+        if is_global:
+            reviews_query = "SELECT id, review, matched_keywords, categories FROM reviews WHERE review IS NOT NULL"
+            reviews = db.execute(text(reviews_query)).fetchall()
+        else:
+            if not brand_id:
+                return {'error': 'Brand ID required for brand-specific keywords', 'updates_made': 0}
+            reviews_query = "SELECT id, review, matched_keywords, categories FROM reviews WHERE brand_name = :brand_id AND review IS NOT NULL"
+            reviews = db.execute(text(reviews_query), {'brand_id': brand_id}).fetchall()
+        
+        updates_made = 0
+        
+        # Process each review incrementally
+        for review in reviews:
+            review_id, review_text, current_keywords_json, current_categories_json = review
+            review_text_lower = review_text.lower()
+            
+            # Parse existing keywords and categories
+            try:
+                current_keywords = json.loads(current_keywords_json) if current_keywords_json else []
+                current_categories = json.loads(current_categories_json) if current_categories_json else []
+            except:
+                current_keywords = []
+                current_categories = []
+            
+            # Check if any new keywords match this review (with stemming)
+            matched_new_keywords = []
+            for keyword in new_keywords:
+                if keyword_matches_text(keyword, review_text) and keyword not in current_keywords:
+                    matched_new_keywords.append(keyword)
+            
+            # Update if new matches found
+            if matched_new_keywords:
+                updated_keywords = list(set(current_keywords + matched_new_keywords))
+                updated_categories = list(set(current_categories + [category])) if category and category not in current_categories else current_categories
+                
+                # Update the review record
+                update_query = """
+                    UPDATE reviews 
+                    SET matched_keywords = :keywords, categories = :categories 
+                    WHERE id = :review_id
+                """
+                db.execute(text(update_query), {
+                    'keywords': json.dumps(sorted(updated_keywords)),
+                    'categories': json.dumps(sorted(updated_categories)),
+                    'review_id': review_id
+                })
+                updates_made += 1
+        
+        db.commit()
+        
+        return {
+            'success': True,
+            'message': f'Updated {updates_made} reviews with new keywords',
+            'updates_made': updates_made,
+            'total_reviews_checked': len(reviews)
+        }
+
+# Incremental keyword processing for existing reviews
+@app.route('/api/update-reviews-keywords', methods=['POST'])
+def update_reviews_keywords():
+    """Incrementally update existing reviews with new keywords without full reprocessing"""
+    try:
+        data = request.get_json()
+        brand_id = data.get('brand_id')
+        new_keywords = data.get('keywords', [])
+        category = data.get('category', '')
+        is_global = data.get('is_global', True)
+        
+        # Use the internal helper function
+        result = update_reviews_keywords_internal(brand_id, new_keywords, category, is_global)
+        
+        if result.get('error'):
+            return jsonify(result), 400
+        
+        return jsonify(result)
+            
+    except Exception as e:
+        logger.error(f"Error updating reviews with keywords: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Error updating reviews: {str(e)}'
+        }), 500
 
 # Reprocess reviews endpoint (if not present)
 @app.route('/api/reprocess-reviews', methods=['POST'])
@@ -941,6 +1256,410 @@ def generate_ai_report():
         logger.error(f"[AI-REPORT] Traceback: {traceback.format_exc()}")
         return jsonify({'error': f'Failed to generate report: {str(e)}'}), 500
 
+# --- EXPORT ENDPOINT FOR ALL FILTERED REVIEWS ---
+@app.route('/api/brands/<brand>/reviews/export', methods=['GET'])
+def get_all_filtered_reviews_for_export(brand):
+    """Get ALL filtered reviews for CSV/Excel export (no pagination)"""
+    start_time = time.time()
+    
+    # Get filter parameters (same as dashboard endpoint but no pagination)
+    rating_filter = request.args.get('rating')
+    sentiment = request.args.get('sentiment', 'all')
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+    category_filter = request.args.get('category')
+    keyword = request.args.get('keyword', '').strip()
+    
+    try:
+        session = get_db_session()
+        
+        # Parse filters to match the function signature
+        rating_filters = None
+        if rating_filter:
+            rating_filters = [int(r) for r in rating_filter.split(',')]
+        
+        category_filters = None
+        if category_filter:
+            category_filters = category_filter.split(',')
+        
+        # Use the same filtering logic but without pagination
+        filtered_data = get_filtered_reviews_and_analytics(
+            brand=brand,
+            rating_filters=rating_filters,
+            category_filters=category_filters,
+            date_from=date_from,
+            date_to=date_to,
+            sentiment_filter=sentiment if sentiment != 'all' else None,
+            keyword_filter=keyword if keyword else None,
+            page=1,  # Get all from first page
+            per_page=999999  # Very large number to get all reviews
+        )
+        
+        all_reviews = filtered_data['reviews']
+        
+        duration = time.time() - start_time
+        logger.info(f"[EXPORT] Fetched {len(all_reviews)} filtered reviews for {brand}. Time: {duration:.2f}s")
+        
+        return jsonify({
+            'reviews': all_reviews,
+            'total': len(all_reviews),
+            'status': 'success'
+        })
+        
+    except Exception as e:
+        logger.error(f"[EXPORT] Error fetching all filtered reviews for {brand}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+# --- UNIFIED HIGH-PERFORMANCE ENDPOINT ---
+@app.route('/api/brands/<brand>/dashboard', methods=['GET'])
+def get_brand_dashboard_optimized(brand):
+    """
+    Unified endpoint that returns filtered reviews + pre-calculated analytics in one call.
+    This eliminates frontend performance bottlenecks by doing all processing on the backend.
+    """
+    import time
+    start_time = time.time()
+    
+    # Parse query parameters (same as existing endpoints)
+    page = int(request.args.get('page', 1))
+    per_page = int(request.args.get('per_page', 20))
+    rating_filter = request.args.get('rating')
+    sentiment_filter = request.args.get('sentiment')
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+    category_filter = request.args.get('category')
+    keyword_filter = request.args.get('keyword', '').strip()
+    
+    # Parse multiple ratings and categories
+    rating_filters = []
+    if rating_filter:
+        try:
+            if rating_filter.startswith('[') and rating_filter.endswith(']'):
+                rating_filters = json.loads(rating_filter)
+            else:
+                rating_filters = [int(rating_filter)]
+        except (json.JSONDecodeError, ValueError):
+            rating_filters = []
+    
+    category_filters = []
+    if category_filter:
+        try:
+            if category_filter.startswith('[') and category_filter.endswith(']'):
+                category_filters = json.loads(category_filter)
+            else:
+                category_filters = [category_filter]
+        except (json.JSONDecodeError, ValueError):
+            category_filters = []
+    
+    try:
+        logger.info(f"[DASHBOARD] Starting optimized query for brand: {brand}")
+        logger.info(f"[DASHBOARD] Filters - ratings: {rating_filters}, categories: {category_filters}")
+        
+        # Get filtered reviews using optimized database query
+        filtered_data = get_filtered_reviews_and_analytics(
+            brand=brand,
+            rating_filters=rating_filters,
+            category_filters=category_filters,
+            date_from=date_from,
+            date_to=date_to,
+            sentiment_filter=sentiment_filter,
+            keyword_filter=keyword_filter,
+            page=page,
+            per_page=per_page
+        )
+        
+        logger.info(f"[DASHBOARD] Query completed successfully. Total filtered: {filtered_data.get('total_reviews', 0)}")
+        
+        # Quick fix: Add top_keywords if missing from analytics
+        if 'top_keywords' not in filtered_data.get('analytics', {}):
+            print("[DEBUG] Adding top_keywords directly in dashboard endpoint")
+            from database import get_db_session
+            from sqlalchemy import text
+            
+            # Build the same where clause for keywords
+            where_conditions = ['brand_name = :brand']
+            params = {'brand': brand}
+            
+            if category_filters:
+                category_conditions = []
+                for i, cat in enumerate(category_filters):
+                    category_conditions.append(f'categories LIKE :cat{i}')
+                    params[f'cat{i}'] = f'%{cat}%'
+                if category_conditions:
+                    where_conditions.append(f"({' OR '.join(category_conditions)})")
+            
+            where_clause = ' AND '.join(where_conditions)
+            
+            # Get keywords from database
+            with get_db_session() as db:
+                keywords_query = f"""
+                    SELECT matched_keywords
+                    FROM reviews 
+                    WHERE {where_clause} AND matched_keywords IS NOT NULL AND matched_keywords != ''
+                """
+                keywords_result = db.execute(text(keywords_query), params).fetchall()
+                
+                # Process keywords
+                keyword_counts = {}
+                for row in keywords_result:
+                    if row[0]:
+                        try:
+                            if row[0].strip().startswith('['):
+                                keywords_list = json.loads(row[0])
+                            else:
+                                keywords_list = [kw.strip() for kw in row[0].split(',') if kw.strip()]
+                            
+                            for keyword in keywords_list:
+                                if keyword:
+                                    keyword_counts[keyword] = keyword_counts.get(keyword, 0) + 1
+                        except:
+                            continue
+                
+                # Get top 5 keywords
+                top_keywords = sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+                print(f"[DEBUG] Calculated {len(top_keywords)} top keywords: {top_keywords}")
+                
+                # Add to analytics
+                filtered_data['analytics']['top_keywords'] = [{'keyword': kw, 'count': count} for kw, count in top_keywords]
+        
+        # Log timing
+        end_time = time.time()
+        duration = end_time - start_time
+        logger.info(f"[TIMING] GET /api/brands/{brand}/dashboard completed - Time: {duration:.2f}s")
+        
+        return jsonify(filtered_data)
+        
+    except Exception as e:
+        logger.error(f"[DASHBOARD] Error in unified endpoint: {e}")
+        import traceback
+        logger.error(f"[DASHBOARD] Traceback: {traceback.format_exc()}")
+        return jsonify({'error': f'Failed to load dashboard data: {str(e)}'}), 500
+
+def get_filtered_reviews_and_analytics(brand, rating_filters=None, category_filters=None, 
+                                     date_from=None, date_to=None, sentiment_filter=None,
+                                     keyword_filter=None, page=1, per_page=20):
+    print(f"[DEBUG] get_filtered_reviews_and_analytics called for brand: {brand}")
+    """
+    Optimized function that performs filtering and analytics calculation in the database.
+    Returns both paginated reviews and pre-calculated analytics for filtered data.
+    """
+    from database import get_db_session
+    from sqlalchemy import text, desc, func
+    import json
+    from datetime import datetime
+    
+    with get_db_session() as db:
+        # Build the base query with all filters applied at database level
+        base_conditions = ["brand_name = :brand"]
+        params = {"brand": brand}
+        
+        # Rating filter
+        if rating_filters and not (len(rating_filters) == 1 and rating_filters[0] == "all"):
+            # Convert string ratings to integers
+            numeric_ratings = []
+            for r in rating_filters:
+                try:
+                    if isinstance(r, str) and r != "all":
+                        numeric_ratings.append(int(r))
+                    elif isinstance(r, (int, float)):
+                        numeric_ratings.append(int(r))
+                except (ValueError, TypeError):
+                    continue
+            
+            if numeric_ratings:
+                placeholders = ','.join([f':rating_{i}' for i in range(len(numeric_ratings))])
+                base_conditions.append(f"rating IN ({placeholders})")
+                for i, rating in enumerate(numeric_ratings):
+                    params[f'rating_{i}'] = rating
+        
+        # Date filters
+        if date_from:
+            base_conditions.append("date >= :date_from")
+            params['date_from'] = date_from
+        if date_to:
+            base_conditions.append("date <= :date_to")
+            params['date_to'] = date_to
+        
+        # Sentiment filter
+        if sentiment_filter and sentiment_filter.lower() not in ['all', '']:
+            base_conditions.append("sentiment_category = :sentiment")
+            params['sentiment'] = sentiment_filter.lower()
+        
+        # Category filter (JSON contains check)
+        if category_filters and not (len(category_filters) == 1 and category_filters[0] == "all"):
+            category_conditions = []
+            for i, category in enumerate(category_filters):
+                if category != "all":
+                    category_conditions.append(f"(categories LIKE :cat_{i} OR categories LIKE :cat_bracket_{i})")
+                    params[f'cat_{i}'] = f'%{category}%'
+                    params[f'cat_bracket_{i}'] = f'%"{category}"%'
+            
+            if category_conditions:
+                base_conditions.append(f"({' OR '.join(category_conditions)})")
+        
+        # Keyword filter (search in review text)
+        if keyword_filter:
+            base_conditions.append("review LIKE :keyword")
+            params['keyword'] = f'%{keyword_filter}%'
+        
+        # Combine all conditions
+        where_clause = " AND ".join(base_conditions)
+        
+        # 1. Get total count of filtered reviews
+        count_query = f"SELECT COUNT(*) FROM reviews WHERE {where_clause}"
+        total_filtered = db.execute(text(count_query), params).scalar()
+        
+        # 2. Get paginated reviews
+        reviews_query = f"""
+            SELECT id, brand_name, customer_name, review, date, rating, review_link,
+                   sentiment_score, sentiment_category, categories, matched_keywords
+            FROM reviews 
+            WHERE {where_clause}
+            ORDER BY date DESC, id DESC
+            LIMIT :limit OFFSET :offset
+        """
+        params['limit'] = per_page
+        params['offset'] = (page - 1) * per_page
+        
+        reviews_result = db.execute(text(reviews_query), params).fetchall()
+        
+        # 3. Calculate analytics on ALL filtered data (not just the paginated subset)
+        analytics_params = params.copy()
+        # Remove pagination params for analytics calculation
+        analytics_params.pop('limit', None)
+        analytics_params.pop('offset', None)
+        
+        analytics_query = f"""
+            SELECT 
+                AVG(CAST(rating AS FLOAT)) as avg_rating,
+                COUNT(*) as total_count,
+                SUM(CASE WHEN rating >= 4 THEN 1 ELSE 0 END) as positive_count,
+                SUM(CASE WHEN rating <= 2 THEN 1 ELSE 0 END) as negative_count,
+                SUM(CASE WHEN rating = 3 THEN 1 ELSE 0 END) as neutral_count,
+                AVG(CASE WHEN sentiment_score IS NOT NULL THEN sentiment_score ELSE 0 END) as avg_sentiment,
+                SUM(CASE WHEN rating = 5 THEN 1 ELSE 0 END) as rating_5_count,
+                SUM(CASE WHEN rating = 4 THEN 1 ELSE 0 END) as rating_4_count,
+                SUM(CASE WHEN rating = 3 THEN 1 ELSE 0 END) as rating_3_count,
+                SUM(CASE WHEN rating = 2 THEN 1 ELSE 0 END) as rating_2_count,
+                SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) as rating_1_count
+            FROM reviews 
+            WHERE {where_clause}
+        """
+        analytics_result = db.execute(text(analytics_query), analytics_params).fetchone()
+        
+        # 4. Get monthly trends for ALL filtered data (not just paginated)
+        trends_query = f"""
+            SELECT 
+                strftime('%Y-%m', date) as month,
+                COUNT(*) as count
+            FROM reviews 
+            WHERE {where_clause}
+            GROUP BY strftime('%Y-%m', date)
+            ORDER BY month DESC
+            LIMIT 12
+        """
+        trends_result = db.execute(text(trends_query), analytics_params).fetchall()
+        
+        # 5. Calculate top keywords from ALL filtered data (similar to frontend logic)
+        top_keywords = []  # Initialize to ensure it's always defined
+        print(f"[DEBUG] Starting keywords calculation...")
+        keywords_query = f"""
+            SELECT matched_keywords
+            FROM reviews 
+            WHERE {where_clause} AND matched_keywords IS NOT NULL AND matched_keywords != ''
+        """
+        keywords_result = db.execute(text(keywords_query), analytics_params).fetchall()
+        print(f"[DEBUG] Keywords query returned {len(keywords_result)} rows")
+        logger.info(f"[DEBUG] Keywords query returned {len(keywords_result)} rows")
+        
+        # Process keywords similar to frontend logic
+        keyword_counts = {}
+        for row in keywords_result:
+            if row[0]:
+                try:
+                    # Handle both JSON array and comma-separated strings
+                    if row[0].strip().startswith('['):
+                        keywords_list = json.loads(row[0])
+                    else:
+                        keywords_list = [kw.strip() for kw in row[0].split(',') if kw.strip()]
+                    
+                    for keyword in keywords_list:
+                        if keyword:
+                            keyword_counts[keyword] = keyword_counts.get(keyword, 0) + 1
+                except (json.JSONDecodeError, AttributeError) as e:
+                    logger.warning(f"[DEBUG] Failed to parse keywords: {row[0][:100]}... Error: {e}")
+                    continue
+        
+        # Get top 5 keywords
+        try:
+            top_keywords = sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+            print(f"[DEBUG] Top keywords calculated: {top_keywords}")
+            logger.info(f"[DEBUG] Top keywords calculated: {top_keywords}")
+        except Exception as e:
+            print(f"[ERROR] Failed to calculate top keywords: {e}")
+            top_keywords = []
+        
+        # Format the response
+        reviews_list = []
+        for r in reviews_result:
+            review_dict = {
+                'id': r[0],
+                'brand_name': r[1],
+                'customer_name': r[2] or '',
+                'customer': r[2] or '',  # Alias for frontend compatibility
+                'review': r[3] or '',
+                'date': r[4],
+                'rating': r[5],
+                'review_link': r[6],
+                'sentiment_score': r[7],
+                'sentiment_category': r[8],
+                'categories': json.loads(r[9]) if r[9] and r[9].strip().startswith('[') else (r[9] if r[9] else []),
+                'matched_keywords': json.loads(r[10]) if r[10] and r[10].strip().startswith('[') else (r[10] if r[10] else [])
+            }
+            reviews_list.append(review_dict)
+        
+        # Format analytics
+        analytics = {
+            'total_reviews': total_filtered,
+            'average_rating': round(analytics_result[0] if analytics_result[0] else 0, 2),
+            'sentiment_breakdown': {
+                'positive': analytics_result[2] or 0,
+                'negative': analytics_result[3] or 0,
+                'neutral': analytics_result[4] or 0,
+                'total_analyzed': total_filtered
+            },
+            'average_sentiment_score': round(analytics_result[5] if analytics_result[5] else 0, 3),
+            'rating_distribution': {
+                '5': analytics_result[6] or 0,
+                '4': analytics_result[7] or 0,
+                '3': analytics_result[8] or 0,
+                '2': analytics_result[9] or 0,
+                '1': analytics_result[10] or 0
+            },
+            'monthly_trends': [{'month': t[0], 'count': t[1]} for t in trends_result],
+            'top_keywords': [{'keyword': kw, 'count': count} for kw, count in top_keywords]
+        }
+        
+        # Return unified response
+        return {
+            'brand': brand,
+            'total_reviews': total_filtered,  # Total count after filters applied
+            'filtered_total': total_filtered,  # Same as total_reviews for clarity
+            'paginated_count': len(reviews_list),  # Number of reviews on this page (e.g., 20)
+            'page': page,
+            'per_page': per_page,
+            'reviews': reviews_list,
+            'analytics': analytics,  # Analytics calculated on ALL filtered reviews
+            'filters_applied': {
+                'rating': rating_filters,
+                'category': category_filters,
+                'date_from': date_from,
+                'date_to': date_to,
+                'sentiment': sentiment_filter,
+                'keyword': keyword_filter
+            }
+        }
+
 if __name__ == '__main__':
     # Railway deployment fix - force rebuild
-    app.run(debug=False, host='0.0.0.0', port=5000) 
+    app.run(debug=True, host='0.0.0.0', port=5000) 

@@ -330,11 +330,20 @@ class TrustpilotScraper:
         logger.info(f"[BRANDNAME] Extracting brand name from: {trustpilot_url}")
         from playwright.sync_api import sync_playwright
         import re
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page()
-            try:
-                page.goto(trustpilot_url, wait_until="domcontentloaded", timeout=30000)
+        import time
+        
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch(
+                    headless=True,
+                    args=['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+                )
+                page = browser.new_page()
+                
+                # Set a shorter timeout and add retries
+                page.goto(trustpilot_url, wait_until="domcontentloaded", timeout=15000)
+                time.sleep(1)  # Small delay to ensure page loads
+                
                 # Use robust selector for Trustpilot brand name
                 brand_elem = page.query_selector("span[class*='title_title_displayName']")
                 if brand_elem:
@@ -342,8 +351,8 @@ class TrustpilotScraper:
                     if brand_name_raw:
                         brand_name = brand_name_raw.strip()
                         logger.info(f"[BRANDNAME] Found brand name (span): {brand_name}")
-                        browser.close()
                         return brand_name
+                        
                 # Fallback: try the main <h1> selector
                 h1_elem = page.query_selector('h1')
                 if h1_elem:
@@ -351,8 +360,8 @@ class TrustpilotScraper:
                     if h1_text:
                         brand_name = re.sub(r"Reviews.*", "", h1_text).strip()
                         logger.info(f"[BRANDNAME] Found brand name (h1): {brand_name}")
-                        browser.close()
                         return brand_name
+                        
                 # Fallback: try a more specific selector if needed
                 h1_alt = page.query_selector('h1[data-business-unit-title-typography]')
                 if h1_alt:
@@ -360,15 +369,14 @@ class TrustpilotScraper:
                     if h1_alt_text:
                         brand_name = re.sub(r"Reviews.*", "", h1_alt_text).strip()
                         logger.info(f"[BRANDNAME] Found brand name (alt): {brand_name}")
-                        browser.close()
                         return brand_name
+                        
                 logger.info("[BRANDNAME] Brand name not found on page.")
-                browser.close()
                 return None
-            except Exception as e:
-                logger.error(f"[BRANDNAME] Error extracting brand name: {e}")
-                browser.close()
-                return None
+                
+        except Exception as e:
+            logger.error(f"[BRANDNAME] Error extracting brand name: {e}")
+            return None
 
     def scrape_brand_reviews(self, brand_name, max_pages=50, start_page=1, is_new_brand=False):
         """ULTRA-FAST scraper for a brand - single browser instance, minimal logging, 2-3 seconds per page"""
