@@ -444,16 +444,22 @@ def highlight_keywords(text, keywords):
     def replacer(match):
         return f'<mark class="bg-gray-200 text-gray-900 px-1 rounded font-medium">{match.group(0)}</mark>'
     
-    # Create a pattern that avoids highlighting inside existing <mark> tags
+    # Simple approach: avoid highlighting text that's already inside <mark> tags
     for kw in sorted_keywords:
-        # Pattern that matches keyword but not if it's already inside a <mark> tag
-        # Uses negative lookbehind and lookahead to avoid highlighting inside existing marks
         escaped_kw = re.escape(kw)
-        pattern = re.compile(
-            f'(?<!<mark[^>]*>)(?<!<mark[^>]*>[^<]*){escaped_kw}(?![^<]*</mark>)',
-            re.IGNORECASE
-        )
-        text = pattern.sub(replacer, text)
+        
+        # Split text by existing <mark> tags to avoid double highlighting
+        parts = re.split(r'(<mark[^>]*>.*?</mark>)', text, flags=re.IGNORECASE | re.DOTALL)
+        
+        # Only highlight in parts that are not already marked
+        for i in range(len(parts)):
+            if not re.match(r'<mark[^>]*>', parts[i], re.IGNORECASE):
+                # This part is not a mark tag, safe to highlight
+                pattern = re.compile(escaped_kw, re.IGNORECASE)
+                parts[i] = pattern.sub(replacer, parts[i])
+        
+        # Rejoin the parts
+        text = ''.join(parts)
     
     return text
 
