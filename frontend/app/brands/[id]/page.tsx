@@ -1346,6 +1346,131 @@ export default function BrandDetailPage() {
           </Card>
         </div>
 
+        {/* Phase 1: NEW Sizing Intelligence Section */}
+        {analytics?.sizing_intelligence && (
+          <div className="mb-6">
+            <h3 className="text-xl font-bold mb-4 text-foreground">🎯 Sizing Intelligence (Phase 1)</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              
+              {/* Sizing Accuracy Score */}
+              <Card className="bg-card text-card-foreground shadow-lg hover:shadow-xl transition-all">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">Sizing Accuracy</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold mb-2">
+                    {analytics.business_insights?.sizing_accuracy_score || 0}/100
+                  </div>
+                  <div className={`text-xs px-2 py-1 rounded-full inline-block ${
+                    (analytics.business_insights?.sizing_accuracy_score || 0) >= 80 
+                      ? 'bg-green-100 text-green-800' 
+                      : (analytics.business_insights?.sizing_accuracy_score || 0) >= 60
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {(analytics.business_insights?.sizing_accuracy_score || 0) >= 80 ? 'Excellent' : 
+                     (analytics.business_insights?.sizing_accuracy_score || 0) >= 60 ? 'Good' : 'Needs Improvement'}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Size Direction Analysis */}
+              <Card className="bg-card text-card-foreground shadow-lg hover:shadow-xl transition-all">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">Size Direction</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {analytics.sizing_intelligence.size_direction_analysis?.size_direction_percentage && (
+                      <>
+                        {analytics.sizing_intelligence.size_direction_analysis.size_direction_percentage.runs_small > 30 && (
+                          <div className="text-orange-600 font-medium text-sm">
+                            🔺 Runs Small ({analytics.sizing_intelligence.size_direction_analysis.size_direction_percentage.runs_small}%)
+                          </div>
+                        )}
+                        {analytics.sizing_intelligence.size_direction_analysis.size_direction_percentage.runs_large > 30 && (
+                          <div className="text-blue-600 font-medium text-sm">
+                            🔻 Runs Large ({analytics.sizing_intelligence.size_direction_analysis.size_direction_percentage.runs_large}%)
+                          </div>
+                        )}
+                        {analytics.sizing_intelligence.size_direction_analysis.size_direction_percentage.true_to_size > 50 && (
+                          <div className="text-green-600 font-medium text-sm">
+                            ✅ True to Size ({analytics.sizing_intelligence.size_direction_analysis.size_direction_percentage.true_to_size}%)
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Return Risk Level */}
+              <Card className="bg-card text-card-foreground shadow-lg hover:shadow-xl transition-all">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">Return Risk</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className={`text-lg font-bold mb-2 ${
+                    analytics.business_insights?.return_risk_level === 'high' ? 'text-red-600' :
+                    analytics.business_insights?.return_risk_level === 'medium' ? 'text-yellow-600' :
+                    'text-green-600'
+                  }`}>
+                    {analytics.business_insights?.return_risk_level?.toUpperCase() || 'LOW'}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {analytics.sizing_intelligence.customer_behavior?.returned_count || 0} return mentions
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Body Part Issues */}
+              <Card className="bg-card text-card-foreground shadow-lg hover:shadow-xl transition-all">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">Top Fit Issue</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const bodyIssues = analytics.sizing_intelligence.body_part_issues || {};
+                    const maxIssue = Object.entries(bodyIssues).reduce((max, [key, value]) => 
+                      value > max.value ? { key: key.replace('_', ' '), value } : max, 
+                      { key: 'None', value: 0 }
+                    );
+                    return (
+                      <div>
+                        <div className="text-lg font-bold capitalize">{maxIssue.key}</div>
+                        <div className="text-xs text-gray-500">{maxIssue.value} mentions</div>
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Actionable Insights */}
+            {analytics.sizing_intelligence.actionable_insights?.length > 0 && (
+              <Card className="bg-blue-50 border-blue-200">
+                <CardHeader>
+                  <CardTitle className="text-blue-800">🚀 Business Recommendations</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {analytics.sizing_intelligence.actionable_insights.map((insight, index) => (
+                      <div key={index} className={`p-3 rounded-lg border-l-4 ${
+                        insight.priority === 'high' ? 'bg-red-50 border-red-400' :
+                        insight.priority === 'medium' ? 'bg-yellow-50 border-yellow-400' :
+                        'bg-blue-50 border-blue-400'
+                      }`}>
+                        <div className="font-medium text-sm">{insight.message}</div>
+                        <div className="text-xs text-gray-600 mt-1">💡 {insight.recommendation}</div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+
         {/* Data Table with Integrated Filters */}
         <Card className="mb-8 bg-card text-card-foreground shadow-lg">
           <CardHeader>

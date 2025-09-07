@@ -27,9 +27,9 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Playwright browsers (without system deps to avoid font issues)
-# Updated: Fix font package conflicts
+# Install Playwright browsers and system dependencies
 RUN python -m playwright install chromium
+RUN python -m playwright install-deps chromium
 
 # Install NLTK data
 RUN python -m nltk.downloader wordnet stopwords punkt
@@ -41,5 +41,5 @@ COPY . .
 EXPOSE 5000
 
 # Run the app with Gunicorn (recommended for production)
-# Increased timeout to handle long-running scraping operations
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:5000", "--timeout", "300", "--workers", "1"] 
+# Use Railway's PORT environment variable
+CMD ["sh", "-c", "gunicorn app:app --bind 0.0.0.0:$PORT --timeout 300 --workers 1"] 
