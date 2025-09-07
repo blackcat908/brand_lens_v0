@@ -675,7 +675,12 @@ def scrape_api():
 def get_brand_source_url_api():
     brand_id = request.args.get('brand_id')
     if not brand_id:
-        return jsonify({'error': 'Missing brand_id parameter'}), 400
+        # Return helpful message instead of 400 error for missing parameter
+        return jsonify({
+            'message': 'Brand source URL endpoint - provide brand_id parameter',
+            'usage': '/api/brand-source-url?brand_id=BRAND_NAME',
+            'available_brands': []  # Could add list of brands here if needed
+        }), 200
     
     with get_db_session() as db:
         brand_source = get_brand_source_url(db, brand_id)
