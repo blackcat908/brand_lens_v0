@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import '../styles/globals.css'
 import { ThemeProvider } from "@/components/theme-provider"
 import { ThemeHydrationFix } from "@/components/theme-hydration-fix"
-import ThemeToggle from "@/components/theme-toggle"
 
 export const metadata: Metadata = {
   title: 'Brand Lens',
@@ -38,9 +37,6 @@ export default function RootLayout({
       <body>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <ThemeHydrationFix />
-          <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 1000 }}>
-            <ThemeToggle />
-          </div>
           {children}
         </ThemeProvider>
       </body>

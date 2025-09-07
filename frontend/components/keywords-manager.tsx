@@ -69,6 +69,8 @@ interface KeywordsManagerProps {
   hideTitle?: boolean
   hideDescription?: boolean
   initialKeywords?: any
+  brandId?: string  // When provided, show brand-specific keyword management
+  showGlobalKeywords?: boolean  // Whether to show global keywords alongside brand-specific
 }
 
 // Utility to sort keywords alphabetically, case-insensitive
@@ -76,13 +78,22 @@ function sortKeywords(keywords: string[]) {
   return [...keywords].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
 }
 
-export function KeywordsManager({ onKeywordsChange, hideTitle = false, hideDescription = false, initialKeywords = {} }: KeywordsManagerProps) {
+export function KeywordsManager({ 
+  onKeywordsChange, 
+  hideTitle = false, 
+  hideDescription = false, 
+  initialKeywords = {},
+  brandId,
+  showGlobalKeywords = true 
+}: KeywordsManagerProps) {
   const [categories, setCategories] = useState<KeywordCategory[]>(defaultKeywordCategories)
+  const [brandCategories, setBrandCategories] = useState<KeywordCategory[]>([])
   const [newKeyword, setNewKeyword] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("Size Accuracy")
   const [isEditing, setIsEditing] = useState(false)
   const [bulkKeywords, setBulkKeywords] = useState("")
   const [isExpanded, setIsExpanded] = useState(hideTitle || hideDescription ? true : false)
+  const [keywordScope, setKeywordScope] = useState<'global' | 'brand'>('global')
 
   const getAllKeywords = () => {
     return categories.flatMap((category) => category.keywords)
@@ -109,8 +120,20 @@ export function KeywordsManager({ onKeywordsChange, hideTitle = false, hideDescr
     onKeywordsChange?.(getAllKeywords())
   }, [categories])
 
-  const saveKeywords = (categoryName: string, keywords: string[]) => {
-    apiService.setGlobalKeywords(categoryName, keywords).catch(() => {});
+  const saveKeywords = (categoryName: string, keywords: string[], isIncremental: boolean = false) => {
+    if (keywordScope === 'brand' && brandId) {
+      if (isIncremental) {
+        apiService.addBrandKeywords(brandId, categoryName, keywords).catch(() => {});
+      } else {
+        apiService.setBrandKeywords(brandId, categoryName, keywords).catch(() => {});
+      }
+    } else {
+      if (isIncremental) {
+        apiService.addGlobalKeywords(categoryName, keywords).catch(() => {});
+      } else {
+        apiService.setGlobalKeywords(categoryName, keywords).catch(() => {});
+      }
+    }
   };
 
   const fetchAndUpdateKeywords = async () => {
@@ -128,14 +151,22 @@ export function KeywordsManager({ onKeywordsChange, hideTitle = false, hideDescr
 
   const addKeyword = async () => {
     if (newKeyword.trim() && !getAllKeywords().includes(newKeyword.trim().toLowerCase())) {
-      setCategories((prev) => prev.map((category) => {
+      const newKeywordLower = newKeyword.trim().toLowerCase();
+      
+      // Use incremental addition (append mode)
+      saveKeywords(selectedCategory, [newKeywordLower], true);
+      
+      // Update local state
+      const targetCategories = keywordScope === 'brand' ? brandCategories : categories;
+      const setTargetCategories = keywordScope === 'brand' ? setBrandCategories : setCategories;
+      
+      setTargetCategories((prev) => prev.map((category) => {
         if (category.name === selectedCategory) {
-          const updated = { ...category, keywords: sortKeywords([...category.keywords, newKeyword.trim().toLowerCase()]) };
-          saveKeywords(category.name, updated.keywords);
-          return updated;
+          return { ...category, keywords: sortKeywords([...category.keywords, newKeywordLower]) };
         }
         return category;
       }));
+      
       setNewKeyword("");
       await fetchAndUpdateKeywords();
     }

@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Building2, TrendingUp, Star, Plus, Moon, Sun, Trash2, MoreHorizontal, Settings, Loader2, X } from "lucide-react"
+import { Building2, TrendingUp, Star, Plus, Moon, Sun, Trash2, MoreHorizontal, Settings, Loader2, X, Search, Search as SearchIcon } from "lucide-react"
 import { CreateBrandModal } from "@/components/create-brand-modal"
 import { Star as StarIcon, Pin } from "lucide-react"
 import { apiService } from "@/lib/api-service"
@@ -76,6 +76,17 @@ export default function BrandsPage() {
   });
   const [polling, setPolling] = useState(false);
   const pollingBrandRef = useRef("");
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Dark mode functionality
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
   
   // Initialize logos hook
   const { logos, loading: logosLoading, error: logosError, refetch: refetchLogos } = useLogos();
@@ -181,44 +192,68 @@ export default function BrandsPage() {
     localStorage.setItem('pinnedBrands', JSON.stringify(pinnedBrands));
   }, [pinnedBrands]);
 
-  // Sort brands: pinned first
+  // Filter and sort brands: search first, then pinned first
+  const filteredBrands = brands.filter(brand => 
+    brand.brand.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
   const sortedBrands = [
-    ...brands.filter(b => pinnedBrands.includes(b.brand)),
-    ...brands.filter(b => !pinnedBrands.includes(b.brand)),
+    ...filteredBrands.filter(b => pinnedBrands.includes(b.brand)),
+    ...filteredBrands.filter(b => !pinnedBrands.includes(b.brand)),
   ];
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 text-black dark:text-white">
-      <div className="max-w-6xl mx-auto px-2 py-6">
-        {/* Remove darkMode state, toggleDarkMode, and the toggle button from the JSX */}
-        <div className="mb-4">
-          <h1 className="text-2xl font-semibold text-foreground mb-1 animate-fade-in">Brand Review Dashboard</h1>
-          <div className="flex justify-between items-center animate-fade-in-delay">
-            <p className="text-gray-600 text-sm">Monitor sizing and fit sentiment across tracked brands</p>
-            <div className="flex items-center gap-2">
-            <Button
-              onClick={() => setIsCreateModalOpen(true)}
-                className="group flex items-center space-x-1.5 h-9 px-3 text-sm font-medium rounded-md shadow-none border border-gray-300 bg-white text-black hover:bg-black hover:text-white hover:shadow-2xl hover:scale-110 transition-all duration-200"
-            >
-                <Plus className="w-4 h-4 transition-colors duration-150 group-hover:animate-wiggle" />
-              <span>Create New Brand</span>
-            </Button>
-            {(manageMode || pinMode) ? (
-                <Button
-                onClick={() => { setManageMode(false); setPinMode(false); }}
-                  className="flex items-center space-x-1.5 h-9 px-3 text-sm font-medium rounded-md shadow-none border border-gray-300 bg-blue-50 hover:bg-[#2563eb] hover:text-white text-blue-700"
-                >
-                  <span>Done</span>
-                </Button>
-              ) : (
+      {/* Brand Lens Header - Trustpilot Style */}
+      <header className="sticky top-0 z-50 bg-white dark:bg-zinc-900 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Brand Logo and Name */}
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center relative">
+                {/* Simple version of the magnifying glass + shirt concept */}
+                <div className="relative">
+                  <SearchIcon className="w-5 h-5 text-white" />
+                  <div className="absolute -top-1 -left-1 w-2 h-1.5 bg-white/40 rounded-sm transform rotate-12"></div>
+                </div>
+              </div>
+              <span className="text-xl font-bold text-foreground">Brand Lens</span>
+            </div>
+
+            {/* Search Bar */}
+            <div className="flex-1 max-w-2xl mx-8">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search brands or categories..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-foreground placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            {/* Navigation Items */}
+            <nav className="flex items-center space-x-6">
+              <a href="#" className="text-foreground hover:text-blue-600 font-medium transition-colors">
+                Dashboard
+              </a>
+              <a href="#" className="text-foreground hover:text-blue-600 font-medium transition-colors">
+                Analytics
+              </a>
+              <a href="#" className="text-foreground hover:text-blue-600 font-medium transition-colors">
+                AI Reports
+              </a>
+              
+              {/* Settings Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                 <button
-                  className="group flex items-center justify-center h-9 w-9 rounded-md border border-gray-300 bg-white text-black hover:bg-black hover:text-white hover:shadow-2xl hover:scale-110 hover:border-black transition-all duration-200"
-                    title="Settings"
-                  style={{ outline: 'none' }}
+                    className="p-2 rounded-lg bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
+                    aria-label="Settings"
                 >
-                  <Settings className="w-5 h-5 transition-colors duration-150 group-hover:animate-wiggle" />
+                    <Settings className="w-4 h-4 text-foreground" />
                 </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -230,12 +265,60 @@ export default function BrandsPage() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              
+              {/* Create Brand Button */}
+              <Button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="bg-black hover:bg-gray-800 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border dark:border-zinc-600 text-white dark:text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 hover:shadow-lg"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Brand
+              </Button>
+              
+              {/* Theme Toggle */}
+              <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className="p-2 rounded-lg bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
+                aria-label="Toggle theme"
+              >
+                {isDarkMode ? (
+                  <Sun className="w-4 h-4 text-foreground" />
+                ) : (
+                  <Moon className="w-4 h-4 text-foreground" />
+                )}
+              </button>
+            </nav>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="mb-4">
+          <div className="flex justify-end items-center animate-fade-in-delay">
+            <div className="flex items-center gap-2">
+            {(manageMode || pinMode) && (
+                <Button
+                onClick={() => { setManageMode(false); setPinMode(false); }}
+                  className="flex items-center space-x-1.5 h-9 px-3 text-sm font-medium rounded-md shadow-none border border-gray-300 bg-blue-50 hover:bg-[#2563eb] hover:text-white text-blue-700"
+                >
+                  <span>Done</span>
+                </Button>
               )}
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-0 gap-y-8 max-w-full">
+        {sortedBrands.length === 0 && searchQuery.trim() !== "" ? (
+          <div className="text-center py-12">
+            <div className="text-gray-500 dark:text-gray-400 text-lg mb-2">
+              No brands found for "{searchQuery}"
+            </div>
+            <div className="text-gray-400 dark:text-gray-500 text-sm">
+              Try adjusting your search terms
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-full">
           {sortedBrands.map((brand, index) => {
             const sentimentLabel =
               brand.sentimentScore > 0.3
@@ -254,18 +337,16 @@ export default function BrandsPage() {
             return (
               <Link key={brand.brand} href={`/brands/${encodeURIComponent(brand.brand)}`}>
                 <Card
-                  className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:-translate-y-2 hover:bg-gray-50 bg-white dark:bg-zinc-900 text-card-foreground border border-gray-200 rounded-md p-0 shadow-md min-h-[90px] min-w-[220px] max-w-[320px]"
+                  className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:-translate-y-2 hover:bg-gray-50 bg-white dark:bg-zinc-900 text-card-foreground border border-gray-200 rounded-xl p-4 shadow-md h-[190px] w-[270px]"
                   style={{
                     animationDelay: `${index * 80}ms`,
                     animationFillMode: "both",
-                    // Remove fixed height to allow content to dictate height
                   }}
                 >
-                  {/* Header Section */}
-                  <CardHeader className="pb-2 p-2">
-                    <div className="flex items-center justify-between space-x-2 relative">
-                      <div className="flex items-center space-x-2">
-                        <div className="relative w-16 h-16 rounded-md flex items-center justify-center overflow-hidden flex-shrink-0 bg-white">
+                  {/* Trustpilot-style left-aligned layout */}
+                  <div className="flex flex-col items-start text-left space-y-3 relative">
+                    {/* Logo at the top - bigger like Trustpilot */}
+                    <div className="relative w-20 h-20 rounded-md flex items-center justify-center overflow-hidden flex-shrink-0 bg-white">
                           <BrandLogo
                             src={brand.logo || "/placeholder-logo.png"}
                             alt={`${brand.brand} logo`}
@@ -279,8 +360,9 @@ export default function BrandsPage() {
                             </span>
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <CardTitle className="text-lg font-bold text-foreground group-hover:text-blue-600 transition-colors duration-200 truncate flex items-center">
+
+                    {/* Brand name below logo */}
+                    <CardTitle className="text-lg font-semibold text-foreground group-hover:text-blue-600 transition-colors duration-200 truncate flex items-center justify-start">
                             {brand.brand}
                             {/* Always show yellow pin for pinned brands */}
                             {isPinned && !pinMode && (
@@ -332,47 +414,54 @@ export default function BrandsPage() {
                               </button>
                             )}
                           </CardTitle>
-                          {/* Update the Badge for reviews count to ensure it is always a compact pill: */}
-                          <Badge variant="outline" className="inline-flex items-center space-x-1 px-2 py-0.5 text-xs font-normal border border-gray-300 bg-white text-gray-800 mt-1 w-auto">
-                            <Building2 className="w-3 h-3" />
-                            <span>{brand.reviewCount?.toLocaleString() || 0} reviews</span>
-                          </Badge>
-                          {isSyncing && (
-                            <span className="inline-flex items-center px-2 py-0.5 mt-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded animate-pulse">
-                              <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Syncing…
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {/* In the CardHeader, update the avg rating badge: */}
-                      <div
-                        className={
-                          'absolute top-0 right-0 mt-1 mr-2 inline-flex items-center text-xs font-medium px-2.5 py-0.5 rounded-full border w-auto border-gray-300 bg-transparent'
-                        }
-                        style={{ justifyContent: 'flex-end' }}
-                      >
-                        <span className={
-                          (brand.avgRating > 4
-                            ? 'text-green-700'
-                            : brand.avgRating >= 3
-                            ? 'text-yellow-700'
-                            : 'text-red-700') + ' font-bold'
-                        }>{brand.avgRating ? brand.avgRating.toFixed(1) : 'N/A'}</span>
-                        <Star className="w-3.5 h-3.5 ml-1 text-gray-800" />
-                      </div>
-                    </div>
-                  </CardHeader>
 
-                  {/* Content Section */}
-                  <CardContent className="pt-1 p-2 overflow-hidden">
-                    {/* Badges Row */}
-                    {/* The reviews count badge is now moved to the CardHeader */}
-                  </CardContent>
+                    {/* Rating and review count on same line like Trustpilot */}
+                    <div className="flex items-center justify-start space-x-1">
+                      {[1, 2, 3, 4, 5].map((star) => {
+                        const avgRating = brand.avgRating || 0;
+                        const isFilledStar = star <= Math.round(avgRating);
+                        let starColor = 'text-gray-300'; // Default empty star
+                        
+                        if (isFilledStar) {
+                          if (avgRating >= 4) {
+                            starColor = 'text-green-500 fill-green-500'; // Green for 4+ rating
+                          } else if (avgRating >= 3) {
+                            starColor = 'text-yellow-500 fill-yellow-500'; // Yellow for 3-3.9 rating  
+                          } else {
+                            starColor = 'text-red-500 fill-red-500'; // Red for below 3 rating
+                          }
+                        }
+                        
+                        return (
+                          <Star
+                            key={star}
+                            className={`w-4 h-4 ${starColor}`}
+                          />
+                        );
+                      })}
+                      <span className="ml-2 text-sm font-bold text-foreground">
+                        {brand.avgRating ? brand.avgRating.toFixed(1) : 'N/A'}
+                      </span>
+                      <span className="ml-3 text-sm text-gray-600 dark:text-gray-400">
+                        ({brand.reviewCount?.toLocaleString() || 0})
+                      </span>
+                    </div>
+
+                    {/* Syncing indicator */}
+                    {isSyncing && (
+                      <div className="absolute top-0 right-0">
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full animate-pulse">
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Syncing…
+                        </span>
+                      </div>
+                    )}
+                    </div>
                 </Card>
               </Link>
             );
           })}
         </div>
+        )}
 
         <CreateBrandModal
           isOpen={isCreateModalOpen}

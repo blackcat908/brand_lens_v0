@@ -291,3 +291,50 @@ body, html, .main, .card, .table, .bg-background, .bg-card, .bg-table, .bg-neutr
 .animate-fade-highlight {
   animation: fade-highlight 2.5s ease-in-out 1;
 }
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Enhanced skeleton pulse animation - more visible like YouTube/Instagram */
+@keyframes skeleton-pulse-enhanced {
+  0%, 100% {
+    opacity: 1;
+    background-color: #e5e7eb;
+  }
+  50% {
+    opacity: 0.5;
+    background-color: #d1d5db;
+  }
+}
+
+@keyframes skeleton-pulse-enhanced-dark {
+  0%, 100% {
+    opacity: 1;
+    background-color: #374151;
+  }
+  50% {
+    opacity: 0.5;
+    background-color: #4b5563;
+  }
+}
+
+/* Override Tailwind's animate-pulse to be more visible */
+.animate-pulse {
+  animation: skeleton-pulse-enhanced 1.2s ease-in-out infinite !important;
+}
+
+.dark .animate-pulse {
+  animation: skeleton-pulse-enhanced-dark 1.2s ease-in-out infinite !important;
+}

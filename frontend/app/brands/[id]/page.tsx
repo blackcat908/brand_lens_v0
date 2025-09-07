@@ -36,6 +36,7 @@ import { apiService, canonicalBrandId } from "@/lib/api-service"
 import { BrandLogo } from "@/components/brand-logo";
 import winkLemmatizer from 'wink-lemmatizer';
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { BrandDashboardSkeleton } from "@/components/skeleton-ui";
 
 // Helper: lemmatize all words in a string using wink-lemmatizer
 function lemmatizeWords(text: string) {
@@ -229,6 +230,21 @@ export default function BrandDetailPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalReviews, setTotalReviews] = useState(0);
 
+  // Review filters state (moved here to fix initialization order)
+  const [reviewFilters, setReviewFilters] = useState<ReviewFilters>({
+    rating: "all",
+    keyword: "",
+    ratings: [],
+  });
+
+  // Search input state for improved UX (only apply on Enter)
+  const [searchInput, setSearchInput] = useState("");
+
+  // Sync search input with keyword filter when it changes from other sources
+  useEffect(() => {
+    setSearchInput(reviewFilters.keyword);
+  }, [reviewFilters.keyword]);
+
   
 
   // 1. Declare all state first
@@ -244,29 +260,33 @@ export default function BrandDetailPage() {
     endDate = parseISO(customEndDate);
   }
 
-  // Fetch reviews from backend with pagination and filters
+  // NEW: Optimized single API call that gets everything
   useEffect(() => {
     console.log('Current filters state:', filters);
     let isMounted = true;
     setLoading(true);
     setError(null);
-    async function fetchData() {
+    
+    async function fetchOptimizedData() {
       try {
         const apiFilters: any = {};
+        
+        // Handle categories
         if (filters.category && filters.category.length > 0 && !filters.category.includes("all")) {
-          // Handle multiple categories - send as array
           apiFilters.category = filters.category;
         }
+        
+        // Handle ratings
         if (filters.rating && filters.rating.length > 0 && !filters.rating.includes("all")) {
-          // Handle multiple ratings - convert to numbers
           apiFilters.rating = filters.rating.map(r => Number(r));
         }
+        
+        // Handle date filters
         if (filters.dateFilter && filters.dateFilter !== 'all') {
           if (filters.dateFilter === 'custom' && filters.customStartDate && filters.customEndDate) {
             apiFilters.dateFrom = filters.customStartDate;
             apiFilters.dateTo = filters.customEndDate;
           } else {
-            // Calculate date range based on filter selection
             const now = new Date();
             let startDate = new Date();
             
@@ -291,32 +311,60 @@ export default function BrandDetailPage() {
             apiFilters.dateTo = now.toISOString().slice(0, 10);
           }
         }
-        console.log('Sending apiFilters to reviews API:', apiFilters);
         
-        // Fetch paginated reviews for table display
-        const reviewsResp = await apiService.getBrandReviewsByFrontendId(id, currentPage, pageSize, apiFilters);
-        if (!isMounted) return;
-        setReviews(reviewsResp.reviews);
-        setTotalReviews(reviewsResp.total_reviews || 0);
+        // Add keyword filter
+        if (reviewFilters.keyword && reviewFilters.keyword.trim()) {
+          apiFilters.keyword = reviewFilters.keyword.trim();
+        }
+
+        console.log('Sending apiFilters to OPTIMIZED dashboard API:', apiFilters);
+
+        // SINGLE OPTIMIZED API CALL - gets reviews + analytics in one request!
+        const dashboardData = await apiService.getBrandDashboardOptimized(
+          id, 
+          currentPage, 
+          pageSize, 
+          apiFilters
+        );
         
-        // Fetch all reviews for analytics (no pagination)
-        const allReviewsResp = await apiService.getAllBrandReviewsByFrontendId(id, apiFilters);
         if (!isMounted) return;
-        setAllReviews(allReviewsResp);
         
-        // 2. Fix analytics fetch to use correct brand id mapping
-        const analyticsResp = await apiService.getBrandAnalyticsByFrontendId(id, apiFilters);
-        if (!isMounted) return;
-        setAnalytics(analyticsResp);
+        // Set all data from single response
+        setReviews(dashboardData.reviews);
+        setTotalReviews(dashboardData.filtered_total); // Total after filters applied
+        // For analytics calculations, we now use backend pre-calculated analytics
+        // so we don't need setAllReviews anymore, but keeping it for compatibility
+        setAllReviews(dashboardData.reviews);
+        
+        // Convert backend analytics format to frontend format
+        const convertedAnalytics = {
+          brand: dashboardData.brand,
+          total_reviews: dashboardData.analytics.total_reviews,
+          average_rating: dashboardData.analytics.average_rating,
+          avgRating: dashboardData.analytics.average_rating, // Alias
+          sentiment_breakdown: dashboardData.analytics.sentiment_breakdown,
+          average_sentiment: dashboardData.analytics.average_sentiment_score,
+          sentimentScore: dashboardData.analytics.average_sentiment_score, // Alias
+          rating_distribution: dashboardData.analytics.rating_distribution, // Rating distribution data
+          monthly_trends: dashboardData.analytics.monthly_trends,
+          monthlyTrend: dashboardData.analytics.monthly_trends.map(t => t.count), // Alias
+          top_keywords: dashboardData.analytics.top_keywords || [], // Backend calculated top keywords
+          last_updated: new Date().toISOString()
+        };
+        
+        setAnalytics(convertedAnalytics);
+        
       } catch (err: any) {
-        setError(err.message || "Failed to load data");
+        console.error('Dashboard fetch error:', err);
+        setError(err.message || "Failed to load dashboard data");
       } finally {
         if (isMounted) setLoading(false);
       }
     }
-    fetchData();
+    
+    fetchOptimizedData();
     return () => { isMounted = false; };
-  }, [id, currentPage, pageSize, filters]);
+  }, [id, currentPage, pageSize, filters, reviewFilters.keyword]);
 
   // Handler for category change
   const handleCategoryChange = (category: string) => {
@@ -352,11 +400,6 @@ export default function BrandDetailPage() {
 
   const [showTrendChart, setShowTrendChart] = useState(false)
   const [showDistributionChart, setShowDistributionChart] = useState(false)
-  const [reviewFilters, setReviewFilters] = useState<ReviewFilters>({
-    rating: "all",
-    keyword: "",
-    ratings: [],
-  })
 
   /* no more notFound() — we always have a brand object */
 
@@ -469,6 +512,7 @@ export default function BrandDetailPage() {
 
   const clearFilters = () => {
     setReviewFilters({ rating: "all", keyword: "", ratings: [] })
+    setSearchInput("") // Clear search input when clearing filters
   }
 
   const hasActiveFilters = reviewFilters.ratings.length > 0 || reviewFilters.keyword !== ""
@@ -485,6 +529,8 @@ export default function BrandDetailPage() {
   const [aiReportPrompt, setAIReportPrompt] = useState("")
   const [isGeneratingReport, setIsGeneratingReport] = useState(false)
   const [generatedReport, setGeneratedReport] = useState("")
+  const [aiReportHistory, setAiReportHistory] = useState<any[]>([])
+  const [showHistoryTab, setShowHistoryTab] = useState(false)
 
   // Add sorting state
   const [sortBy, setSortBy] = useState<'customer' | 'date' | 'rating'>("date");
@@ -685,20 +731,15 @@ export default function BrandDetailPage() {
     return filtered;
   }, [allReviews, filters, reviewFilters.keyword]);
 
-  // Analytics calculations based on unified filtered data
-  const totalSizingFitReviews = unifiedFilteredReviews.length;
+  // NEW: Use backend pre-calculated analytics instead of client-side calculations
+  // This ensures analytics are based on ALL filtered reviews, not just the 20 paginated ones
+  const totalSizingFitReviews = analytics?.total_reviews || 0;
+  const averageRating = analytics?.average_rating || 0;
+  const sentimentScore = analytics?.average_sentiment || 0;
 
-  // Average Rating: from filtered reviews
-  const averageRating = unifiedFilteredReviews.length > 0 ? 
-    (unifiedFilteredReviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / unifiedFilteredReviews.length) : 0;
-
-  // Sentiment Score: from filtered reviews
-  const sentimentScore = unifiedFilteredReviews.length > 0 ? 
-    (unifiedFilteredReviews.reduce((sum, r) => sum + (Number(r.sentiment_score) || 0), 0) / unifiedFilteredReviews.length) : 0;
-
-  // Positive/Negative/Neutral chart: from unified filtered reviews
+  // Use backend sentiment breakdown data
   const filteredPosNegMetrics = useMemo(() => {
-    if (unifiedFilteredReviews.length === 0) {
+    if (!analytics?.sentiment_breakdown) {
       return {
         totalSizingFitReviews: 0,
         positiveCount: 0,
@@ -707,12 +748,12 @@ export default function BrandDetailPage() {
       };
     }
     return {
-      totalSizingFitReviews: unifiedFilteredReviews.length,
-      positiveCount: unifiedFilteredReviews.filter((r) => r.rating >= 4).length,
-      negativeCount: unifiedFilteredReviews.filter((r) => r.rating <= 2).length,
-      neutralCount: unifiedFilteredReviews.filter((r) => r.rating === 3).length,
+      totalSizingFitReviews: analytics.sentiment_breakdown.total_analyzed,
+      positiveCount: analytics.sentiment_breakdown.positive,
+      negativeCount: analytics.sentiment_breakdown.negative,
+      neutralCount: analytics.sentiment_breakdown.neutral,
     };
-  }, [unifiedFilteredReviews]);
+  }, [analytics]);
 
   // Use paginated reviews from backend for table display
   const paginatedReviews = reviews;
@@ -865,9 +906,9 @@ export default function BrandDetailPage() {
 
   
 
-  // Show loading spinner or error if needed
-  if (loading || reviews.length === 0) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="animate-spin mr-2" /> Loading reviews and analytics...</div>;
+  // Show skeleton UI or error if needed
+  if (loading) {
+    return <BrandDashboardSkeleton />;
   }
   if (error) {
     return <div className="text-red-500 p-4">{error}</div>;
@@ -887,8 +928,12 @@ export default function BrandDetailPage() {
   // Before rendering the table, check for empty reviews and not loading:
   if (!loading && reviews.length === 0) {
     return (
+      <div className="min-h-screen bg-white dark:bg-zinc-950 text-black dark:text-white">
+        <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-center h-64 text-lg text-gray-500">
         No reviews match the selected category.
+          </div>
+        </div>
       </div>
     );
   }
@@ -902,7 +947,9 @@ export default function BrandDetailPage() {
             <BrandLogo src={meta.logo} alt={`${meta.name} logo`} maxWidth={80} maxHeight={80} brandName={meta.name} />
             <div>
               <h1 className="text-3xl font-bold text-foreground">{meta.name}</h1>
-              <p className="text-gray-600">Last updated: {analytics?.last_updated || 'Never'}</p>
+              <p className="text-gray-600">
+                Last updated: {analytics?.last_updated ? format(new Date(analytics.last_updated), 'MMM dd, yyyy - HH:mm') : 'Never'}
+              </p>
             </div>
           </div>
           <div className="flex items-center space-x-2 mb-6 justify-end">
@@ -1024,15 +1071,9 @@ export default function BrandDetailPage() {
               <div className="hidden group-hover:block">
                 <div className="space-y-2">
                   {(() => {
-                    // Calculate rating distribution from unifiedFilteredReviews
-                    const ratingCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-                    const totalReviews = unifiedFilteredReviews.length;
-                    
-                    unifiedFilteredReviews.forEach(review => {
-                      if (review.rating && ratingCounts.hasOwnProperty(review.rating)) {
-                        ratingCounts[review.rating as keyof typeof ratingCounts]++;
-                      }
-                    });
+                    // Use backend rating distribution data instead of client-side calculation
+                    const ratingCounts = analytics?.rating_distribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+                    const totalReviews = analytics?.total_reviews || 0;
                     
                     const colors = {
                       5: '#10b981', // Green
@@ -1043,7 +1084,7 @@ export default function BrandDetailPage() {
                     };
                     
                     return [5, 4, 3, 2, 1].map(rating => {
-                      const count = ratingCounts[rating as keyof typeof ratingCounts];
+                      const count = ratingCounts[rating.toString()] || 0;
                       const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
                       const color = colors[rating as keyof typeof colors];
                       
@@ -1278,27 +1319,16 @@ export default function BrandDetailPage() {
             <CardContent className="pt-2 px-2 pb-1">
               <div className="flex flex-wrap gap-1 mt-0">
                 {(() => {
-                  const keywordCounts: Record<string, { count: number; sentiment: string[] }> = {};
-                  unifiedFilteredReviews.forEach(r => {
-                    currentKeywords.forEach((keyword: string) => {
-                      if (r.review && r.review.toLowerCase().includes(keyword.toLowerCase())) {
-                        if (!keywordCounts[keyword]) keywordCounts[keyword] = { count: 0, sentiment: [] };
-                        keywordCounts[keyword].count++;
-                        if (r.sentiment) keywordCounts[keyword].sentiment.push(r.sentiment);
-                      }
-                    });
-                  });
-                  const topKeywords = Object.entries(keywordCounts)
-                    .sort((a, b) => b[1].count - a[1].count)
-                    .slice(0, 5);
-                  if (topKeywords.length === 0) return <span className="text-xs text-gray-400">No issues found</span>;
-                  return topKeywords.map(([keyword, data]) => {
-                    const pos = data.sentiment.filter(s => s === 'positive').length;
-                    const neg = data.sentiment.filter(s => s === 'negative').length;
-                    const neu = data.sentiment.filter(s => s === 'neutral').length;
-                    let color = 'bg-green-100 text-green-800';
-                    if (neg > pos && neg > neu) color = 'bg-red-100 text-red-800';
-                    else if (neu > pos && neu > neg) color = 'bg-yellow-100 text-yellow-800';
+                  // Use backend top keywords instead of client-side calculation
+                  const topKeywords = analytics?.top_keywords || [];
+                  
+                  if (topKeywords.length === 0) return <span className="text-xs text-gray-400">No keywords found</span>;
+                  
+                  return topKeywords.slice(0, 5).map((keywordData: any) => {
+                    const { keyword, count } = keywordData;
+                    // Default to positive color since we don't have sentiment breakdown for individual keywords from backend
+                    const color = 'bg-green-100 text-green-800';
+                    
                     return (
                       <button
                         key={keyword}
@@ -1306,7 +1336,7 @@ export default function BrandDetailPage() {
                         onClick={() => handleFilterChange('keyword', keyword)}
                         title={`Show reviews mentioning '${keyword}'`}
                       >
-                        {keyword} <span className="font-bold">({data.count})</span>
+                        {keyword} <span className="font-bold">({count})</span>
                       </button>
                     );
                   });
@@ -1334,81 +1364,142 @@ export default function BrandDetailPage() {
                 </div>
                 <div className="flex items-center gap-2 justify-end mb-4">
                   <div className="flex items-center gap-2">
+                    <div className="relative flex items-center">
                     <Input
                       placeholder="Search in reviews..."
-                      value={reviewFilters.keyword}
-                      onChange={e => handleFilterChange('keyword', e.target.value)}
-                      className="h-10 w-64 text-sm"
-                    />
+                        value={searchInput}
+                        onChange={e => setSearchInput(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            handleFilterChange('keyword', searchInput.trim());
+                          }
+                        }}
+                        className="h-10 w-64 text-sm pr-16"
+                      />
+                      <Button
+                        onClick={() => handleFilterChange('keyword', searchInput.trim())}
+                        size="sm"
+                        variant="ghost"
+                        className="absolute right-1 h-8 px-2 hover:bg-gray-100"
+                      >
+                        {reviewFilters.keyword ? (
+                          <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                        )}
+                      </Button>
                   </div>
+                  </div>
+                  {/* Clear Filters Button - only show when filters are active */}
+                  {((filters.category.length > 0 && !filters.category.includes("all")) || 
+                    (filters.rating.length > 0 && !filters.rating.includes("all")) || 
+                    filters.dateFilter !== "all" || 
+                    reviewFilters.keyword.trim() !== "") && (
+                                          <Button 
+                        variant="outline" 
+                        className="h-10 px-4 text-sm text-red-600 bg-red-50 border-red-300 transition-transform duration-200 hover:scale-105"
+                      onClick={() => {
+                        // Clear all filters
+                        setFilters({
+                          category: ["all"],
+                          rating: ["all"],
+                          dateFilter: "all",
+                          customStartDate: "",
+                          customEndDate: ""
+                        });
+                        setPendingFilters({
+                          category: ["all"],
+                          rating: ["all"],
+                          dateFilter: "all",
+                          customStartDate: "",
+                          customEndDate: ""
+                        });
+                        setReviewFilters({ rating: "all", keyword: "", ratings: [] });
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <X className="w-4 h-4 mr-1" />
+                      Clear Filters
+                    </Button>
+                  )}
+                  
                   <Dialog open={filterDialogOpen} onOpenChange={setFilterDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button variant="outline" className="h-10 px-6 text-base hover:scale-105 transition-transform duration-200">Filter</Button>
+                      <Button variant="outline" className="h-10 px-6 text-base hover:scale-105 transition-transform duration-200 relative">
+                        Filter
+                        {/* Active filter indicator */}
+                        {(filters.category.length > 0 && !filters.category.includes("all")) || 
+                         (filters.rating.length > 0 && !filters.rating.includes("all")) || 
+                         filters.dateFilter !== "all" || 
+                         reviewFilters.keyword.trim() !== "" ? (
+                          <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full"></span>
+                        ) : null}
+                      </Button>
                     </DialogTrigger>
                     <DialogContent>
                       <DialogTitle>Filter Reviews</DialogTitle>
-                      {/* Category multi-select dropdown */}
+                      {/* Category selection with flexible buttons */}
                       <div className="mb-4">
-                        <Label htmlFor="filter-category">Category</Label>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="h-8 text-xs px-2 bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-300 dark:border-zinc-700 justify-between w-full">
-                              {pendingFilters.category.includes("all") ? "All Reviews" : 
-                               pendingFilters.category.length === 0 ? "Select Categories" :
-                               pendingFilters.category.length === 1 ? pendingFilters.category[0] :
-                               `${pendingFilters.category.length} categories selected`}
-                              <ChevronDown className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent className="w-56">
-                            <DropdownMenuCheckboxItem
-                              checked={pendingFilters.category.includes("all")}
-                              onCheckedChange={(checked) => {
+                        <Label className="text-sm font-medium mb-2 block">Category</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {/* All Reviews button */}
+                          <button
+                            type="button"
+                            onClick={() => {
                                 setPendingFilters(f => ({
                                   ...f,
-                                  category: checked ? ["all"] : []
+                                category: ["all"]
                                 }));
                               }}
+                            className={`px-3 py-1.5 rounded-md border-2 transition-all duration-200 text-sm transform hover:scale-105 ${
+                              pendingFilters.category.includes("all")
+                                ? "border-blue-500 bg-blue-50 text-blue-700 font-medium"
+                                : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
+                            }`}
                             >
                               All Reviews
-                            </DropdownMenuCheckboxItem>
+                          </button>
+                          
+                          {/* Individual category buttons */}
                             {Object.keys(customKeywords).map((cat: string) => (
-                              <DropdownMenuCheckboxItem
+                            <button
                                 key={cat}
-                                checked={pendingFilters.category.includes(cat)}
-                                onCheckedChange={(checked) => {
+                              type="button"
+                              onClick={() => {
                                   setPendingFilters(f => {
-                                    const newCategory = checked 
-                                      ? [...f.category.filter(c => c !== "all"), cat]
-                                      : f.category.filter(c => c !== cat);
+                                  const isSelected = f.category.includes(cat);
+                                  const newCategory = isSelected 
+                                    ? f.category.filter(c => c !== cat)
+                                    : [...f.category.filter(c => c !== "all"), cat];
                                     return {
                                       ...f,
                                       category: newCategory.length === 0 ? ["all"] : newCategory
                                     };
                                   });
                                 }}
+                              className={`px-3 py-1.5 rounded-md border-2 transition-all duration-200 text-sm transform hover:scale-105 ${
+                                pendingFilters.category.includes(cat)
+                                  ? "border-blue-500 bg-blue-50 text-blue-700 font-medium"
+                                  : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
+                              }`}
                               >
                                 {cat}
-                              </DropdownMenuCheckboxItem>
+                            </button>
                             ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                       </div>
-                      {/* Rating multi-select dropdown */}
+                      </div>
+                      {/* Rating selection with horizontal checkboxes */}
                       <div className="mb-4">
-                        <Label htmlFor="filter-rating">Rating</Label>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="h-8 text-xs px-2 bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-300 dark:border-zinc-700 justify-between w-full">
-                              {pendingFilters.rating.includes("all") ? "All Ratings" : 
-                               pendingFilters.rating.length === 0 ? "Select Ratings" :
-                               pendingFilters.rating.length === 1 ? `${pendingFilters.rating[0]}★` :
-                               `${pendingFilters.rating.length} ratings selected`}
-                              <ChevronDown className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent className="w-56">
-                            <DropdownMenuCheckboxItem
+                        <Label className="text-sm font-medium mb-2 block">Rating</Label>
+                        <div className="space-y-2">
+                          {/* All Ratings option */}
+                          <div className="flex items-center space-x-2 group">
+                            <Checkbox
+                              id="rating-all"
                               checked={pendingFilters.rating.includes("all")}
                               onCheckedChange={(checked) => {
                                 setPendingFilters(f => ({
@@ -1416,12 +1507,19 @@ export default function BrandDetailPage() {
                                   rating: checked ? ["all"] : []
                                 }));
                               }}
-                            >
+                              className="h-3.5 w-3.5 transition-transform duration-200 hover:scale-105"
+                            />
+                            <Label htmlFor="rating-all" className="text-sm cursor-pointer transition-colors duration-200 group-hover:text-blue-600">
                               All Ratings
-                            </DropdownMenuCheckboxItem>
+                            </Label>
+                          </div>
+                          
+                          {/* Individual rating checkboxes in a row */}
+                          <div className="flex flex-wrap gap-3">
                             {["5", "4", "3", "2", "1"].map((rating: string) => (
-                              <DropdownMenuCheckboxItem
-                                key={rating}
+                              <div key={rating} className="flex items-center space-x-1.5 group">
+                                <Checkbox
+                                  id={`rating-${rating}`}
                                 checked={pendingFilters.rating.includes(rating)}
                                 onCheckedChange={(checked) => {
                                   setPendingFilters(f => {
@@ -1434,18 +1532,22 @@ export default function BrandDetailPage() {
                                     };
                                   });
                                 }}
-                              >
-                                {rating}★
-                              </DropdownMenuCheckboxItem>
+                                  className="h-3.5 w-3.5 transition-transform duration-200 hover:scale-105"
+                                />
+                                <Label htmlFor={`rating-${rating}`} className="text-sm cursor-pointer flex items-center space-x-1 transition-colors duration-200 group-hover:text-blue-600">
+                                  <span>{rating}</span>
+                                  <Star className="w-3.5 h-3.5 text-yellow-500 fill-current" />
+                                </Label>
+                              </div>
                             ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                          </div>
+                        </div>
                       </div>
                       {/* Date filter dropdown */}
                       <div className="mb-4">
-                        <Label htmlFor="filter-date">Date</Label>
+                        <Label className="text-sm font-medium mb-2 block">Date</Label>
                         <Select value={pendingFilters.dateFilter} onValueChange={value => setPendingFilters(f => ({ ...f, dateFilter: value }))}>
-                          <SelectTrigger className="h-8 text-xs px-2 bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-300 dark:border-zinc-700">
+                          <SelectTrigger className="h-8 px-3 bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-300 dark:border-zinc-700 text-sm">
                             <SelectValue placeholder="All Time" />
                           </SelectTrigger>
                           <SelectContent>
@@ -1458,19 +1560,27 @@ export default function BrandDetailPage() {
                           </SelectContent>
                         </Select>
                         {pendingFilters.dateFilter === 'custom' && (
-                          <div className="flex gap-2 mt-2">
-                            <input type="date" value={pendingFilters.customStartDate} onChange={e => setPendingFilters(f => ({ ...f, customStartDate: e.target.value }))} className="border rounded px-2 py-1 text-xs h-8" />
-                            <span className="text-xs">to</span>
-                            <input type="date" value={pendingFilters.customEndDate} onChange={e => setPendingFilters(f => ({ ...f, customEndDate: e.target.value }))} className="border rounded px-2 py-1 text-xs h-8" />
+                          <div className="flex gap-2 mt-2 items-center">
+                            <input 
+                              type="date" 
+                              value={pendingFilters.customStartDate} 
+                              onChange={e => setPendingFilters(f => ({ ...f, customStartDate: e.target.value }))} 
+                              className="border border-gray-300 rounded-md px-2 py-1 text-sm h-8 flex-1" 
+                            />
+                            <span className="text-xs text-gray-500">to</span>
+                            <input 
+                              type="date" 
+                              value={pendingFilters.customEndDate} 
+                              onChange={e => setPendingFilters(f => ({ ...f, customEndDate: e.target.value }))} 
+                              className="border border-gray-300 rounded-md px-2 py-1 text-sm h-8 flex-1" 
+                            />
                           </div>
                         )}
                       </div>
 
                       {/* Additional Information Section */}
                       <div className="mb-4">
-                        <Label className="text-sm font-medium">Additional Information</Label>
-                        <div className="mt-2 space-y-2">
-                          <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 group">
                             <Checkbox
                               id="additional-info"
                               checked={showAdditionalInfo}
@@ -1481,23 +1591,27 @@ export default function BrandDetailPage() {
                                 setShowLinkColumn(isChecked);
                                 setShowMatchedKeywords(isChecked);
                               }}
+                            className="h-3.5 w-3.5 transition-transform duration-200 hover:scale-105"
                             />
-                            <Label htmlFor="additional-info" className="text-sm">
-                              Enable Additional Information
+                          <Label htmlFor="additional-info" className="text-sm cursor-pointer transition-colors duration-200 group-hover:text-blue-600">
+                            Show Additional Info
                             </Label>
                           </div>
                           {showAdditionalInfo && (
-                            <div className="ml-6 space-y-1 text-xs text-gray-600">
-                              <div>• Customer Information</div>
-                              <div>• Review Link</div>
-                              <div>• Matched Keywords</div>
+                          <div className="mt-2 ml-5 text-xs text-gray-600 bg-gray-50 p-2 rounded-md">
+                            <div>• Customer • Link • Keywords</div>
                             </div>
                           )}
-                        </div>
                       </div>
 
                       <DialogFooter>
-                        <Button onClick={() => setFilterDialogOpen(false)} variant="outline">Cancel</Button>
+                        <Button 
+                          onClick={() => setFilterDialogOpen(false)} 
+                          variant="outline"
+                          className="transition-transform duration-200 hover:scale-105"
+                        >
+                          Cancel
+                        </Button>
                         <Button
                           onClick={() => {
                             setFilters(pendingFilters);
@@ -1505,6 +1619,7 @@ export default function BrandDetailPage() {
                             setFilterDialogOpen(false);
                           }}
                           variant="default"
+                          className="transition-transform duration-200 hover:scale-105"
                         >
                           Apply Filters
                         </Button>
@@ -1514,10 +1629,73 @@ export default function BrandDetailPage() {
                   {/* CSV and Excel download buttons */}
                   <Button
                     variant="outline"
-                    onClick={() => {
+                    onClick={async () => {
+                      try {
+                        // Build the exact same apiFilters as the main dashboard call
+                        const apiFilters: any = {};
+                        
+                        // Handle categories
+                        if (filters.category && filters.category.length > 0 && !filters.category.includes("all")) {
+                          apiFilters.category = filters.category;
+                        }
+                        
+                        // Handle ratings
+                        if (filters.rating && filters.rating.length > 0 && !filters.rating.includes("all")) {
+                          apiFilters.rating = filters.rating.map(r => Number(r));
+                        }
+                        
+                        // Handle date filters
+                        if (filters.dateFilter && filters.dateFilter !== 'all') {
+                          if (filters.dateFilter === 'custom' && filters.customStartDate && filters.customEndDate) {
+                            apiFilters.dateFrom = filters.customStartDate;
+                            apiFilters.dateTo = filters.customEndDate;
+                          } else {
+                            const now = new Date();
+                            let startDate = new Date();
+                            
+                            switch (filters.dateFilter) {
+                              case '1w':
+                                startDate = subWeeks(now, 1);
+                                break;
+                              case '1m':
+                                startDate = subMonths(now, 1);
+                                break;
+                              case '3m':
+                                startDate = subMonths(now, 3);
+                                break;
+                              case '6m':
+                                startDate = subMonths(now, 6);
+                                break;
+                              default:
+                                startDate = now;
+                            }
+                            
+                            apiFilters.dateFrom = startDate.toISOString().slice(0, 10);
+                            apiFilters.dateTo = now.toISOString().slice(0, 10);
+                          }
+                        }
+                        
+                        // Add keyword filter
+                        if (reviewFilters.keyword && reviewFilters.keyword.trim()) {
+                          apiFilters.keyword = reviewFilters.keyword.trim();
+                        }
+                        
+                        console.log('CSV Export - Using same apiFilters as dashboard:', apiFilters);
+                        
+                        // Get ALL filtered reviews for export using the SAME filters as dashboard
+                        const exportData = await apiService.getBrandDashboardOptimized(id, 1, 50000, apiFilters);
+                        
+                        // Import and execute export with all filtered reviews
+                        import("@/lib/export-utils").then(({ exportReviewsAsCSV }) => {
+                          exportReviewsAsCSV(exportData.reviews, meta.name)
+                        })
+                      } catch (error) {
+                        console.error('Error exporting CSV:', error);
+                        // Fallback to paginated reviews if export fails
                       import("@/lib/export-utils").then(({ exportReviewsAsCSV }) => {
                         exportReviewsAsCSV(unifiedFilteredReviews, meta.name)
                       })
+                      }
                     }}
                   >
                     <Download className="w-4 h-4 mr-1" />
@@ -1525,7 +1703,12 @@ export default function BrandDetailPage() {
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => setShowAIReportModal(true)}
+                    onClick={() => {
+                      setShowAIReportModal(true);
+                      setShowHistoryTab(false);
+                      setAIReportPrompt("");
+                      setGeneratedReport("");
+                    }}
                   >
                     <FileText className="w-4 h-4 mr-1" />
                     AI Report
@@ -1535,17 +1718,116 @@ export default function BrandDetailPage() {
 
               <Separator />
 
+              {/* Always show review count */}
+              <div className="mb-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    {/* Active Filters Display */}
+                    {((filters.category.length > 0 && !filters.category.includes("all")) || 
+                      (filters.rating.length > 0 && !filters.rating.includes("all")) || 
+                      filters.dateFilter !== "all" || 
+                      reviewFilters.keyword.trim() !== "") && (
+                      <div className="flex flex-wrap gap-2 items-center mb-2">
+                        <span className="text-sm font-medium text-gray-600">Active Filters:</span>
+                      
+                      {/* Category badges */}
+                      {filters.category.length > 0 && !filters.category.includes("all") && 
+                        filters.category.map(cat => (
+                          <Badge key={cat} variant="secondary" className="flex items-center space-x-1 bg-blue-100 text-blue-800 border-blue-200">
+                            <span>{cat}</span>
+                            <button 
+                              onClick={() => {
+                                const newCategories = filters.category.filter(c => c !== cat);
+                                setFilters(f => ({ ...f, category: newCategories.length === 0 ? ["all"] : newCategories }));
+                                setPendingFilters(f => ({ ...f, category: newCategories.length === 0 ? ["all"] : newCategories }));
+                                setCurrentPage(1);
+                              }}
+                              className="ml-1 hover:text-red-500"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </Badge>
+                        ))
+                      }
+                      
+                      {/* Rating badges */}
+                      {filters.rating.length > 0 && !filters.rating.includes("all") && 
+                        filters.rating.map(rating => (
+                          <Badge key={rating} variant="secondary" className="flex items-center space-x-1 bg-yellow-100 text-yellow-800 border-yellow-200">
+                            <Star className="w-3 h-3" />
+                            <span>{rating} stars</span>
+                            <button 
+                              onClick={() => {
+                                const newRatings = filters.rating.filter(r => r !== rating);
+                                setFilters(f => ({ ...f, rating: newRatings.length === 0 ? ["all"] : newRatings }));
+                                setPendingFilters(f => ({ ...f, rating: newRatings.length === 0 ? ["all"] : newRatings }));
+                                setCurrentPage(1);
+                              }}
+                              className="ml-1 hover:text-red-500"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </Badge>
+                        ))
+                      }
+                      
+                      {/* Date filter badge */}
+                      {filters.dateFilter !== "all" && (
+                        <Badge variant="secondary" className="flex items-center space-x-1 bg-green-100 text-green-800 border-green-200">
+                          <span>
+                            {filters.dateFilter === "custom" 
+                              ? `${filters.customStartDate} to ${filters.customEndDate}`
+                              : filters.dateFilter === "7d" ? "Last 7 days"
+                              : filters.dateFilter === "30d" ? "Last 30 days"
+                              : filters.dateFilter === "3m" ? "Last 3 months"
+                              : filters.dateFilter === "6m" ? "Last 6 months"
+                              : filters.dateFilter
+                            }
+                          </span>
+                          <button 
+                            onClick={() => {
+                              setFilters(f => ({ ...f, dateFilter: "all", customStartDate: "", customEndDate: "" }));
+                              setPendingFilters(f => ({ ...f, dateFilter: "all", customStartDate: "", customEndDate: "" }));
+                              setCurrentPage(1);
+                            }}
+                            className="ml-1 hover:text-red-500"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </Badge>
+                      )}
+                      
+                      {/* Keyword search badge */}
+                      {reviewFilters.keyword.trim() !== "" && (
+                        <Badge variant="secondary" className="flex items-center space-x-1 bg-purple-100 text-purple-800 border-purple-200">
+                          <span>"{reviewFilters.keyword}"</span>
+                          <button 
+                            onClick={() => {
+                              setReviewFilters(f => ({ ...f, keyword: "" }));
+                              setCurrentPage(1);
+                            }}
+                            className="ml-1 hover:text-red-500"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </Badge>
+                      )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Review count - always visible */}
+                  <div className="text-sm text-gray-600 ml-4 whitespace-nowrap">
+                    Showing {reviews.length} of {totalReviews} reviews
+                  </div>
+                </div>
+              </div>
+
               {/* Filters Section */}
               {/* The category filter tabs are removed from here */}
             </div>
           </CardHeader>
           <CardContent>
-            {/* Review count display */}
-            <div className="flex items-center justify-end mb-2">
-              <div className="text-sm text-gray-600">
-                Showing {reviews.length} of {totalReviews} reviews
-              </div>
-            </div>
             {/* The category filter tabs are removed from here */}
             <TooltipProvider>
               <Table className="bg-white text-black table-fixed w-full">
@@ -1592,7 +1874,7 @@ export default function BrandDetailPage() {
                           <TableCell className="text-black bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">
                             <span>{review.rating}</span>
                           </TableCell>
-                          <TableCell className="whitespace-pre-line text-sm">
+                          <TableCell className="whitespace-pre-line text-sm bg-white dark:bg-zinc-900 text-black dark:text-white border-gray-200 dark:border-zinc-700">
                             <div
                                 dangerouslySetInnerHTML={{
                                 __html: highlightedHTML
@@ -1777,14 +2059,41 @@ export default function BrandDetailPage() {
           <>
             <div className="fixed inset-0 bg-black bg-opacity-40 z-40 transition-opacity" />
             <div className="fixed inset-0 z-50 flex items-center justify-center">
-              <div className="bg-white dark:bg-[#18181b] dark:border dark:border-gray-700 dark:shadow-2xl rounded-lg shadow-lg p-6 w-full max-w-4xl transition-colors">
+              <div className="bg-white dark:bg-[#18181b] dark:border dark:border-gray-700 dark:shadow-2xl rounded-lg shadow-lg p-6 w-full max-w-5xl transition-colors">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-bold text-black dark:text-white">AI Report Generator</h2>
+                  <h2 className="text-lg font-bold text-black dark:text-white">AI Report Center</h2>
                   <Button variant="ghost" className="bg-black hover:bg-black focus:bg-black active:bg-black transition-transform duration-150 transform hover:scale-110 focus:scale-110" onClick={() => setShowAIReportModal(false)}>
                     <X className="w-5 h-5 text-white" />
                   </Button>
                 </div>
                 
+                {/* Tab Navigation */}
+                <div className="flex space-x-4 mb-6 border-b border-gray-200 dark:border-gray-700">
+                  <button
+                    onClick={() => setShowHistoryTab(false)}
+                    className={`pb-2 px-1 transition-colors duration-200 ${
+                      !showHistoryTab
+                        ? "border-b-2 border-blue-500 text-blue-600 font-medium"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`}
+                  >
+                    New Report
+                  </button>
+                  <button
+                    onClick={() => setShowHistoryTab(true)}
+                    className={`pb-2 px-1 transition-colors duration-200 ${
+                      showHistoryTab
+                        ? "border-b-2 border-blue-500 text-blue-600 font-medium"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`}
+                  >
+                    History ({aiReportHistory.length})
+                  </button>
+                </div>
+                
+                {/* Tab Content */}
+                {!showHistoryTab ? (
+                  /* New Report Tab */
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="ai-prompt" className="text-sm font-medium">Enter your prompt for the AI report:</Label>
@@ -1858,6 +2167,25 @@ export default function BrandDetailPage() {
                             
                             const data = await response.json();
                             setGeneratedReport(data.report);
+                            
+                            // Save to history
+                            const historyItem = {
+                              id: Date.now(),
+                              prompt: aiReportPrompt,
+                              report: data.report,
+                              timestamp: new Date().toISOString(),
+                              filters: {
+                                category: filters.category,
+                                rating: filters.rating,
+                                dateFilter: filters.dateFilter,
+                                customStartDate: filters.customStartDate,
+                                customEndDate: filters.customEndDate,
+                                keyword: reviewFilters.keyword
+                              },
+                              reviewCount: unifiedFilteredReviews.length,
+                              brandName: meta.name
+                            };
+                            setAiReportHistory(prev => [historyItem, ...prev]);
                           } catch (error) {
                             console.error("Error generating report:", error);
                             setGeneratedReport("Error generating report. Please try again.");
@@ -1923,6 +2251,130 @@ export default function BrandDetailPage() {
                     </div>
                   )}
                 </div>
+                ) : (
+                  /* History Tab */
+                  <div className="space-y-4">
+                    {aiReportHistory.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                        <p>No AI reports generated yet.</p>
+                        <p className="text-sm">Generate your first report to see it here.</p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* History Header with Clear All Button */}
+                        <div className="flex justify-between items-center mb-4">
+                          <div className="text-sm text-gray-600">
+                            {aiReportHistory.length} report{aiReportHistory.length !== 1 ? 's' : ''} in history
+                          </div>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              if (window.confirm(`Are you sure you want to delete all ${aiReportHistory.length} reports from history? This action cannot be undone.`)) {
+                                setAiReportHistory([]);
+                              }
+                            }}
+                            className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-300 hover:border-red-400 transition-all duration-200 hover:scale-105"
+                          >
+                            <X className="w-3 h-3 mr-1" />
+                            Clear All History
+                          </Button>
+                        </div>
+                      <div className="space-y-4 max-h-96 overflow-y-auto">
+                        {aiReportHistory.map((item) => (
+                          <div key={item.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200">
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex-1">
+                                <h4 className="font-medium text-sm truncate pr-4">{item.prompt}</h4>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {new Date(item.timestamp).toLocaleDateString()} at {new Date(item.timestamp).toLocaleTimeString()} • {item.reviewCount} reviews
+                                </div>
+                              </div>
+                              <div className="flex space-x-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => {
+                                    import("@/lib/export-utils").then(({ exportAIReportAsPDF }) => {
+                                      exportAIReportAsPDF(item.report, item.brandName, item.prompt)
+                                    })
+                                  }}
+                                  className="text-xs transition-transform duration-200 hover:scale-105"
+                                >
+                                  <Download className="w-3 h-3 mr-1" />
+                                  PDF
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => {
+                                    import("@/lib/export-utils").then(({ exportAIReportAsWord }) => {
+                                      exportAIReportAsWord(item.report, item.brandName, item.prompt)
+                                    })
+                                  }}
+                                  className="text-xs transition-transform duration-200 hover:scale-105"
+                                >
+                                  <Download className="w-3 h-3 mr-1" />
+                                  Word
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => {
+                                    // Confirm before deleting
+                                    if (window.confirm('Are you sure you want to delete this report from history?')) {
+                                      setAiReportHistory(prev => prev.filter(historyItem => historyItem.id !== item.id));
+                                    }
+                                  }}
+                                  className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-300 hover:border-red-400 transition-all duration-200 hover:scale-105"
+                                >
+                                  <X className="w-3 h-3 mr-1" />
+                                  Delete
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            {/* Filter Context */}
+                            <div className="text-xs text-gray-600 mb-2">
+                              <strong>Filters used:</strong>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {!item.filters.category.includes("all") && (
+                                  <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                                    Categories: {item.filters.category.join(", ")}
+                                  </span>
+                                )}
+                                {!item.filters.rating.includes("all") && (
+                                  <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">
+                                    Ratings: {item.filters.rating.join(", ")}★
+                                  </span>
+                                )}
+                                {item.filters.dateFilter !== "all" && (
+                                  <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded">
+                                    Date: {item.filters.dateFilter === "custom" 
+                                      ? `${item.filters.customStartDate} to ${item.filters.customEndDate}`
+                                      : item.filters.dateFilter}
+                                  </span>
+                                )}
+                                {item.filters.keyword && (
+                                  <span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded">
+                                    Keyword: "{item.filters.keyword}"
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Report Preview */}
+                            <div className="text-xs text-gray-700 bg-gray-100 p-2 rounded max-h-20 overflow-hidden">
+                              {item.report.substring(0, 200)}...
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </>

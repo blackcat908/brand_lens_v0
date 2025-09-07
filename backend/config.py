@@ -70,7 +70,7 @@ LOGGING_CONFIG = {
 
 # AI Service settings
 AI_CONFIG = {
-    'openai_api_key': os.environ.get('OPENAI_API_KEY') or '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',
+    'openai_api_key': os.environ.get('OPENAI_API_KEY'),  # Remove hardcoded key - use environment variable only
     'model': 'gpt-3.5-turbo',
     'max_tokens': 4000,  # Increased for larger datasets
     'temperature': 0.7,

@@ -14,13 +14,20 @@ class AIService:
         if not api_key:
             logger.warning("[AI-SERVICE] No OpenAI API key found. Set OPENAI_API_KEY environment variable.")
             self.client = None
+            self.api_key_status = "missing"
+        elif api_key.startswith('sk-proj-') and len(api_key) < 100:
+            logger.warning("[AI-SERVICE] OpenAI API key appears to be truncated or invalid.")
+            self.client = None
+            self.api_key_status = "invalid"
         else:
             try:
                 self.client = OpenAI(api_key=api_key)
                 logger.info("[AI-SERVICE] OpenAI client initialized successfully")
+                self.api_key_status = "valid"
             except Exception as e:
                 logger.error(f"[AI-SERVICE] Failed to initialize OpenAI client: {e}")
                 self.client = None
+                self.api_key_status = "error"
 
     def generate_report(self, brand_name: str, prompt: str, reviews: List[Dict[str, Any]]) -> str:
         """
@@ -184,6 +191,9 @@ Based on {total_reviews} customer reviews, here's the analysis:
 > "{review.get('review', 'No review text')[:200]}..."
 """
         
+        # Add API key status information
+        api_key_status = getattr(self, 'api_key_status', 'unknown')
+        
         report += f"""
 ## Recommendations
 Based on the analysis of {total_reviews} reviews:
@@ -193,10 +203,23 @@ Based on the analysis of {total_reviews} reviews:
 3. **Monitor Trends:** Track sentiment changes over time to measure improvement efforts
 
 ## Note
-*This is a fallback report generated without AI analysis. For enhanced insights, please configure the OpenAI API key.*
+*This is a fallback report generated without AI analysis. For enhanced insights with detailed analysis and specific recommendations, please fix the OpenAI API key configuration.*
+
+**API Key Status:** {api_key_status}
+
+**To enable AI-powered reports:**
+1. **Get a valid API key:** Visit [OpenAI Platform](https://platform.openai.com/account/api-keys)
+2. **Set environment variable:** `OPENAI_API_KEY=your-actual-api-key`
+3. **Restart the application**
+
+**Common Issues:**
+- API key is missing or empty
+- API key is truncated or corrupted  
+- API key has expired or been revoked
+- Insufficient OpenAI credits
 
 ---
-*Report generated on {os.popen('date').read().strip() if os.name != 'nt' else 'Windows'}*
+*Fallback report generated automatically*
 """
         
         return report
@@ -254,7 +277,7 @@ Based on the analysis of {total_reviews} reviews:
             
         except Exception as e:
             logger.error(f"[AI-SERVICE] Error calling OpenAI API: {e}")
-            return self._get_fallback_report(brand_name, prompt, reviews_data, error_message=str(e))
+            return self._get_fallback_report(brand_name, prompt, reviews_data)
 
     def _format_reviews_as_csv(self, reviews_data: List[Dict[str, Any]]) -> str:
         """Format review data as CSV string for AI consumption."""

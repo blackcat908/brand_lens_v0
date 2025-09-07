@@ -140,6 +140,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
     <img
         src={logoSrc}
       alt={alt}
+      className="border border-gray-200 dark:border-gray-600 rounded-md"
       style={{
         maxWidth: "100%",
         maxHeight: "100%",

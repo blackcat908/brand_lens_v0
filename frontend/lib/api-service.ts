@@ -246,7 +246,7 @@ class ApiService {
   ): Promise<Review[]> {
     const backendBrand = this.mapBrandId(brandId);
     // Fetch with a very large page size to get all reviews
-    const response = await this.getBrandReviews(backendBrand, 1, 10000, filters);
+    const response = await this.getBrandReviews(backendBrand, 1, 50000, filters);
     return response.reviews;
   }
 
@@ -264,19 +264,169 @@ class ApiService {
     return this.getBrandAnalytics(backendBrand, filters);
   }
 
+  // NEW: Get ALL filtered reviews for export (no pagination)
+  async getAllFilteredReviews(
+    brandId: string,
+    filters?: {
+      rating?: number | number[]; 
+      sentiment?: string;
+      dateFrom?: string;
+      dateTo?: string;
+      category?: string | string[];
+      keyword?: string;
+    }
+  ) {
+    const backendBrand = this.mapBrandId(brandId);
+    const params = new URLSearchParams();
+    
+    // Add filters as query parameters
+    if (filters?.rating && Array.isArray(filters.rating) && filters.rating.length > 0) {
+      params.append('rating', filters.rating.join(','));
+    }
+    if (filters?.sentiment && filters.sentiment !== 'all') {
+      params.append('sentiment', filters.sentiment);
+    }
+    if (filters?.dateFrom) {
+      params.append('date_from', filters.dateFrom);
+    }
+    if (filters?.dateTo) {
+      params.append('date_to', filters.dateTo);
+    }
+    if (filters?.category && Array.isArray(filters.category) && filters.category.length > 0) {
+      params.append('category', filters.category.join(','));
+    }
+    if (filters?.keyword && filters.keyword.trim()) {
+      params.append('keyword', filters.keyword.trim());
+    }
+
+    const queryString = params.toString();
+    const url = `${this.baseUrl}/api/brands/${backendBrand}/reviews/export${queryString ? `?${queryString}` : ''}`;
+    
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch all filtered reviews: ${response.statusText}`);
+    }
+    
+    return response.json();
+  }
+
+  // NEW: Unified high-performance endpoint
+  async getBrandDashboardOptimized(
+    brandId: string,
+    page: number = 1,
+    perPage: number = 20,
+    filters?: {
+      rating?: number | number[]; 
+      sentiment?: string;
+      dateFrom?: string;
+      dateTo?: string;
+      category?: string | string[];
+      keyword?: string;
+    }
+  ): Promise<{
+    brand: string;
+    total_reviews: number;
+    filtered_total: number;
+    page: number;
+    per_page: number;
+    reviews: Review[];
+    analytics: {
+      total_reviews: number;
+      average_rating: number;
+      sentiment_breakdown: {
+        positive: number;
+        negative: number;
+        neutral: number;
+        total_analyzed: number;
+      };
+      average_sentiment_score: number;
+      monthly_trends: Array<{ month: string; count: number }>;
+    };
+    filters_applied: any;
+  }> {
+    const backendBrand = this.mapBrandId(brandId);
+    
+    const params = new URLSearchParams({
+      page: page.toString(),
+      per_page: perPage.toString(),
+    });
+
+    if (filters?.rating) {
+      if (Array.isArray(filters.rating)) {
+        params.append('rating', JSON.stringify(filters.rating));
+      } else {
+        params.append('rating', filters.rating.toString());
+      }
+    }
+
+    if (filters?.sentiment) {
+      params.append('sentiment', filters.sentiment);
+    }
+
+    if (filters?.dateFrom) {
+      params.append('date_from', filters.dateFrom);
+    }
+
+    if (filters?.dateTo) {
+      params.append('date_to', filters.dateTo);
+    }
+
+    if (filters?.category) {
+      if (Array.isArray(filters.category)) {
+        params.append('category', JSON.stringify(filters.category));
+      } else {
+        params.append('category', filters.category);
+      }
+    }
+
+    if (filters?.keyword) {
+      params.append('keyword', filters.keyword);
+    }
+
+    const response = await fetch(`${this.baseUrl}/brands/${encodeURIComponent(backendBrand)}/dashboard?${params}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch dashboard data: ${response.statusText}`);
+    }
+    return response.json();
+  }
+
   async getGlobalKeywords() {
     const response = await fetch(`${this.baseUrl}/keywords`);
     if (!response.ok) throw new Error('Failed to fetch keywords');
     return response.json();
   }
 
-  async setGlobalKeywords(category: string, keywords: string[]) {
+  async setGlobalKeywords(category: string, keywords: string[], append: boolean = false) {
     const response = await fetch(`${this.baseUrl}/keywords`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ category, keywords }),
+      body: JSON.stringify({ category, keywords, append }),
     });
     if (!response.ok) throw new Error('Failed to save keywords');
+    return response.json();
+  }
+
+  async addGlobalKeywords(category: string, newKeywords: string[]) {
+    return this.setGlobalKeywords(category, newKeywords, true);
+  }
+
+  async setBrandKeywords(brandId: string, category: string, keywords: string[], append: boolean = false) {
+    const response = await fetch(`${this.baseUrl}/brands/${encodeURIComponent(brandId)}/keywords`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category, keywords, append }),
+    });
+    if (!response.ok) throw new Error('Failed to save brand keywords');
+    return response.json();
+  }
+
+  async addBrandKeywords(brandId: string, category: string, newKeywords: string[]) {
+    return this.setBrandKeywords(brandId, category, newKeywords, true);
+  }
+
+  async getBrandKeywords(brandId: string) {
+    const response = await fetch(`${this.baseUrl}/brands/${encodeURIComponent(brandId)}/keywords`);
+    if (!response.ok) throw new Error('Failed to fetch brand keywords');
     return response.json();
   }
 

@@ -28,6 +28,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Playwright browsers (without system deps to avoid font issues)
+# Updated: Fix font package conflicts
 RUN python -m playwright install chromium
 
 # Install NLTK data
