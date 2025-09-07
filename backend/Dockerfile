@@ -24,12 +24,29 @@ RUN apt-get update && apt-get install -y \
     libgbm1 \
     libxss1 \
     fonts-liberation \
+    fonts-unifont \
+    libasound2 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libxss1 \
+    libxtst6 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Playwright browsers and system dependencies
+# Install Playwright browsers
 RUN python -m playwright install chromium
-RUN python -m playwright install-deps chromium
+
+# Install additional Playwright dependencies manually (skip font issues)
+RUN apt-get update && apt-get install -y \
+    gstreamer1.0-libav \
+    gstreamer1.0-plugins-bad \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* || true
 
 # Install NLTK data
 RUN python -m nltk.downloader wordnet stopwords punkt
