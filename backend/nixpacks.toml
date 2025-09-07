@@ -22,5 +22,19 @@ nixPkgs = [
   "libgbm",           # libgbm.so.1
   "pango",            # libpango-1.0.so.0
   "cairo",            # libcairo.so.2
-  "alsa-lib"          # libasound.so.2
+  "alsa-lib",         # libasound.so.2 (main ALSA library)
+  "xorg-server",      # X11 server support
+  "xorg-server-xvfb", # Virtual framebuffer for headless
+  "fontconfig",       # Font configuration
+  "freetype",         # Font rendering
+  "libxshmfence",     # X11 shared memory
+  "mesa",             # OpenGL support
+  "vulkan-loader"     # Vulkan support for modern browsers
+]
+
+[phases.install]
+cmds = [
+  "pip install -r requirements.txt",
+  "python -m playwright install chromium",
+  "python -m playwright install-deps chromium"
 ]
