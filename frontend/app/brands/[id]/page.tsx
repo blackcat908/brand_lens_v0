@@ -31,9 +31,10 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/comp
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/components/ui/use-toast"
-import { format, subDays, subMonths, isAfter, isBefore, parseISO } from "date-fns"
+import { format, subDays, subMonths, subWeeks, isAfter, isBefore, parseISO } from "date-fns"
 import { apiService, canonicalBrandId } from "@/lib/api-service"
 import { BrandLogo } from "@/components/brand-logo";
+// @ts-ignore - wink-lemmatizer doesn't have type definitions
 import winkLemmatizer from 'wink-lemmatizer';
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { BrandDashboardSkeleton } from "@/components/skeleton-ui";
@@ -345,10 +346,10 @@ export default function BrandDetailPage() {
           sentiment_breakdown: dashboardData.analytics.sentiment_breakdown,
           average_sentiment: dashboardData.analytics.average_sentiment_score,
           sentimentScore: dashboardData.analytics.average_sentiment_score, // Alias
-          rating_distribution: dashboardData.analytics.rating_distribution, // Rating distribution data
+          rating_distribution: (dashboardData.analytics as any).rating_distribution || {}, // Rating distribution data
           monthly_trends: dashboardData.analytics.monthly_trends,
           monthlyTrend: dashboardData.analytics.monthly_trends.map(t => t.count), // Alias
-          top_keywords: dashboardData.analytics.top_keywords || [], // Backend calculated top keywords
+          top_keywords: (dashboardData.analytics as any)?.top_keywords || [], // Backend calculated top keywords
           last_updated: new Date().toISOString()
         };
         
@@ -1431,10 +1432,10 @@ export default function BrandDetailPage() {
                 <CardContent>
                   {(() => {
                     const bodyIssues = analytics.sizing_intelligence.body_part_issues || {};
-                    const maxIssue = Object.entries(bodyIssues).reduce((max, [key, value]) => 
-                      value > max.value ? { key: key.replace('_', ' '), value } : max, 
-                      { key: 'None', value: 0 }
-                    );
+                    const maxIssue = Object.entries(bodyIssues).reduce((max, [key, value]) => {
+                      const numValue = typeof value === 'number' ? value : 0;
+                      return numValue > max.value ? { key: key.replace('_', ' '), value: numValue } : max;
+                    }, { key: 'None', value: 0 });
                     return (
                       <div>
                         <div className="text-lg font-bold capitalize">{maxIssue.key}</div>
@@ -1454,7 +1455,7 @@ export default function BrandDetailPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {analytics.sizing_intelligence.actionable_insights.map((insight, index) => (
+                    {analytics.sizing_intelligence.actionable_insights.map((insight: any, index: number) => (
                       <div key={index} className={`p-3 rounded-lg border-l-4 ${
                         insight.priority === 'high' ? 'bg-red-50 border-red-400' :
                         insight.priority === 'medium' ? 'bg-yellow-50 border-yellow-400' :
@@ -1812,7 +1813,7 @@ export default function BrandDetailPage() {
                         
                         // Import and execute export with all filtered reviews
                         import("@/lib/export-utils").then(({ exportReviewsAsCSV }) => {
-                          exportReviewsAsCSV(exportData.reviews, meta.name)
+                          exportReviewsAsCSV(exportData.reviews as any, meta.name)
                         })
                       } catch (error) {
                         console.error('Error exporting CSV:', error);

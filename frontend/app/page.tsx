@@ -217,20 +217,20 @@ export default function BrandsPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 text-black dark:text-white">
-      {/* Brand Lens Header - Trustpilot Style */}
-      <header className="sticky top-0 z-50 bg-white dark:bg-zinc-900 shadow-sm">
+      {/* Brand Lens Header - Black Background with White Elements */}
+      <header className="sticky top-0 z-50 bg-black shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Brand Logo and Name */}
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center relative">
+              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center relative">
                 {/* Simple version of the magnifying glass + shirt concept */}
                 <div className="relative">
-                  <SearchIcon className="w-5 h-5 text-white" />
-                  <div className="absolute -top-1 -left-1 w-2 h-1.5 bg-white/40 rounded-sm transform rotate-12"></div>
+                  <SearchIcon className="w-5 h-5 text-black" />
+                  <div className="absolute -top-1 -left-1 w-2 h-1.5 bg-black/40 rounded-sm transform rotate-12"></div>
                 </div>
               </div>
-              <span className="text-xl font-bold text-foreground">Brand Lens</span>
+              <span className="text-xl font-bold text-white">Brand Lens</span>
             </div>
 
             {/* Search Bar */}
@@ -242,31 +242,31 @@ export default function BrandsPage() {
                   placeholder="Search brands or categories..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-foreground placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-600 rounded-lg bg-white text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
                 />
               </div>
             </div>
 
             {/* Navigation Items */}
             <nav className="flex items-center space-x-6">
-              <a href="#" className="text-foreground hover:text-blue-600 font-medium transition-colors">
+              <a href="#" className="text-white hover:text-gray-300 font-medium transition-colors">
                 Dashboard
               </a>
-              <a href="#" className="text-foreground hover:text-blue-600 font-medium transition-colors">
+              <Link href="/analytics" className="text-white hover:text-gray-300 font-medium transition-colors">
                 Analytics
-              </a>
-              <a href="#" className="text-foreground hover:text-blue-600 font-medium transition-colors">
+              </Link>
+              <Link href="/ai-reports" className="text-white hover:text-gray-300 font-medium transition-colors">
                 AI Reports
-              </a>
+              </Link>
               
               {/* Settings Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                 <button
-                    className="p-2 rounded-lg bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
+                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
                     aria-label="Settings"
                 >
-                    <Settings className="w-4 h-4 text-foreground" />
+                    <Settings className="w-4 h-4 text-white" />
                 </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -282,7 +282,7 @@ export default function BrandsPage() {
               {/* Create Brand Button */}
               <Button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="bg-black hover:bg-gray-800 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border dark:border-zinc-600 text-white dark:text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 hover:shadow-lg"
+                className="bg-white hover:bg-gray-100 text-black px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 hover:shadow-lg"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Create Brand
@@ -291,13 +291,13 @@ export default function BrandsPage() {
               {/* Theme Toggle */}
               <button
                 onClick={() => setIsDarkMode(!isDarkMode)}
-                className="p-2 rounded-lg bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
+                className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
                 aria-label="Toggle theme"
               >
                 {isDarkMode ? (
-                  <Sun className="w-4 h-4 text-foreground" />
+                  <Sun className="w-4 h-4 text-white" />
                 ) : (
-                  <Moon className="w-4 h-4 text-foreground" />
+                  <Moon className="w-4 h-4 text-white" />
                 )}
               </button>
             </nav>
@@ -392,7 +392,7 @@ export default function BrandsPage() {
                             {brand.brand}
                             {/* Always show yellow pin for pinned brands */}
                             {isPinned && !pinMode && (
-                              <Pin className="w-4 h-4 ml-2 text-yellow-500 fill-yellow-400" title="Pinned" />
+                              <Pin className="w-4 h-4 ml-2 text-yellow-500 fill-yellow-400" />
                             )}
                             {/* Show interactive pin button only in pinMode */}
                             {pinMode && (
