@@ -305,8 +305,24 @@ def delete_brand_and_reviews(brand_name):
 
 # Legacy functions for backward compatibility
 def get_reviews_by_brand(db, brand_name: str) -> List[Dict[str, Any]]:
-    objs = db.query(Review).filter(Review.brand_name == brand_name).order_by(Review.id.desc()).all()
-    return [o.__dict__ for o in objs]
+    try:
+        objs = db.query(Review).filter(Review.brand_name == brand_name).order_by(Review.id.desc()).all()
+        logger.info(f"[DATABASE] Query returned {len(objs)} objects for brand '{brand_name}'")
+        
+        # Filter out None objects and log any issues
+        valid_objs = []
+        for i, obj in enumerate(objs):
+            if obj is None:
+                logger.warning(f"[DATABASE] Found None object at index {i} for brand '{brand_name}'")
+            else:
+                valid_objs.append(obj)
+        
+        result = [o.__dict__ for o in valid_objs if o is not None]
+        logger.info(f"[DATABASE] Returning {len(result)} valid reviews for brand '{brand_name}'")
+        return result
+    except Exception as e:
+        logger.error(f"[DATABASE] Error fetching reviews for brand '{brand_name}': {str(e)}")
+        return []
 
 def get_all_reviews(db) -> List[Dict[str, Any]]:
     objs = db.query(Review).order_by(Review.id.desc()).all()
